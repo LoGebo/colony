@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 5 of 8 (Amenities, Communication & Marketplace)
-Plan: 1 of 5 complete
+Plan: 3 of 5 complete
 Status: In progress
-Last activity: 2026-01-29 - Completed 05-01-PLAN.md (Amenity Definitions & Booking Rules)
+Last activity: 2026-01-29 - Completed 05-03-PLAN.md (Channels, Posts, Comments, Reactions)
 
-Progress: [##############      ] 58%
+Progress: [###############     ] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 17
 - Average duration: 4.7 min
-- Total execution time: 70 min
+- Total execution time: 80 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [##############      ] 58%
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
-| 05-amenities | 1 | 7 min | 7 min |
+| 05-amenities | 3 | 17 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (8 min), 04-03 (10 min), 04-04 (5 min), 05-01 (7 min)
-- Trend: Starting Phase 5 amenities domain
+- Last 5 plans: 04-04 (5 min), 05-01 (7 min), 05-02 (3 min), 05-03 (7 min)
+- Trend: Phase 5 progressing steadily
 
 *Updated after each plan completion*
 
@@ -104,6 +104,11 @@ Recent decisions affecting current work:
 - Rule evaluation uses priority DESC ordering so blackouts override quotas
 - Partial unique index for one default rule per amenity per type
 - Exception handling in validate_booking_rules() for graceful handling when reservations table doesn't exist
+- Adjacency list over ltree for comments - simpler for dynamic trees with frequent edits
+- Denormalized reaction_counts JSONB + trigger for O(1) reads vs O(n) COUNT(*)
+- depth <= 20 CHECK constraint prevents excessive comment nesting
+- root_comment_id enables efficient thread fetching without recursive parent walks
+- UNIQUE (post_id, resident_id) for reactions enforces one reaction per user per post
 
 ### Pending Todos
 
@@ -113,24 +118,32 @@ None yet.
 
 - Research flag: Phase 5 (Amenities) needs exclusion constraint performance testing with RLS
 - RESOLVED: Phase 4 double-entry patterns researched and implemented
+- RESOLVED: Phase 5 comment hierarchy and reaction counter patterns implemented
 
 ## Session Continuity
 
-Last session: 2026-01-29 20:16 UTC
-Stopped at: Completed 05-01-PLAN.md (Amenity Definitions & Booking Rules)
+Last session: 2026-01-29 20:17 UTC
+Stopped at: Completed 05-03-PLAN.md (Channels, Posts, Comments, Reactions)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue with Plan 05-02 (Reservations with exclusion constraints)
+**Recommended:** Continue with Plan 05-04 (Announcements) or 05-05 (Surveys)
 
-Phase 5 Plan 01 deliverables complete:
-- amenity_type enum (9 values: pool, gym, salon, rooftop, bbq, court, room, parking, other)
-- rule_type enum (10 booking rule types)
-- reservation_status enum (5 values)
-- waitlist_status enum (4 values)
-- amenities table with JSONB schedules and booking configuration
-- amenity_rules table with priority-ordered configurable rules
-- validate_booking_rules() function for rule enforcement
-- is_amenity_open() helper for schedule checking
-- create_default_amenity_rules() helper for new amenity setup
+Phase 5 progress:
+- 05-01: Amenities with booking rules COMPLETE
+- 05-02: Reservations with exclusion constraints COMPLETE
+- 05-03: Channels, Posts, Comments, Reactions COMPLETE
+- 05-04: Announcements with targeting - PENDING
+- 05-05: Surveys with one-vote-per-unit - PENDING
+
+Communication infrastructure available:
+- channel_type enum: general, building, committee, announcements, marketplace
+- post_type enum: discussion, question, event, poll
+- channels table with is_public, allowed_roles, anyone_can_post access control
+- posts table with media, polls, reaction_counts, comment_count
+- post_comments with adjacency list hierarchy (depth/root auto-computed)
+- post_reactions with unique constraint and counter trigger sync
+- get_comment_thread() recursive CTE for tree-order fetching
+- create_default_channels() helper function
+- increment_post_view_count() SECURITY DEFINER for analytics
