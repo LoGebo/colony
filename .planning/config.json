@@ -1,0 +1,17 @@
+{
+  "mode": "yolo",
+  "depth": "standard",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "quality",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  },
+  "context": {
+    "spec_document": "User provided comprehensive 15-section functional specification for UPOE",
+    "current_focus": "Database architecture modeling with Supabase MCP",
+    "frontend_stack": "Expo + Next.js (future phase)"
+  }
+}
