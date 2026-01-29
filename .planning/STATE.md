@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 2 of 8 (Identity & CRM)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-29 - Completed 02-02-PLAN.md (Residents, Occupancies, Vehicles, Pets)
+Last activity: 2026-01-29 - Completed 02-03-PLAN.md (Resident Documents and Storage)
 
-Progress: [#####               ] 17%
+Progress: [######              ] 21%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 4 min
-- Total execution time: 18 min
+- Total execution time: 21 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 12 min | 4 min |
-| 02-identity-crm | 2 | 6 min | 3 min |
+| 02-identity-crm | 3 | 9 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min), 01-03 (5 min), 02-01 (2 min), 02-02 (4 min)
+- Last 5 plans: 01-03 (5 min), 02-01 (2 min), 02-02 (4 min), 02-03 (3 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -58,6 +58,9 @@ Recent decisions affecting current work:
 - Occupancies allow same resident multiple roles in same unit via unique(unit_id, resident_id, occupancy_type)
 - Plate normalization via GENERATED ALWAYS column for LPR matching
 - Pet vaccinations in separate table for time-series queries and expiry tracking
+- 10MB file limit for resident documents (sufficient for ID scans and contracts)
+- Partial unique index allows document re-upload after rejection
+- Storage path convention: {community_id}/{resident_id}/{document_type}/{filename}
 
 ### Pending Todos
 
@@ -70,6 +73,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T11:01:00Z
-Stopped at: Completed 02-02-PLAN.md (Residents, Occupancies, Vehicles, Pets)
+Last session: 2026-01-29T11:05:56Z
+Stopped at: Completed 02-03-PLAN.md (Resident Documents and Storage)
 Resume file: None
