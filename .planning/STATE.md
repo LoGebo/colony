@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 3 of 8 (Access Control & Security)
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: In progress
-Last activity: 2026-01-29 - Completed 03-02-PLAN.md (Invitations & Access Logs)
+Last activity: 2026-01-29 - Completed 03-03-PLAN.md (Patrol Routes & Checkpoints)
 
-Progress: [######              ] 22%
+Progress: [######              ] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 4 min
-- Total execution time: 28 min
+- Total plans completed: 9
+- Average duration: 3 min
+- Total execution time: 31 min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [######              ] 22%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 12 min | 4 min |
 | 02-identity-crm | 3 | 9 min | 3 min |
-| 03-access-control | 2 | 7 min | 3.5 min |
+| 03-access-control | 3 | 10 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (4 min), 02-03 (3 min), 03-01 (4 min), 03-02 (3 min)
+- Last 5 plans: 02-03 (3 min), 03-01 (4 min), 03-02 (3 min), 03-03 (3 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -69,6 +69,10 @@ Recent decisions affecting current work:
 - access_logs is append-only with trigger-enforced immutability (no deleted_at/updated_at)
 - Hash chain column for tamper detection in access_logs
 - Blacklist supports deny_entry, alert_only, call_police protocols
+- NFC serial stored as TEXT not UUID (factory-assigned, tamper-evident)
+- Haversine formula for GPS distance calculation (accurate for short distances)
+- Patrol logs are audit records without soft delete
+- Progress auto-updated via trigger when checkpoints scanned
 
 ### Pending Todos
 
@@ -82,13 +86,12 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-29 18:28 UTC
-Stopped at: Completed 03-02-PLAN.md
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Execute 03-03-PLAN.md (Patrol & Emergency)
+**Recommended:** Execute 03-04-PLAN.md (Emergency Alerts)
 
 Remaining Phase 3 plans:
-- 03-03: Patrol routes, checkpoints, emergency alerts
-- 03-04: QR codes and access tokens
+- 03-04: Emergency alerts and panic buttons
