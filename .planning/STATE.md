@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 4 (Financial Engine) - COMPLETE
+**Current focus:** Phase 5 (Amenities, Communication & Marketplace) - In progress
 
 ## Current Position
 
-Phase: 4 of 8 (Financial Engine) - COMPLETE
-Plan: 4 of 4 complete
-Status: Phase complete
-Last activity: 2026-01-29 - Completed 04-04-PLAN.md (Bank Reconciliation)
+Phase: 5 of 8 (Amenities, Communication & Marketplace)
+Plan: 1 of 5 complete
+Status: In progress
+Last activity: 2026-01-29 - Completed 05-01-PLAN.md (Amenity Definitions & Booking Rules)
 
-Progress: [#############       ] 54%
+Progress: [##############      ] 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 4.5 min
-- Total execution time: 63 min
+- Total plans completed: 15
+- Average duration: 4.7 min
+- Total execution time: 70 min
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [#############       ] 54%
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
+| 05-amenities | 1 | 7 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (4 min), 04-02 (8 min), 04-03 (10 min), 04-04 (5 min)
-- Trend: Financial engine phase complete, averaging 7 min per plan due to complexity
+- Last 5 plans: 04-02 (8 min), 04-03 (10 min), 04-04 (5 min), 05-01 (7 min)
+- Trend: Starting Phase 5 amenities domain
 
 *Updated after each plan completion*
 
@@ -99,6 +100,10 @@ Recent decisions affecting current work:
 - Statement line status workflow: unmatched->matched/manually_matched/excluded/disputed
 - Payment proof approval triggers record_payment() for double-entry compliance
 - unit_balances view aggregates from ledger_entries on accounts_receivable subtype
+- JSONB schedule format: {day: {open, close}} for amenity operating hours
+- Rule evaluation uses priority DESC ordering so blackouts override quotas
+- Partial unique index for one default rule per amenity per type
+- Exception handling in validate_booking_rules() for graceful handling when reservations table doesn't exist
 
 ### Pending Todos
 
@@ -111,24 +116,21 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 19:22 UTC
-Stopped at: Completed 04-04-PLAN.md (Bank Reconciliation) - PHASE 4 COMPLETE
+Last session: 2026-01-29 20:16 UTC
+Stopped at: Completed 05-01-PLAN.md (Amenity Definitions & Booking Rules)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Begin Phase 5 (Amenities)
+**Recommended:** Continue with Plan 05-02 (Reservations with exclusion constraints)
 
-Phase 4 Financial Engine deliverables complete:
-- Chart of accounts with standard HOA numbering
-- Double-entry ledger with immutable entries
-- Fee structures with Mexican indiviso coefficient calculation
-- Payment/charge recording with auto-posting
-- Interest calculation with 4 methods
-- Delinquency triggers and action tracking
-- Budgets with variance tracking
-- Bank accounts with secure storage
-- Bank statements and reconciliation workflow
-- Payment proofs with approval trigger
-- unit_balances view for real-time financial position
-- Helper functions for balance queries and delinquency processing
+Phase 5 Plan 01 deliverables complete:
+- amenity_type enum (9 values: pool, gym, salon, rooftop, bbq, court, room, parking, other)
+- rule_type enum (10 booking rule types)
+- reservation_status enum (5 values)
+- waitlist_status enum (4 values)
+- amenities table with JSONB schedules and booking configuration
+- amenity_rules table with priority-ordered configurable rules
+- validate_booking_rules() function for rule enforcement
+- is_amenity_open() helper for schedule checking
+- create_default_amenity_rules() helper for new amenity setup
