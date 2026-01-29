@@ -49,11 +49,7 @@ CREATE TABLE access_logs (
 
   -- Hash chain for tamper detection
   previous_hash TEXT,
-  entry_hash TEXT GENERATED ALWAYS AS (
-    encode(sha256(
-      (id::TEXT || logged_at::TEXT || person_name || direction || decision::TEXT)::bytea
-    ), 'hex')
-  ) STORED
+  entry_hash TEXT  -- Computed by trigger since GENERATED columns require IMMUTABLE expressions
 
   -- NO deleted_at column - access logs are never deleted
   -- NO updated_at column - access logs are never updated
@@ -69,6 +65,30 @@ COMMENT ON COLUMN access_logs.plate_detected IS 'LPR detected plate - may differ
 COMMENT ON COLUMN access_logs.entry_hash IS 'SHA-256 hash of key fields for tamper detection';
 COMMENT ON COLUMN access_logs.previous_hash IS 'Hash of previous entry for chain verification (optional)';
 COMMENT ON COLUMN access_logs.logged_at IS 'Timestamp of access event. This is the primary time field (no updated_at).';
+
+-- ============================================
+-- HASH COMPUTATION TRIGGER
+-- ============================================
+-- Compute entry_hash on INSERT (can't use GENERATED column because logged_at uses now())
+
+CREATE OR REPLACE FUNCTION compute_access_log_hash()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.entry_hash := encode(sha256(
+    (NEW.id::TEXT || NEW.logged_at::TEXT || NEW.person_name || NEW.direction || NEW.decision::TEXT)::bytea
+  ), 'hex');
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION compute_access_log_hash IS 'Computes SHA-256 entry_hash for tamper detection on INSERT';
+
+CREATE TRIGGER access_logs_compute_hash
+  BEFORE INSERT ON access_logs
+  FOR EACH ROW
+  EXECUTE FUNCTION compute_access_log_hash();
 
 -- ============================================
 -- IMMUTABILITY ENFORCEMENT
