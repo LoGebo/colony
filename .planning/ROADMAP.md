@@ -14,8 +14,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Multi-Tenant Security** - Core tables, RLS patterns, audit infrastructure ✓
 - [x] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding ✓
-- [ ] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies
-- [ ] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation
+- [x] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies ✓
+- [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation ✓
 - [ ] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings
 - [ ] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts
 - [ ] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config
@@ -69,13 +69,13 @@ Plans:
   5. Patrol routes with NFC checkpoints can be defined and logged
   6. Emergency alerts (panic, fire, medical) capture type, location, and dispatch status
   7. QR codes store cryptographic signatures with burn status
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 03-01: Create access points, guards, shifts tables
-- [ ] 03-02: Create invitations, access logs, blacklist tables
-- [ ] 03-03: Create patrol routes, checkpoints, patrol logs
-- [ ] 03-04: Create emergency alerts and QR codes tables
+- [x] 03-01-PLAN.md - Access point enums and tables, guards, shifts, assignments (Wave 1) ✓
+- [x] 03-02-PLAN.md - Invitations with polymorphic validation, immutable access logs, blacklist (Wave 2) ✓
+- [x] 03-03-PLAN.md - Patrol checkpoints with NFC serial, routes, patrol logs (Wave 2) ✓
+- [x] 03-04-PLAN.md - QR codes with HMAC signatures, emergency alerts and responders (Wave 3) ✓
 
 ### Phase 4: Financial Engine
 **Goal**: Implement double-entry accounting with fee structures, payments, reconciliation, and delinquency management
@@ -90,13 +90,13 @@ Plans:
   6. Delinquency triggers (days -> action) are configurable
   7. Bank accounts and statement imports support reconciliation workflow
   8. Payment proofs flow through validation workflow (pending -> approved/rejected)
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
 
 Plans:
-- [ ] 04-01: Create chart of accounts and ledger entries
-- [ ] 04-02: Create fee structures, transactions, payments
-- [ ] 04-03: Create interest rules, delinquency triggers, budgets
-- [ ] 04-04: Create bank accounts, statement imports, payment proofs
+- [x] 04-01-PLAN.md - Chart of accounts and ledger entries with immutability triggers (Wave 1) ✓
+- [x] 04-02-PLAN.md - Fee structures, schedules, payment/charge recording functions (Wave 2) ✓
+- [x] 04-03-PLAN.md - Interest rules, delinquency triggers, budgets (Wave 2) ✓
+- [x] 04-04-PLAN.md - Bank accounts, statement imports, payment proofs, unit_balances view (Wave 3) ✓
 
 ### Phase 5: Amenities, Communication & Marketplace
 **Goal**: Enable community engagement through amenity reservations, social communication, and internal marketplace
@@ -218,15 +218,15 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Security | 3/3 | Complete ✓ | 2026-01-29 |
 | 2. Identity & CRM | 3/3 | Complete ✓ | 2026-01-29 |
-| 3. Access Control & Security | 0/4 | Not started | - |
-| 4. Financial Engine | 0/4 | Not started | - |
+| 3. Access Control & Security | 4/4 | Complete ✓ | 2026-01-29 |
+| 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
 | 5. Amenities, Communication & Marketplace | 0/5 | Not started | - |
 | 6. Maintenance, Chat, Documents & Notifications | 0/5 | Not started | - |
 | 7. Operations & Compliance | 0/5 | Not started | - |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
-**Total:** 6/38 plans
+**Total:** 14/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-29 - Phase 2 complete*
+*Last updated: 2026-01-29 - Phase 4 complete*
