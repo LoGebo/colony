@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 3 - Access Control & Security
+**Current focus:** Phase 3 Complete - Ready for Phase 4 (Financial)
 
 ## Current Position
 
-Phase: 3 of 8 (Access Control & Security)
-Plan: 3 of 4 complete
-Status: In progress
-Last activity: 2026-01-29 - Completed 03-03-PLAN.md (Patrol Routes & Checkpoints)
+Phase: 3 of 8 (Access Control & Security) - COMPLETE
+Plan: 4 of 4 complete
+Status: Phase complete
+Last activity: 2026-01-29 - Completed 03-04-PLAN.md (Emergency Alerts & QR Codes)
 
-Progress: [######              ] 27%
+Progress: [########            ] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 3 min
-- Total execution time: 31 min
+- Total plans completed: 10
+- Average duration: 4 min
+- Total execution time: 36 min
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [######              ] 27%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 12 min | 4 min |
 | 02-identity-crm | 3 | 9 min | 3 min |
-| 03-access-control | 3 | 10 min | 3 min |
+| 03-access-control | 4 | 15 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (3 min), 03-01 (4 min), 03-02 (3 min), 03-03 (3 min)
-- Trend: Fast execution
+- Last 5 plans: 03-01 (4 min), 03-02 (3 min), 03-03 (3 min), 03-04 (5 min)
+- Trend: Consistent fast execution
 
 *Updated after each plan completion*
 
@@ -67,12 +67,16 @@ Recent decisions affecting current work:
 - Shift assignments use NULL effective_until for ongoing/indefinite assignments
 - Polymorphic invitations with CHECK constraints enforce type-specific fields
 - access_logs is append-only with trigger-enforced immutability (no deleted_at/updated_at)
-- Hash chain column for tamper detection in access_logs
+- Hash chain column for tamper detection in access_logs (trigger-computed, not GENERATED)
 - Blacklist supports deny_entry, alert_only, call_police protocols
 - NFC serial stored as TEXT not UUID (factory-assigned, tamper-evident)
 - Haversine formula for GPS distance calculation (accurate for short distances)
 - Patrol logs are audit records without soft delete
 - Progress auto-updated via trigger when checkpoints scanned
+- HMAC-SHA256 for QR signatures enables offline verification on guard devices
+- QR payload format: {id}|{community_id}|{expiry_epoch}|{signature} for compact encoding
+- Emergency alerts are permanent audit trail (no soft delete)
+- Auto-priority based on emergency_type: panic/fire/disaster=critical, medical=urgent, intrusion=high
 
 ### Pending Todos
 
@@ -85,13 +89,18 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 18:28 UTC
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-01-29 18:35 UTC
+Stopped at: Completed 03-04-PLAN.md (Phase 3 Complete)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Execute 03-04-PLAN.md (Emergency Alerts)
+**Recommended:** Begin Phase 4 planning (Financial: Fees, Payments, Ledger)
 
-Remaining Phase 3 plans:
-- 03-04: Emergency alerts and panic buttons
+Phase 3 deliverables ready:
+- Access points and guard management
+- Invitations with QR codes and offline verification
+- Access logging with tamper detection
+- Blacklist and alert protocols
+- Patrol routes with GPS tracking
+- Emergency alerts with SLA tracking
