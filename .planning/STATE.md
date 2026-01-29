@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 5 of 8 (Amenities, Communication & Marketplace)
-Plan: 3 of 5 complete
-Status: In progress
-Last activity: 2026-01-29 - Completed 05-03-PLAN.md (Channels, Posts, Comments, Reactions)
+Plan: 5 of 5 complete
+Status: Phase nearly complete (05-04 pending)
+Last activity: 2026-01-29 - Completed 05-05-PLAN.md (Marketplace, Exchange Zones, Moderation Queue)
 
-Progress: [###############     ] 65%
+Progress: [################    ] 69%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: 4.7 min
-- Total execution time: 80 min
+- Total plans completed: 18
+- Average duration: 4.9 min
+- Total execution time: 89 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [###############     ] 65%
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
-| 05-amenities | 3 | 17 min | 6 min |
+| 05-amenities | 4 | 26 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (5 min), 05-01 (7 min), 05-02 (3 min), 05-03 (7 min)
-- Trend: Phase 5 progressing steadily
+- Last 5 plans: 05-01 (7 min), 05-02 (3 min), 05-03 (7 min), 05-05 (9 min)
+- Trend: Phase 5 marketplace plan slightly longer due to SKIP LOCKED pattern complexity
 
 *Updated after each plan completion*
 
@@ -109,6 +109,12 @@ Recent decisions affecting current work:
 - depth <= 20 CHECK constraint prevents excessive comment nesting
 - root_comment_id enables efficient thread fetching without recursive parent walks
 - UNIQUE (post_id, resident_id) for reactions enforces one reaction per user per post
+- Listings expire after 30 days by default (expires_at configurable)
+- New sellers get higher moderation priority (5 for first-timer, 3 for 1-2 listings, 0 for established)
+- FOR UPDATE SKIP LOCKED pattern enables horizontal scaling of moderators
+- Polymorphic moderation_queue with item_type + item_id references any content type
+- Dual confirmation required for exchange completion (seller_confirmed AND buyer_confirmed)
+- Stale moderation claims released after 30 minutes (configurable via release_stale_claims)
 
 ### Pending Todos
 
@@ -122,28 +128,30 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 20:17 UTC
-Stopped at: Completed 05-03-PLAN.md (Channels, Posts, Comments, Reactions)
+Last session: 2026-01-29 20:19 UTC
+Stopped at: Completed 05-05-PLAN.md (Marketplace, Exchange Zones, Moderation Queue)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue with Plan 05-04 (Announcements) or 05-05 (Surveys)
+**Recommended:** Complete Plan 05-04 (Announcements) to finish Phase 5
 
 Phase 5 progress:
 - 05-01: Amenities with booking rules COMPLETE
 - 05-02: Reservations with exclusion constraints COMPLETE
 - 05-03: Channels, Posts, Comments, Reactions COMPLETE
 - 05-04: Announcements with targeting - PENDING
-- 05-05: Surveys with one-vote-per-unit - PENDING
+- 05-05: Marketplace, Exchange Zones, Moderation Queue COMPLETE
 
-Communication infrastructure available:
-- channel_type enum: general, building, committee, announcements, marketplace
-- post_type enum: discussion, question, event, poll
-- channels table with is_public, allowed_roles, anyone_can_post access control
-- posts table with media, polls, reaction_counts, comment_count
-- post_comments with adjacency list hierarchy (depth/root auto-computed)
-- post_reactions with unique constraint and counter trigger sync
-- get_comment_thread() recursive CTE for tree-order fetching
-- create_default_channels() helper function
-- increment_post_view_count() SECURITY DEFINER for analytics
+Marketplace infrastructure available:
+- listing_category enum: sale, service, rental, wanted
+- moderation_status enum: pending, in_review, approved, rejected, flagged
+- marketplace_listings with 30-day expiry, moderation workflow, RLS
+- exchange_zones with safety features, availability hours
+- exchange_appointments with dual confirmation flow
+- moderation_queue with FOR UPDATE SKIP LOCKED pattern
+- claim_moderation_item() for concurrent moderator processing
+- resolve_moderation() updates source content on approval/rejection
+- queue_listing_for_moderation() auto-queues with priority
+- confirm_exchange_completion() marks listing sold on dual confirm
+- create_default_exchange_zones() seeds Lobby/Caseta defaults
