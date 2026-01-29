@@ -104,6 +104,13 @@ Recent decisions affecting current work:
 - Rule evaluation uses priority DESC ordering so blackouts override quotas
 - Partial unique index for one default rule per amenity per type
 - Exception handling in validate_booking_rules() for graceful handling when reservations table doesn't exist
+- btree_gist extension enables exclusion constraints combining UUID + tstzrange
+- Exclusion constraint WHERE clause limits to status=confirmed AND deleted_at IS NULL
+- '[)' bounds critical for adjacent slots (14:00-15:00, 15:00-16:00) to NOT conflict
+- Waitlist uses requested_date column with trigger (lower() on tstzrange not IMMUTABLE)
+- FOR UPDATE SKIP LOCKED prevents race conditions in waitlist promotion
+- pg_notify('waitlist_promotion') enables real-time mobile/web notifications
+- Reservation fees link to transactions table for double-entry compliance
 - Adjacency list over ltree for comments - simpler for dynamic trees with frequent edits
 - Denormalized reaction_counts JSONB + trigger for O(1) reads vs O(n) COUNT(*)
 - depth <= 20 CHECK constraint prevents excessive comment nesting
@@ -128,15 +135,15 @@ None yet.
 
 ### Blockers/Concerns
 
-- Research flag: Phase 5 (Amenities) needs exclusion constraint performance testing with RLS
+- RESOLVED: Phase 5 (Amenities) exclusion constraint implemented with btree_gist
 - RESOLVED: Phase 4 double-entry patterns researched and implemented
 - RESOLVED: Phase 5 comment hierarchy and reaction counter patterns implemented
 - RESOLVED: Phase 5 announcement fan-out and survey voting patterns implemented
 
 ## Session Continuity
 
-Last session: 2026-01-29 20:27 UTC
-Stopped at: Completed 05-04-PLAN.md (Announcements, Surveys, Notifications)
+Last session: 2026-01-29 20:31 UTC
+Stopped at: Re-executed 05-02-PLAN.md (Reservations with Exclusion Constraints)
 Resume file: None
 
 ## Next Steps
