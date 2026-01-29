@@ -33,12 +33,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Soft delete pattern (deleted_at) functions correctly on test tables
   4. RLS policies correctly filter by community_id from JWT app_metadata
   5. Audit columns (created_at, updated_at, deleted_at, created_by) auto-populate via triggers
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 01-01: Create organizations, communities tables with RLS
-- [ ] 01-02: Implement UUID v7, soft delete, audit column patterns
-- [ ] 01-03: Create base enums and types for status fields
+- [ ] 01-01-PLAN.md - Core utilities: UUID v7 function, audit triggers, RLS helpers (Wave 1)
+- [ ] 01-02-PLAN.md - Base enums and domain types for status fields (Wave 1)
+- [ ] 01-03-PLAN.md - Organizations and communities tables with RLS policies (Wave 2)
 
 ### Phase 2: Identity & CRM
 **Goal**: Model the core entities that identify who lives in each community - units, residents, vehicles, and pets with their relationships
@@ -216,7 +216,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Multi-Tenant Security | 0/3 | Not started | - |
+| 1. Foundation & Multi-Tenant Security | 0/3 | Planned | - |
 | 2. Identity & CRM | 0/3 | Not started | - |
 | 3. Access Control & Security | 0/4 | Not started | - |
 | 4. Financial Engine | 0/4 | Not started | - |
