@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 1 - Foundation & Multi-Tenant Security (COMPLETE)
+**Current focus:** Phase 2 - Identity & CRM
 
 ## Current Position
 
-Phase: 1 of 8 (Foundation & Multi-Tenant Security)
-Plan: 3 of 3 in current phase (PHASE COMPLETE)
-Status: Phase complete - ready for Phase 2
-Last activity: 2026-01-29 - Completed 01-03-PLAN.md (Organizations and Communities Tables)
+Phase: 2 of 8 (Identity & CRM)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-29 - Completed 02-01-PLAN.md (Units Table and CRM Enums)
 
-Progress: [###                 ] 10%
+Progress: [####                ] 13%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 4 min
-- Total execution time: 12 min
+- Total execution time: 14 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 12 min | 4 min |
+| 02-identity-crm | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min), 01-02 (2 min), 01-03 (5 min)
+- Last 5 plans: 01-01 (5 min), 01-02 (2 min), 01-03 (5 min), 02-01 (2 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -50,6 +51,8 @@ Recent decisions affecting current work:
 - ON DELETE RESTRICT for communities.organization_id to prevent orphan communities
 - Denormalized unit_count/resident_count on communities for dashboard performance
 - RLS policies use (SELECT func()) pattern for JWT caching performance
+- Coefficient NUMERIC(7,4) allows 4 decimal precision for Mexican indiviso percentages
+- Units use ON DELETE RESTRICT from communities to prevent orphan data
 
 ### Pending Todos
 
@@ -62,6 +65,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T10:24:48Z
-Stopped at: Completed 01-03-PLAN.md (Organizations and Communities Tables) - Phase 1 COMPLETE
+Last session: 2026-01-29T10:55:50Z
+Stopped at: Completed 02-01-PLAN.md (Units Table and CRM Enums)
 Resume file: None
