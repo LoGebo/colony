@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 4 (Financial Engine) - Plan 02 Complete
+**Current focus:** Phase 4 (Financial Engine) - Plan 03 Complete
 
 ## Current Position
 
 Phase: 4 of 8 (Financial Engine)
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: In progress
-Last activity: 2026-01-29 - Completed 04-02-PLAN.md (Fee Structures & Charges)
+Last activity: 2026-01-29 - Completed 04-03-PLAN.md (Interest Rules & Delinquency)
 
-Progress: [##########          ] 45%
+Progress: [###########         ] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 4 min
-- Total execution time: 48 min
+- Total execution time: 58 min
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [##########          ] 45%
 | 01-foundation | 3 | 12 min | 4 min |
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
-| 04-financial-engine | 2 | 12 min | 6 min |
+| 04-financial-engine | 3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3 min), 03-04 (5 min), 04-01 (4 min), 04-02 (8 min)
-- Trend: Consistent execution
+- Last 5 plans: 03-04 (5 min), 04-01 (4 min), 04-02 (8 min), 04-03 (10 min)
+- Trend: Consistent execution, financial plans slightly longer due to complexity
 
 *Updated after each plan completion*
 
@@ -89,6 +89,12 @@ Recent decisions affecting current work:
 - Payment method requires_proof flag for SPEI/transfer verification workflow
 - record_payment/record_charge auto-post transactions after creating balanced entries
 - Transaction references use PREFIX-YYYY-NNNNN format (PAY/CHG sequences per community)
+- Interest rules require assembly approval tracking (approved_at, approved_by, assembly_minute_reference)
+- calculate_interest() supports 4 methods: simple, compound_monthly, compound_daily, flat_fee
+- Delinquency actions are immutable audit trail (prevent_delinquency_action_modification trigger)
+- Delinquency triggers have UNIQUE constraint on (community_id, days_overdue, action_type)
+- Budget variance is GENERATED ALWAYS AS (actual_amount - budgeted_amount) STORED
+- Budget totals auto-calculated by update_budget_totals() AFTER trigger on budget_lines
 
 ### Pending Todos
 
@@ -101,18 +107,22 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 19:12 UTC
-Stopped at: Completed 04-02-PLAN.md (Fee Structures & Charges)
+Last session: 2026-01-29 19:14 UTC
+Stopped at: Completed 04-03-PLAN.md (Interest Rules & Delinquency)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 4 with 04-03-PLAN.md (Interest Rules & Delinquency)
+**Recommended:** Continue Phase 4 with 04-04-PLAN.md (Bank Reconciliation)
 
-Phase 4 Plan 02 deliverables ready:
-- fee_calculation_type and fee_frequency enums
-- fee_structures table with formula configuration
-- fee_schedules table linking fees to units with overrides
-- calculate_fee_amount() and get_unit_fee_amount() functions
-- payment_methods table with Mexican payment types
-- record_payment() and record_charge() functions with double-entry
+Phase 4 Plan 03 deliverables ready:
+- interest_calculation_method enum
+- interest_rules table with per-community configurable rates
+- calculate_interest() function for overdue amounts
+- delinquency_action_type enum
+- delinquency_triggers table mapping days overdue to actions
+- delinquency_actions audit log table (immutable)
+- budget_status enum
+- budgets table with assembly approval tracking
+- budget_lines table with GENERATED variance column
+- update_budget_totals() trigger for auto-totals
