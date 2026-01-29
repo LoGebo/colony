@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 5 (Amenities, Communication & Marketplace) - COMPLETE
+**Current focus:** Phase 6 (Maintenance, Chat, Documents & Notifications) - IN PROGRESS
 
 ## Current Position
 
-Phase: 5 of 8 (Amenities, Communication & Marketplace)
-Plan: 5 of 5 complete
-Status: Phase complete
-Last activity: 2026-01-29 - Completed 05-04-PLAN.md (Announcements, Surveys, Notifications)
+Phase: 6 of 8 (Maintenance, Chat, Documents & Notifications)
+Plan: 1 of 5 complete
+Status: In progress
+Last activity: 2026-01-29 - Completed 06-01-PLAN.md (Ticket Enums, Categories, SLA & Workflow)
 
-Progress: [################    ] 73%
+Progress: [################-   ] 77%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: 5.0 min
-- Total execution time: 95 min
+- Total plans completed: 20
+- Average duration: 5.2 min
+- Total execution time: 104 min
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [################    ] 73%
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
+| 06-maintenance | 1 | 9 min | 9 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (3 min), 05-03 (7 min), 05-05 (9 min), 05-04 (6 min)
-- Trend: Phase 5 consistent execution times across communication infrastructure
+- Last 5 plans: 05-03 (7 min), 05-05 (9 min), 05-04 (6 min), 06-01 (9 min)
+- Trend: Phase 6 maintains consistent execution times
 
 *Updated after each plan completion*
 
@@ -128,6 +129,9 @@ Recent decisions affecting current work:
 - One vote per unit via UNIQUE(survey_id, unit_id) - fair HOA representation
 - pg_notify for real-time notifications - Supabase Realtime subscription for instant push
 - Service notifications are permanent records (no deleted_at) - audit trail requirement
+- ENUM-based state machine with trigger validation for ticket status transitions
+- SLA matrix lookup table with category+priority combination and NULL category fallback
+- System comments auto-generated for status/assignment/priority changes (audit trail)
 
 ### Pending Todos
 
@@ -142,31 +146,29 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 20:31 UTC
-Stopped at: Re-executed 05-02-PLAN.md (Reservations with Exclusion Constraints)
+Last session: 2026-01-29 23:54 UTC
+Stopped at: Completed 06-01-PLAN.md (Ticket Enums, Categories, SLA & Workflow)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Begin Phase 6 (Guards & Operations)
+**Recommended:** Continue Phase 6 with 06-02-PLAN.md (Assets & Preventive Maintenance)
 
-Phase 5 COMPLETE:
-- 05-01: Amenities with booking rules COMPLETE
-- 05-02: Reservations with exclusion constraints COMPLETE
-- 05-03: Channels, Posts, Comments, Reactions COMPLETE
-- 05-04: Announcements, Surveys, Notifications COMPLETE
-- 05-05: Marketplace, Exchange Zones, Moderation Queue COMPLETE
+Phase 6 IN PROGRESS:
+- 06-01: Ticket Enums, Categories, SLA & Workflow COMPLETE
+- 06-02: Assets & Preventive Maintenance PENDING
+- 06-03: Chat & Messaging PENDING
+- 06-04: Documents & Signatures PENDING
+- 06-05: Push Notifications PENDING
 
-Communication infrastructure available:
-- announcement_segment enum with 7 targeting options
-- announcements with JSONB target_criteria for flexible targeting
-- announcement_recipients fan-out with delivery/read/acknowledgment tracking
-- expand_announcement_recipients() batched expansion function
-- surveys with simple and coefficient voting methods
-- survey_votes with one-per-unit constraint and coefficient snapshot
-- cast_survey_vote() with authorization validation
-- close_survey() for result computation
-- notification_type_service enum (5 types)
-- service_notifications with pg_notify for real-time push
-- send_service_notification() creates per-resident notifications
-- mark_notification_read() and record_notification_action() helpers
+Maintenance infrastructure available:
+- ticket_status enum (8 states) with state machine transitions
+- ticket_priority enum (4 levels) with default SLA times
+- ticket_categories table with hierarchy and community isolation
+- sla_definitions table with category+priority matrix
+- tickets table with validate_ticket_transition() trigger
+- SLA due dates auto-computed via set_ticket_sla_dates()
+- check_sla_breaches() for periodic breach detection
+- notify_sla_breach() sends pg_notify for real-time alerts
+- ticket_assignments with historical tracking
+- ticket_comments with system-generated audit trail
