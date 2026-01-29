@@ -13,7 +13,7 @@ This roadmap delivers the complete Supabase database schema for UPOE (Unified Pr
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Multi-Tenant Security** - Core tables, RLS patterns, audit infrastructure ✓
-- [ ] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding
+- [x] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding ✓
 - [ ] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies
 - [ ] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation
 - [ ] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings
@@ -53,9 +53,9 @@ Plans:
 **Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 02-01-PLAN.md - Create units table with types, areas, coefficients, and CRM enums (Wave 1)
-- [ ] 02-02-PLAN.md - Create residents, occupancies, vehicles, pets tables with RLS (Wave 2)
-- [ ] 02-03-PLAN.md - Create resident documents table and storage bucket with RLS (Wave 3)
+- [x] 02-01-PLAN.md - Create units table with types, areas, coefficients, and CRM enums (Wave 1) ✓
+- [x] 02-02-PLAN.md - Create residents, occupancies, vehicles, pets tables with RLS (Wave 2) ✓
+- [x] 02-03-PLAN.md - Create resident documents table and storage bucket with RLS (Wave 3) ✓
 
 ### Phase 3: Access Control & Security
 **Goal**: Model the security operations infrastructure - access points, guards, visitors, patrols, and emergency alerts
@@ -217,7 +217,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Security | 3/3 | Complete ✓ | 2026-01-29 |
-| 2. Identity & CRM | 0/3 | Ready for execution | - |
+| 2. Identity & CRM | 3/3 | Complete ✓ | 2026-01-29 |
 | 3. Access Control & Security | 0/4 | Not started | - |
 | 4. Financial Engine | 0/4 | Not started | - |
 | 5. Amenities, Communication & Marketplace | 0/5 | Not started | - |
@@ -225,8 +225,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 7. Operations & Compliance | 0/5 | Not started | - |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
-**Total:** 3/38 plans
+**Total:** 6/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-29 - Phase 2 planned (3 plans in 3 waves)*
+*Last updated: 2026-01-29 - Phase 2 complete*
