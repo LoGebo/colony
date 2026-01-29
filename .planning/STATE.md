@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 3 of 8 (Access Control & Security)
-Plan: 1 of 4 complete
+Plan: 2 of 4 complete
 Status: In progress
-Last activity: 2026-01-29 - Completed 03-01-PLAN.md (Access Points & Guards)
+Last activity: 2026-01-29 - Completed 03-02-PLAN.md (Invitations & Access Logs)
 
-Progress: [#####               ] 19%
+Progress: [######              ] 22%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 4 min
-- Total execution time: 25 min
+- Total execution time: 28 min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [#####               ] 19%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 12 min | 4 min |
 | 02-identity-crm | 3 | 9 min | 3 min |
-| 03-access-control | 1 | 4 min | 4 min |
+| 03-access-control | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2 min), 02-02 (4 min), 02-03 (3 min), 03-01 (4 min)
+- Last 5 plans: 02-02 (4 min), 02-03 (3 min), 03-01 (4 min), 03-02 (3 min)
 - Trend: Fast execution
 
 *Updated after each plan completion*
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 - Guards separate from residents to support third-party security companies
 - Generated crosses_midnight column for automatic night shift detection
 - Shift assignments use NULL effective_until for ongoing/indefinite assignments
+- Polymorphic invitations with CHECK constraints enforce type-specific fields
+- access_logs is append-only with trigger-enforced immutability (no deleted_at/updated_at)
+- Hash chain column for tamper detection in access_logs
+- Blacklist supports deny_entry, alert_only, call_police protocols
 
 ### Pending Todos
 
@@ -77,15 +81,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 18:23 UTC
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-01-29 18:28 UTC
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Execute 03-02-PLAN.md (Invitations & QR Codes)
+**Recommended:** Execute 03-03-PLAN.md (Patrol & Emergency)
 
 Remaining Phase 3 plans:
-- 03-02: Invitations (single-use, event, recurring, vehicle pre-auth) + QR codes
-- 03-03: Access logs (immutable with photos) + Blacklist with protocols
-- 03-04: Patrol routes, checkpoints, emergency alerts
+- 03-03: Patrol routes, checkpoints, emergency alerts
+- 03-04: QR codes and access tokens
