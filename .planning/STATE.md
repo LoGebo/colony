@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 5 (Amenities, Communication & Marketplace) - In progress
+**Current focus:** Phase 5 (Amenities, Communication & Marketplace) - COMPLETE
 
 ## Current Position
 
 Phase: 5 of 8 (Amenities, Communication & Marketplace)
 Plan: 5 of 5 complete
-Status: Phase nearly complete (05-04 pending)
-Last activity: 2026-01-29 - Completed 05-05-PLAN.md (Marketplace, Exchange Zones, Moderation Queue)
+Status: Phase complete
+Last activity: 2026-01-29 - Completed 05-04-PLAN.md (Announcements, Surveys, Notifications)
 
-Progress: [################    ] 69%
+Progress: [################    ] 73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 4.9 min
-- Total execution time: 89 min
+- Total plans completed: 19
+- Average duration: 5.0 min
+- Total execution time: 95 min
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [################    ] 69%
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
-| 05-amenities | 4 | 26 min | 6.5 min |
+| 05-amenities | 5 | 32 min | 6.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (7 min), 05-02 (3 min), 05-03 (7 min), 05-05 (9 min)
-- Trend: Phase 5 marketplace plan slightly longer due to SKIP LOCKED pattern complexity
+- Last 5 plans: 05-02 (3 min), 05-03 (7 min), 05-05 (9 min), 05-04 (6 min)
+- Trend: Phase 5 consistent execution times across communication infrastructure
 
 *Updated after each plan completion*
 
@@ -115,6 +115,12 @@ Recent decisions affecting current work:
 - Polymorphic moderation_queue with item_type + item_id references any content type
 - Dual confirmation required for exchange completion (seller_confirmed AND buyer_confirmed)
 - Stale moderation claims released after 30 minutes (configurable via release_stale_claims)
+- Fan-out pattern for announcement_recipients - enables per-resident delivery/read tracking
+- JSONB target_criteria for segment targeting - flexible filtering without schema changes
+- Coefficient snapshot at vote time - vote_weight captures unit coefficient for historical accuracy
+- One vote per unit via UNIQUE(survey_id, unit_id) - fair HOA representation
+- pg_notify for real-time notifications - Supabase Realtime subscription for instant push
+- Service notifications are permanent records (no deleted_at) - audit trail requirement
 
 ### Pending Todos
 
@@ -125,33 +131,35 @@ None yet.
 - Research flag: Phase 5 (Amenities) needs exclusion constraint performance testing with RLS
 - RESOLVED: Phase 4 double-entry patterns researched and implemented
 - RESOLVED: Phase 5 comment hierarchy and reaction counter patterns implemented
+- RESOLVED: Phase 5 announcement fan-out and survey voting patterns implemented
 
 ## Session Continuity
 
-Last session: 2026-01-29 20:19 UTC
-Stopped at: Completed 05-05-PLAN.md (Marketplace, Exchange Zones, Moderation Queue)
+Last session: 2026-01-29 20:27 UTC
+Stopped at: Completed 05-04-PLAN.md (Announcements, Surveys, Notifications)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Complete Plan 05-04 (Announcements) to finish Phase 5
+**Recommended:** Begin Phase 6 (Guards & Operations)
 
-Phase 5 progress:
+Phase 5 COMPLETE:
 - 05-01: Amenities with booking rules COMPLETE
 - 05-02: Reservations with exclusion constraints COMPLETE
 - 05-03: Channels, Posts, Comments, Reactions COMPLETE
-- 05-04: Announcements with targeting - PENDING
+- 05-04: Announcements, Surveys, Notifications COMPLETE
 - 05-05: Marketplace, Exchange Zones, Moderation Queue COMPLETE
 
-Marketplace infrastructure available:
-- listing_category enum: sale, service, rental, wanted
-- moderation_status enum: pending, in_review, approved, rejected, flagged
-- marketplace_listings with 30-day expiry, moderation workflow, RLS
-- exchange_zones with safety features, availability hours
-- exchange_appointments with dual confirmation flow
-- moderation_queue with FOR UPDATE SKIP LOCKED pattern
-- claim_moderation_item() for concurrent moderator processing
-- resolve_moderation() updates source content on approval/rejection
-- queue_listing_for_moderation() auto-queues with priority
-- confirm_exchange_completion() marks listing sold on dual confirm
-- create_default_exchange_zones() seeds Lobby/Caseta defaults
+Communication infrastructure available:
+- announcement_segment enum with 7 targeting options
+- announcements with JSONB target_criteria for flexible targeting
+- announcement_recipients fan-out with delivery/read/acknowledgment tracking
+- expand_announcement_recipients() batched expansion function
+- surveys with simple and coefficient voting methods
+- survey_votes with one-per-unit constraint and coefficient snapshot
+- cast_survey_vote() with authorization validation
+- close_survey() for result computation
+- notification_type_service enum (5 types)
+- service_notifications with pg_notify for real-time push
+- send_service_notification() creates per-resident notifications
+- mark_notification_read() and record_notification_action() helpers
