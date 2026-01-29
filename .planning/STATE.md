@@ -12,26 +12,26 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 Phase: 1 of 8 (Foundation & Multi-Tenant Security)
 Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-29 - Completed 01-02-PLAN.md (Base Enums and Domain Types)
+Last activity: 2026-01-29 - Completed 01-01-PLAN.md (Database Foundation Functions)
 
-Progress: [#                   ] 3%
+Progress: [##                  ] 6%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2 min
-- Total execution time: 2 min
+- Total plans completed: 2
+- Average duration: 3.5 min
+- Total execution time: 7 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1 | 2 min | 2 min |
+| 01-foundation | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min)
-- Trend: Fast execution (schema already existed)
+- Last 5 plans: 01-01 (5 min), 01-02 (2 min)
+- Trend: Fast execution
 
 *Updated after each plan completion*
 
@@ -42,9 +42,9 @@ Progress: [#                   ] 3%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Row-level multi-tenancy with community_id (pending confirmation)
-- UUIDs for all PKs for offline-sync (pending confirmation)
-- Soft deletes everywhere for audit/sync (pending confirmation)
+- Row-level multi-tenancy with community_id (CONFIRMED - get_current_community_id() RLS helper created)
+- UUIDs for all PKs for offline-sync (CONFIRMED - generate_uuid_v7() function created)
+- Soft deletes everywhere for audit/sync (CONFIRMED - soft_delete() and perform_soft_delete() created)
 - NUMERIC(15,4) for financial amounts (CONFIRMED - money_amount domain created)
 - Spanish unit types for Mexican market (casa, departamento, etc.)
 
@@ -59,6 +59,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T10:13:55Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-01-29T10:15:58Z
+Stopped at: Completed 01-01-PLAN.md (Database Foundation Functions)
 Resume file: None
