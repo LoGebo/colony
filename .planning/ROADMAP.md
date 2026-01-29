@@ -50,12 +50,12 @@ Plans:
   3. Vehicles link to residents/units with LPR-ready plate storage
   4. Pets have vaccination records and incident history tracking
   5. Onboarding workflow states transition correctly (invited -> registered -> verified -> active)
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
 
 Plans:
-- [ ] 02-01: Create units table with types, areas, coefficients
-- [ ] 02-02: Create residents, occupancies, vehicles, pets tables
-- [ ] 02-03: Create resident documents and onboarding workflow
+- [ ] 02-01-PLAN.md - Create units table with types, areas, coefficients, and CRM enums (Wave 1)
+- [ ] 02-02-PLAN.md - Create residents, occupancies, vehicles, pets tables with RLS (Wave 2)
+- [ ] 02-03-PLAN.md - Create resident documents table and storage bucket with RLS (Wave 3)
 
 ### Phase 3: Access Control & Security
 **Goal**: Model the security operations infrastructure - access points, guards, visitors, patrols, and emergency alerts
@@ -217,7 +217,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Multi-Tenant Security | 3/3 | Complete ✓ | 2026-01-29 |
-| 2. Identity & CRM | 0/3 | Not started | - |
+| 2. Identity & CRM | 0/3 | Ready for execution | - |
 | 3. Access Control & Security | 0/4 | Not started | - |
 | 4. Financial Engine | 0/4 | Not started | - |
 | 5. Amenities, Communication & Marketplace | 0/5 | Not started | - |
@@ -229,4 +229,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-29 - Phase 1 complete*
+*Last updated: 2026-01-29 - Phase 2 planned (3 plans in 3 waves)*
