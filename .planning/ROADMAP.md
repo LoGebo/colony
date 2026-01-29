@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding ✓
 - [x] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies ✓
 - [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation ✓
-- [ ] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings
+- [x] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings ✓
 - [ ] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts
 - [ ] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config
 - [ ] **Phase 8: Governance & Analytics** - Incidents, voting, parking, keys, violations, metrics, integrations
@@ -113,14 +113,14 @@ Plans:
   8. Surveys enforce one-vote-per-unit
   9. Marketplace listings support sale, service, rental, wanted types
   10. Safe exchange zones and moderation queue function correctly
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 05-01: Create amenities, schedules, booking rules tables
-- [ ] 05-02: Create reservations, waitlist, fees tables
-- [ ] 05-03: Create channels, posts, comments, reactions tables
-- [ ] 05-04: Create announcements, surveys, service notifications
-- [ ] 05-05: Create marketplace listings, categories, exchanges, reviews
+- [x] 05-01-PLAN.md - Amenity enums, amenities table with schedules, booking rules engine (Wave 1) ✓
+- [x] 05-02-PLAN.md - Reservations with exclusion constraints, waitlist auto-promotion, fees (Wave 2) ✓
+- [x] 05-03-PLAN.md - Channels, posts, nested comments, reactions with denormalized counters (Wave 1) ✓
+- [x] 05-04-PLAN.md - Announcements with segment targeting, surveys with one-vote-per-unit (Wave 2) ✓
+- [x] 05-05-PLAN.md - Marketplace listings, exchange zones, moderation queue with SKIP LOCKED (Wave 1) ✓
 
 ### Phase 6: Maintenance, Chat, Documents & Notifications
 **Goal**: Operational support systems for maintenance requests, real-time messaging, document management, and notification delivery
@@ -220,13 +220,13 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 2. Identity & CRM | 3/3 | Complete ✓ | 2026-01-29 |
 | 3. Access Control & Security | 4/4 | Complete ✓ | 2026-01-29 |
 | 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
-| 5. Amenities, Communication & Marketplace | 0/5 | Not started | - |
+| 5. Amenities, Communication & Marketplace | 5/5 | Complete ✓ | 2026-01-29 |
 | 6. Maintenance, Chat, Documents & Notifications | 0/5 | Not started | - |
 | 7. Operations & Compliance | 0/5 | Not started | - |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
-**Total:** 14/38 plans
+**Total:** 19/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-29 - Phase 4 complete*
+*Last updated: 2026-01-29 - Phase 5 complete*
