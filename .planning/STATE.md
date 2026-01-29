@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 4 (Financial Engine) - Plan 01 Complete
+**Current focus:** Phase 4 (Financial Engine) - Plan 02 Complete
 
 ## Current Position
 
 Phase: 4 of 8 (Financial Engine)
-Plan: 1 of 4 complete
+Plan: 2 of 4 complete
 Status: In progress
-Last activity: 2026-01-29 - Completed 04-01-PLAN.md (Chart of Accounts & Double-Entry Ledger)
+Last activity: 2026-01-29 - Completed 04-02-PLAN.md (Fee Structures & Charges)
 
-Progress: [#########           ] 40%
+Progress: [##########          ] 45%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 4 min
-- Total execution time: 40 min
+- Total execution time: 48 min
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [#########           ] 40%
 | 01-foundation | 3 | 12 min | 4 min |
 | 02-identity-crm | 3 | 9 min | 3 min |
 | 03-access-control | 4 | 15 min | 4 min |
-| 04-financial-engine | 1 | 4 min | 4 min |
+| 04-financial-engine | 2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (3 min), 03-03 (3 min), 03-04 (5 min), 04-01 (4 min)
-- Trend: Consistent fast execution
+- Last 5 plans: 03-03 (3 min), 03-04 (5 min), 04-01 (4 min), 04-02 (8 min)
+- Trend: Consistent execution
 
 *Updated after each plan completion*
 
@@ -84,6 +84,11 @@ Recent decisions affecting current work:
 - balance_after column on ledger_entries for O(1) historical balance lookups
 - ledger_entries is append-only with same immutability pattern as access_logs
 - Transactions use pending->posted state machine (posted is immutable)
+- Coefficient calculation: base_amount * (unit.coefficient / 100) for Mexican indiviso
+- Fee schedules allow override_amount for special arrangements without changing fee structure
+- Payment method requires_proof flag for SPEI/transfer verification workflow
+- record_payment/record_charge auto-post transactions after creating balanced entries
+- Transaction references use PREFIX-YYYY-NNNNN format (PAY/CHG sequences per community)
 
 ### Pending Todos
 
@@ -96,20 +101,18 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 19:03 UTC
-Stopped at: Completed 04-01-PLAN.md (Chart of Accounts & Double-Entry Ledger)
+Last session: 2026-01-29 19:12 UTC
+Stopped at: Completed 04-02-PLAN.md (Fee Structures & Charges)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 4 with 04-02-PLAN.md (Fee Structures & Charges)
+**Recommended:** Continue Phase 4 with 04-03-PLAN.md (Interest Rules & Delinquency)
 
-Phase 4 Plan 01 deliverables ready:
-- account_category and account_subtype enums
-- accounts table with hierarchical chart of accounts
-- create_standard_chart_of_accounts() function
-- transaction_type and transaction_status enums
-- transactions table with immutability on posted
-- ledger_entries table (append-only, trigger-enforced)
-- update_account_balance() trigger for running balances
-- account_ledger view for reporting
+Phase 4 Plan 02 deliverables ready:
+- fee_calculation_type and fee_frequency enums
+- fee_structures table with formula configuration
+- fee_schedules table linking fees to units with overrides
+- calculate_fee_amount() and get_unit_fee_amount() functions
+- payment_methods table with Mexican payment types
+- record_payment() and record_charge() functions with double-entry
