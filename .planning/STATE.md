@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 6 of 8 (Maintenance, Chat, Documents & Notifications)
-Plan: 4 of 5 complete
+Plan: 4 of 5 complete (06-03 Chat & Messaging complete)
 Status: In progress
-Last activity: 2026-01-29 - Completed 06-04-PLAN.md (Documents & Signatures)
+Last activity: 2026-01-29 - Completed 06-03-PLAN.md (Chat & Messaging)
 
 Progress: [##################- ] 85%
 
@@ -32,11 +32,11 @@ Progress: [##################- ] 85%
 | 03-access-control | 4 | 15 min | 4 min |
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
-| 06-maintenance | 4 | 30 min | 7.5 min |
+| 06-maintenance | 4 | 49 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (6 min), 06-01 (9 min), 06-02 (est), 06-03 (est), 06-04 (14 min)
-- Trend: Phase 6 showing slightly longer execution times due to complex schema
+- Last 5 plans: 06-01 (9 min), 06-02 (est), 06-03 (19 min), 06-04 (14 min)
+- Trend: Phase 6 showing longer execution times due to complex schema and migration sync issues
 
 *Updated after each plan completion*
 
@@ -136,6 +136,10 @@ Recent decisions affecting current work:
 - Signature immutability enforced via prevent_signature_modification() trigger
 - Permission targeting: exactly one of user_id, unit_id, role per document_permissions row
 - SHA-256 signature hash from checksum+resident+timestamp+ip for tamper detection
+- Denormalized counts via triggers for chat (participant_count, message_count, unread_count)
+- pg_notify for real-time message delivery to Supabase Realtime subscribers
+- Spanish full-text search with GIN index for message content
+- Guard booth conversations per access_point + date for shift continuity
 
 ### Pending Todos
 
@@ -151,8 +155,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 23:59 UTC
-Stopped at: Completed 06-04-PLAN.md (Documents & Signatures)
+Last session: 2026-01-30 00:04 UTC
+Stopped at: Completed 06-03-PLAN.md (Chat & Messaging)
 Resume file: None
 
 ## Next Steps
@@ -162,7 +166,7 @@ Resume file: None
 Phase 6 IN PROGRESS:
 - 06-01: Ticket Enums, Categories, SLA & Workflow COMPLETE
 - 06-02: Assets & Preventive Maintenance (status unknown)
-- 06-03: Chat & Messaging (status unknown)
+- 06-03: Chat & Messaging COMPLETE
 - 06-04: Documents & Signatures COMPLETE
 - 06-05: Push Notifications PENDING
 
@@ -181,3 +185,20 @@ Document infrastructure available:
 - capture_signature() validates and records signatures
 - verify_signature_hash() detects tampering
 - get_pending_signatures() and get_document_signatures() for dashboards
+
+Chat infrastructure available:
+- conversation_type enum (direct, group, guard_booth, support)
+- participant_role enum (owner, admin, member, guard)
+- conversations table with type-specific constraints
+- conversation_participants with roles, muting, unread tracking
+- messages table with text, media, replies, edits, soft delete
+- message_read_receipts for per-user read tracking
+- message_reactions with emoji codes
+- quick_responses for guard canned messages
+- find_or_create_direct_conversation() and get_or_create_guard_booth() helpers
+- mark_messages_read() batch read function
+- edit_message() and delete_message() functions
+- notify_new_message() trigger for pg_notify real-time
+- notify_typing() RPC for typing indicators
+- get_conversation_list() and search_messages() helpers
+- Spanish full-text search index on message content
