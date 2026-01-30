@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 6 (Maintenance, Chat, Documents & Notifications) - COMPLETE
+**Current focus:** Phase 7 (Operations & Compliance) - In Progress
 
 ## Current Position
 
-Phase: 6 of 8 (Maintenance, Chat, Documents & Notifications) - COMPLETE
-Plan: 5 of 5 complete (06-05 Push Notifications complete)
-Status: Phase complete
-Last activity: 2026-01-30 - Completed 06-05-PLAN.md (Push Notifications)
+Phase: 7 of 8 (Operations & Compliance)
+Plan: 1 of 4 complete (07-01 Package Management complete)
+Status: In progress
+Last activity: 2026-01-30 - Completed 07-01-PLAN.md (Package Management Schema)
 
-Progress: [####################] 87.5%
+Progress: [######################..] 89.3%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
-- Average duration: 5.5 min
-- Total execution time: 131 min
+- Total plans completed: 25
+- Average duration: 5.4 min
+- Total execution time: 135 min
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [####################] 87.5%
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
+| 07-operations | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (9 min), 06-02 (est), 06-03 (19 min), 06-04 (14 min), 06-05 (6 min)
-- Trend: Phase 6 complete with comprehensive maintenance, chat, document, and notification systems
+- Last 5 plans: 06-03 (19 min), 06-04 (14 min), 06-05 (6 min), 07-01 (4 min)
+- Trend: Phase 7 started with package management schema
 
 *Updated after each plan completion*
 
@@ -150,6 +151,11 @@ Recent decisions affecting current work:
 - pg_notify('notification_created') for Edge Function async delivery
 - 30-day staleness threshold for push token cleanup
 - Token UPSERT on (user_id, device_id, platform) for seamless token refresh
+- 8-state package lifecycle with trigger-validated transitions (received->stored->notified->pending_pickup->picked_up)
+- Mexican carrier enum includes local carriers (Estafeta, Redpack) and e-commerce (Mercado Libre, Amazon)
+- Pickup codes reuse Phase 3 HMAC-SHA256 pattern for offline verification
+- Storage location current_count maintained by trigger for real-time capacity tracking
+- Package signatures are immutable (trigger-enforced) for chain of custody compliance
 
 ### Pending Todos
 
@@ -163,35 +169,29 @@ None yet.
 - RESOLVED: Phase 5 announcement fan-out and survey voting patterns implemented
 - RESOLVED: Phase 6 document versioning and signature immutability patterns implemented
 - RESOLVED: Phase 6 notification infrastructure with multi-channel delivery
+- RESOLVED: Phase 7 HMAC pattern reused from Phase 3 for pickup codes
 
 ## Session Continuity
 
-Last session: 2026-01-30 00:17 UTC
-Stopped at: Completed 06-02-PLAN.md (Assets & Preventive Maintenance) - Phase 6 COMPLETE
+Last session: 2026-01-30 01:12 UTC
+Stopped at: Completed 07-01-PLAN.md (Package Management Schema)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Begin Phase 7 (Operations & Analytics)
+**Recommended:** Continue Phase 7 with 07-02 (Service Providers & Visitor Management)
 
-Phase 6 COMPLETE:
-- 06-01: Ticket Enums, Categories, SLA & Workflow DONE
-- 06-02: Assets & Preventive Maintenance DONE
-- 06-03: Chat & Messaging DONE
-- 06-04: Documents & Signatures DONE
-- 06-05: Push Notifications DONE
+Phase 7 Progress:
+- 07-01: Package Management Schema DONE
+- 07-02: Service Providers & Visitor Management TODO
+- 07-03: Move-In/Move-Out Workflow TODO
+- 07-04: Audit Logs & Compliance Reports TODO
 
-Notification infrastructure available:
-- notification_channel enum (push, email, sms, in_app)
-- notification_type enum (18 types across 4 domains)
-- push_platform enum (fcm_android, fcm_ios, apns, web_push)
-- push_tokens table with staleness tracking and cleanup
-- notification_preferences with JSONB per-type settings
-- notifications table with multi-channel delivery tracking
-- notification_deliveries for per-channel status
-- notification_templates with 18 Spanish defaults
-- register_push_token(), mark_token_invalid(), cleanup_stale_push_tokens()
-- get_notification_channels() with DND support (emergency_alert bypasses)
-- create_notification() integrates preferences, templates, pg_notify
-- mark_notification_read(), get_unread_notifications()
-- record_delivery_status() updates delivery tracking
+Package management infrastructure available:
+- package_status, package_carrier, pickup_code_type, pickup_code_status enums
+- package_storage_locations with capacity tracking
+- packages table with 8-state lifecycle and state machine trigger
+- package_pickup_codes with PIN and HMAC-signed QR support
+- package_signatures with immutability enforcement
+- generate_pickup_pin(), generate_pickup_qr_payload(), verify_pickup_qr_payload()
+- create_pickup_code(), validate_pickup_code(), use_pickup_code() workflow
