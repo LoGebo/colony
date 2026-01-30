@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 7 of 8 (Operations & Compliance)
-Plan: 1 of 4 complete (07-01 Package Management complete)
+Plan: 2 of 4 complete (07-02 Provider Management complete)
 Status: In progress
-Last activity: 2026-01-30 - Completed 07-01-PLAN.md (Package Management Schema)
+Last activity: 2026-01-30 - Completed 07-02-PLAN.md (Provider Management)
 
-Progress: [######################..] 89.3%
+Progress: [########################..] 92.9%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
-- Average duration: 5.4 min
-- Total execution time: 135 min
+- Total plans completed: 26
+- Average duration: 5.5 min
+- Total execution time: 143 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [######################..] 89.3%
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
-| 07-operations | 1 | 4 min | 4 min |
+| 07-operations | 2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-03 (19 min), 06-04 (14 min), 06-05 (6 min), 07-01 (4 min)
-- Trend: Phase 7 started with package management schema
+- Last 5 plans: 06-04 (14 min), 06-05 (6 min), 07-01 (4 min), 07-02 (8 min)
+- Trend: Phase 7 progressing with operations infrastructure
 
 *Updated after each plan completion*
 
@@ -156,6 +156,14 @@ Recent decisions affecting current work:
 - Pickup codes reuse Phase 3 HMAC-SHA256 pattern for offline verification
 - Storage location current_count maintained by trigger for real-time capacity tracking
 - Package signatures are immutable (trigger-enforced) for chain of custody compliance
+- Provider status workflow: pending_approval -> active -> suspended/inactive
+- Document status workflow: pending_verification -> verified/rejected, verified -> expired
+- GENERATED columns for is_expired and days_until_expiry - always current, no stale data
+- Expiry alert tracking with 30d/14d/7d boolean flags prevents duplicate notifications
+- provider_documents_expiring view groups by urgency_level: expired, critical, warning, upcoming
+- Personnel full_name is GENERATED from Mexican name format
+- Access schedules use day-of-week array (0=Sunday, 6=Saturday) with time windows
+- is_provider_access_allowed() enables real-time access checks at guard checkpoints
 
 ### Pending Todos
 
@@ -170,28 +178,29 @@ None yet.
 - RESOLVED: Phase 6 document versioning and signature immutability patterns implemented
 - RESOLVED: Phase 6 notification infrastructure with multi-channel delivery
 - RESOLVED: Phase 7 HMAC pattern reused from Phase 3 for pickup codes
+- RESOLVED: Bug fix - packages_table referenced non-existent update_updated_at() function
 
 ## Session Continuity
 
-Last session: 2026-01-30 01:12 UTC
-Stopped at: Completed 07-01-PLAN.md (Package Management Schema)
+Last session: 2026-01-30 01:16 UTC
+Stopped at: Completed 07-02-PLAN.md (Provider Management)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 7 with 07-02 (Service Providers & Visitor Management)
+**Recommended:** Continue Phase 7 with 07-03 (Move Coordination) or 07-04 (Audit & Compliance)
 
 Phase 7 Progress:
 - 07-01: Package Management Schema DONE
-- 07-02: Service Providers & Visitor Management TODO
+- 07-02: Provider Management DONE
 - 07-03: Move-In/Move-Out Workflow TODO
 - 07-04: Audit Logs & Compliance Reports TODO
 
-Package management infrastructure available:
-- package_status, package_carrier, pickup_code_type, pickup_code_status enums
-- package_storage_locations with capacity tracking
-- packages table with 8-state lifecycle and state machine trigger
-- package_pickup_codes with PIN and HMAC-signed QR support
-- package_signatures with immutability enforcement
-- generate_pickup_pin(), generate_pickup_qr_payload(), verify_pickup_qr_payload()
-- create_pickup_code(), validate_pickup_code(), use_pickup_code() workflow
+Provider management infrastructure available:
+- provider_status, document_status enums
+- providers table with status workflow, specialties array, rating
+- provider_documents with GENERATED is_expired, days_until_expiry
+- provider_documents_expiring view with urgency_level
+- provider_personnel with photo ID and access restrictions
+- provider_access_schedules with day/time windows
+- is_provider_access_allowed() function for guard checkpoint access control
