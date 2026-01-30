@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 7 of 8 (Operations & Compliance)
-Plan: 4 of 4 complete (07-04 Audit Logs & Compliance complete)
+Plan: 5 of 5 complete (07-05 Community Settings & RBAC complete)
 Status: Phase 7 COMPLETE
-Last activity: 2026-01-30 - Completed 07-04-PLAN.md (Audit Logs & Compliance)
+Last activity: 2026-01-30 - Completed 07-05-PLAN.md (Community Settings & RBAC)
 
 Progress: [############################] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
-- Average duration: 5.6 min
-- Total execution time: 157 min
+- Total plans completed: 29
+- Average duration: 5.7 min
+- Total execution time: 166 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [############################] 100%
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
-| 07-operations | 4 | 26 min | 6.5 min |
+| 07-operations | 5 | 35 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 07-02 (8 min), 07-03 (8 min), 07-04 (6 min)
-- Trend: Phase 7 complete with operations and compliance infrastructure
+- Last 5 plans: 07-01 (4 min), 07-02 (8 min), 07-03 (8 min), 07-04 (6 min), 07-05 (9 min)
+- Trend: Phase 7 complete with operations, compliance, and RBAC infrastructure
 
 *Updated after each plan completion*
 
@@ -177,6 +177,13 @@ Recent decisions affecting current work:
 - Session tracking includes device fingerprint, IP, location, and security flags
 - should_block_login() implements rate limiting: 5 attempts per email, 10 per IP, 15-minute window
 - Security events are permanent audit trail (no UPDATE/DELETE policies)
+- JSONB feature_flags on community_settings with GIN index for per-tenant feature control
+- is_feature_enabled() and get_feature_config() for feature flag queries
+- 6 system roles seeded (super_admin, community_admin, manager, guard, resident, provider)
+- 24 permissions across operations, security, configuration, financial categories
+- has_permission() function for database-level permission checking
+- Hybrid RBAC: JWT claims for common checks, database for fine-grained control
+- Fixed generate_uuid_v7() to use extensions.gen_random_bytes() for pgcrypto schema
 
 ### Pending Todos
 
@@ -193,11 +200,12 @@ None yet.
 - RESOLVED: Phase 7 HMAC pattern reused from Phase 3 for pickup codes
 - RESOLVED: Bug fix - packages_table referenced non-existent update_updated_at() function
 - RESOLVED: Phase 7 audit infrastructure with immutable audit.audit_log table
+- RESOLVED: generate_uuid_v7() fixed to use extensions.gen_random_bytes() (pgcrypto schema issue)
 
 ## Session Continuity
 
-Last session: 2026-01-30 01:26 UTC
-Stopped at: Completed 07-04-PLAN.md (Audit Logs & Compliance)
+Last session: 2026-01-30 01:28 UTC
+Stopped at: Completed 07-05-PLAN.md (Community Settings & RBAC)
 Resume file: None
 
 ## Next Steps
@@ -209,8 +217,9 @@ Phase 7 Summary:
 - 07-02: Provider Management DONE
 - 07-03: Move Coordination DONE
 - 07-04: Audit Logs & Compliance DONE
+- 07-05: Community Settings & RBAC DONE
 
-Audit and compliance infrastructure available:
+Operations and compliance infrastructure available:
 - audit schema with operation enum
 - audit.audit_log table (IMMUTABLE append-only)
 - audit.enable_tracking() for dynamic trigger enablement
@@ -219,3 +228,8 @@ Audit and compliance infrastructure available:
 - security_events with 12 event types
 - Rate limiting via should_block_login()
 - Audit enabled on: packages, providers, provider_documents, move_requests, move_deposits
+- community_settings with JSONB feature_flags and GIN index
+- is_feature_enabled() and get_feature_config() functions
+- 6 system roles with 24 permissions
+- has_permission() function for RBAC checks
+- Hybrid RBAC combining JWT claims and database permissions
