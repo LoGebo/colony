@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 7 (Operations & Compliance) - In Progress
+**Current focus:** Phase 7 (Operations & Compliance) - COMPLETE
 
 ## Current Position
 
 Phase: 7 of 8 (Operations & Compliance)
-Plan: 3 of 4 complete (07-03 Move Coordination complete)
-Status: In progress
-Last activity: 2026-01-30 - Completed 07-03-PLAN.md (Move Coordination)
+Plan: 4 of 4 complete (07-04 Audit Logs & Compliance complete)
+Status: Phase 7 COMPLETE
+Last activity: 2026-01-30 - Completed 07-04-PLAN.md (Audit Logs & Compliance)
 
-Progress: [#########################.] 96.4%
+Progress: [############################] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 28
 - Average duration: 5.6 min
-- Total execution time: 151 min
+- Total execution time: 157 min
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [#########################.] 96.4%
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
-| 07-operations | 3 | 20 min | 6.7 min |
+| 07-operations | 4 | 26 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-05 (6 min), 07-01 (4 min), 07-02 (8 min), 07-03 (8 min)
-- Trend: Phase 7 progressing with operations infrastructure
+- Last 5 plans: 07-01 (4 min), 07-02 (8 min), 07-03 (8 min), 07-04 (6 min)
+- Trend: Phase 7 complete with operations and compliance infrastructure
 
 *Updated after each plan completion*
 
@@ -170,6 +170,13 @@ Recent decisions affecting current work:
 - check_debt_free() queries unit_balances view from Phase 4
 - Validation waiver requires waiver_reason (CHECK constraint enforced)
 - Deposit workflow functions: process/approve/complete sequence with status validation
+- Dedicated audit schema separates audit infrastructure from public tables
+- audit.audit_log is append-only with trigger-enforced immutability
+- enable_tracking(regclass) dynamically adds audit triggers to any table
+- Audit captures old_record, new_record, changed_fields[] for full change history
+- Session tracking includes device fingerprint, IP, location, and security flags
+- should_block_login() implements rate limiting: 5 attempts per email, 10 per IP, 15-minute window
+- Security events are permanent audit trail (no UPDATE/DELETE policies)
 
 ### Pending Todos
 
@@ -185,29 +192,30 @@ None yet.
 - RESOLVED: Phase 6 notification infrastructure with multi-channel delivery
 - RESOLVED: Phase 7 HMAC pattern reused from Phase 3 for pickup codes
 - RESOLVED: Bug fix - packages_table referenced non-existent update_updated_at() function
+- RESOLVED: Phase 7 audit infrastructure with immutable audit.audit_log table
 
 ## Session Continuity
 
-Last session: 2026-01-30 01:17 UTC
-Stopped at: Completed 07-03-PLAN.md (Move Coordination)
+Last session: 2026-01-30 01:26 UTC
+Stopped at: Completed 07-04-PLAN.md (Audit Logs & Compliance)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 7 with 07-04 (Audit & Compliance)
+**Recommended:** Phase 7 COMPLETE - Ready for Phase 8
 
-Phase 7 Progress:
+Phase 7 Summary:
 - 07-01: Package Management Schema DONE
 - 07-02: Provider Management DONE
 - 07-03: Move Coordination DONE
-- 07-04: Audit Logs & Compliance Reports TODO
+- 07-04: Audit Logs & Compliance DONE
 
-Move coordination infrastructure available:
-- move_type, move_status, validation_status, deposit_status enums
-- move_requests table with scheduling, moving company, facility reservations
-- move_validations table with auto-generated checklists (7 for move_out, 2 for move_in)
-- create_move_validations() trigger for auto-generation
-- update_validation_summary() trigger for all_validations_passed flag
-- check_debt_free() function queries unit_balances view
-- move_deposits table with GENERATED refund_amount column
-- Workflow functions: process_deposit_refund, approve_deposit_refund, complete_deposit_refund, forfeit_deposit
+Audit and compliance infrastructure available:
+- audit schema with operation enum
+- audit.audit_log table (IMMUTABLE append-only)
+- audit.enable_tracking() for dynamic trigger enablement
+- audit.log_changes() captures before/after JSONB
+- user_sessions with device fingerprint, IP, location
+- security_events with 12 event types
+- Rate limiting via should_block_login()
+- Audit enabled on: packages, providers, provider_documents, move_requests, move_deposits
