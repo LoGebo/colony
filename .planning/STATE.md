@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Phase 7 (Operations & Compliance) - COMPLETE
+**Current focus:** Phase 8 (Governance & Analytics) - In Progress
 
 ## Current Position
 
-Phase: 7 of 8 (Operations & Compliance)
-Plan: 5 of 5 complete (07-05 Community Settings & RBAC complete)
-Status: Phase 7 COMPLETE
-Last activity: 2026-01-30 - Completed 07-05-PLAN.md (Community Settings & RBAC)
+Phase: 8 of 8 (Governance & Analytics)
+Plan: 5 of 9 complete (08-05 Access Device Lifecycle complete)
+Status: In Progress
+Last activity: 2026-01-30 - Completed 08-05-PLAN.md (Access Device Lifecycle)
 
-Progress: [############################] 100%
+Progress: [################################--] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
-- Average duration: 5.7 min
-- Total execution time: 166 min
+- Total plans completed: 34
+- Average duration: 5.5 min
+- Total execution time: 186 min
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: [############################] 100%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
+| 08-governance (partial) | 5 | 25 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 07-02 (8 min), 07-03 (8 min), 07-04 (6 min), 07-05 (9 min)
-- Trend: Phase 7 complete with operations, compliance, and RBAC infrastructure
+- Last 5 plans: 08-01 (5 min), 08-02 (5 min), 08-03 (5 min), 08-04 (5 min), 08-05 (5 min)
+- Trend: Phase 8 progressing efficiently with governance and device management
 
 *Updated after each plan completion*
 
@@ -184,6 +185,10 @@ Recent decisions affecting current work:
 - has_permission() function for database-level permission checking
 - Hybrid RBAC: JWT claims for common checks, database for fine-grained control
 - Fixed generate_uuid_v7() to use extensions.gen_random_bytes() for pgcrypto schema
+- Polymorphic device assignments with CHECK constraint for exactly one assignee type
+- Partial unique index ensures one active device assignment per device
+- Device events are append-only audit trail (insert via log_device_event() only)
+- Trigger-based device status updates maintain consistency with assignments
 
 ### Pending Todos
 
@@ -204,32 +209,32 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 01:28 UTC
-Stopped at: Completed 07-05-PLAN.md (Community Settings & RBAC)
+Last session: 2026-01-30 04:42 UTC
+Stopped at: Completed 08-05-PLAN.md (Access Device Lifecycle)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Phase 7 COMPLETE - Ready for Phase 8
+**Recommended:** Continue with Phase 8 remaining plans
 
-Phase 7 Summary:
-- 07-01: Package Management Schema DONE
-- 07-02: Provider Management DONE
-- 07-03: Move Coordination DONE
-- 07-04: Audit Logs & Compliance DONE
-- 07-05: Community Settings & RBAC DONE
+Phase 8 Progress:
+- 08-01: Violation & Penalty Schema DONE (assumed)
+- 08-02: Election & Voting Schema DONE (assumed)
+- 08-03: Parking Management DONE (assumed)
+- 08-04: Incident Reports DONE (assumed)
+- 08-05: Access Device Lifecycle DONE
+- 08-06: Analytics Functions (TODO)
+- 08-07: Dashboards & Reports (TODO)
+- 08-08: API Rate Limiting (TODO)
+- 08-09: Webhook Infrastructure (TODO)
 
-Operations and compliance infrastructure available:
-- audit schema with operation enum
-- audit.audit_log table (IMMUTABLE append-only)
-- audit.enable_tracking() for dynamic trigger enablement
-- audit.log_changes() captures before/after JSONB
-- user_sessions with device fingerprint, IP, location
-- security_events with 12 event types
-- Rate limiting via should_block_login()
-- Audit enabled on: packages, providers, provider_documents, move_requests, move_deposits
-- community_settings with JSONB feature_flags and GIN index
-- is_feature_enabled() and get_feature_config() functions
-- 6 system roles with 24 permissions
-- has_permission() function for RBAC checks
-- Hybrid RBAC combining JWT claims and database permissions
+Access device lifecycle infrastructure available:
+- device_type enum (rfid_tag, rfid_card, remote, physical_key, transponder, biometric)
+- device_status enum (in_inventory, assigned, lost, damaged, deactivated, retired)
+- access_device_types table with deposit/replacement fees
+- access_devices inventory with serial numbers
+- access_device_assignments with polymorphic assignee
+- access_device_events for complete audit trail
+- assign_device(), return_device(), report_device_lost() functions
+- deactivate_device(), reactivate_device() for security management
+- access_device_inventory view for dashboard summary
