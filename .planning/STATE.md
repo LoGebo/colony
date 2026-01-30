@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 4 of 9 complete (08-04 Parking Management complete)
+Plan: 1 of 9 complete (08-01 Incident Management complete)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-04-PLAN.md (Parking Management)
+Last activity: 2026-01-30 - Completed 08-01-PLAN.md (Incident Management)
 
-Progress: [#################################----] 93%
+Progress: [##############################-------] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
-- Average duration: 5.9 min
-- Total execution time: 240 min
+- Total plans completed: 30
+- Average duration: 6.2 min
+- Total execution time: 187 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [#################################----] 93%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 9 | 79 min | 8.8 min |
+| 08-governance (partial) | 1 | 21 min | 21 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min), 08-04 (8 min)
-- Trend: Phase 8 parking management with exclusion constraints for reservations
+- Last 5 plans: 07-03 (8 min), 07-04 (6 min), 07-05 (9 min), 08-01 (21 min)
+- Trend: Phase 8 incident management with JSONB timeline and auto-event triggers
 
 *Updated after each plan completion*
 
@@ -211,6 +211,12 @@ Recent decisions affecting current work:
 - Parking exclusion constraint with '[)' bounds for adjacent slot compatibility
 - Auto vehicle linking in violations via plate_normalized matching
 - violation_record_id prepared for Phase 8-07 formal violations integration
+- JSONB timeline over separate events table - simpler queries, atomic updates
+- Idempotent DO blocks for enums handle pre-existing types from parallel development
+- auth.jwt() -> 'app_metadata' ->> 'role' pattern for RLS (not custom get_user_role())
+- Polymorphic reporter: reported_by (resident), reported_by_guard, reporter_name (external)
+- Status change trigger updates status_changed_at, first_response_at, resolved_at automatically
+- Incident number format: INC-YYYY-NNNNN sequential per community per year
 
 ### Pending Todos
 
@@ -231,24 +237,37 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 04:56 UTC
-Stopped at: Completed 08-04-PLAN.md (Parking Management)
+Last session: 2026-01-30 05:00 UTC
+Stopped at: Completed 08-01-PLAN.md (Incident Management)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Complete Phase 8 final plan (08-08)
+**Recommended:** Continue Phase 8 Plan 08-02 (Voting & Assemblies)
 
 Phase 8 Progress:
-- 08-01: Violation & Penalty Schema DONE
-- 08-02: Election & Voting Schema DONE (Mexican law proxy limits, coefficient weighting)
-- 08-03: Parking Management DONE
-- 08-04: Incident Reports DONE
-- 08-05: Access Device Lifecycle DONE
-- 08-06: Emergency Preparedness DONE (contacts, medical, accessibility, evacuation)
-- 08-07: Violation Tracking DONE (offense counting, sanctions, appeals)
-- 08-08: API Rate Limiting (TODO)
-- 08-09: External Integrations DONE
+- 08-01: Incident Management DONE (JSONB timeline, auto-events, SLA tracking)
+- 08-02: Voting & Assemblies (TODO)
+- 08-03: Parking Inventory (TODO)
+- 08-04: Access Devices (TODO)
+- 08-05: Violations & Penalties (TODO)
+- 08-06: Emergency Contacts (TODO)
+- 08-07: Analytics Summary Tables (TODO)
+- 08-08: Webhooks & Integrations (TODO)
+- 08-09: API Keys & Rate Limiting (TODO)
+
+Incident management infrastructure available:
+- incident_severity enum (low, medium, high, critical)
+- incident_status enum (reported -> acknowledged -> investigating -> in_progress -> pending_review -> resolved -> closed)
+- incident_types table for configurable categories with SLA settings
+- incidents table with JSONB timeline, polymorphic location/reporter, SLA tracking
+- incident_media table for photo/video/audio/document attachments
+- incident_assignments table for handler/supervisor/observer tracking
+- generate_incident_number() for INC-YYYY-NNNNN format
+- add_incident_event() for timeline management
+- Status change trigger auto-logs transitions and tracks first_response_at, resolved_at
+- Media/assignment triggers auto-append events to timeline
+- add_incident_comment() and escalate_incident() helper functions
 
 Elections & Voting infrastructure available:
 - election_type enum (board_election, bylaw_amendment, extraordinary_expense, general_decision)
