@@ -166,14 +166,14 @@ Plans:
   11. Community settings configure hours, rules, branding
   12. Feature flags enable/disable features per community
   13. Roles and permissions matrix is configurable
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 07-01: Create packages, storage, pickup codes, signatures
-- [ ] 07-02: Create providers, documentation, employees, schedules
-- [ ] 07-03: Create move requests, validations, deposits, sign-offs
-- [ ] 07-04: Create audit logs, sessions, security events
-- [ ] 07-05: Create community settings, preferences, feature flags, roles
+- [ ] 07-01-PLAN.md - Packages, storage locations, pickup codes (PIN/QR with HMAC), signatures (Wave 1)
+- [ ] 07-02-PLAN.md - Providers, documents with expiration tracking, personnel, access schedules (Wave 1)
+- [ ] 07-03-PLAN.md - Move requests, auto-generated validations, damage deposits with refund workflow (Wave 1)
+- [ ] 07-04-PLAN.md - Audit schema, immutable audit_log, user sessions, security events (Wave 2)
+- [ ] 07-05-PLAN.md - Community settings, JSONB feature flags, roles, permissions, RBAC functions (Wave 2)
 
 ### Phase 8: Governance & Analytics
 **Goal**: Complete the system with incident management, formal voting, parking, keys, violations, pre-computed analytics, and external integrations
@@ -222,11 +222,11 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
 | 5. Amenities, Communication & Marketplace | 5/5 | Complete ✓ | 2026-01-29 |
 | 6. Maintenance, Chat, Documents & Notifications | 5/5 | Complete ✓ | 2026-01-30 |
-| 7. Operations & Compliance | 0/5 | Not started | - |
+| 7. Operations & Compliance | 0/5 | Planned | - |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
 **Total:** 24/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-30 - Phase 6 complete*
+*Last updated: 2026-01-30 - Phase 7 planned*
