@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 5 of 9 complete (08-05 Access Device Lifecycle complete)
+Plan: 6 of 9 complete (08-09 External Integrations complete)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-05-PLAN.md (Access Device Lifecycle)
+Last activity: 2026-01-30 - Completed 08-09-PLAN.md (External Integrations)
 
 Progress: [################################--] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
+- Total plans completed: 35
 - Average duration: 5.5 min
-- Total execution time: 186 min
+- Total execution time: 191 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [################################--] 94%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 5 | 25 min | 5 min |
+| 08-governance (partial) | 6 | 30 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (5 min), 08-02 (5 min), 08-03 (5 min), 08-04 (5 min), 08-05 (5 min)
-- Trend: Phase 8 progressing efficiently with governance and device management
+- Last 5 plans: 08-02 (5 min), 08-03 (5 min), 08-04 (5 min), 08-05 (5 min), 08-09 (5 min)
+- Trend: Phase 8 progressing efficiently with governance and integrations
 
 *Updated after each plan completion*
 
@@ -189,6 +189,12 @@ Recent decisions affecting current work:
 - Partial unique index ensures one active device assignment per device
 - Device events are append-only audit trail (insert via log_device_event() only)
 - Trigger-based device status updates maintain consistency with assignments
+- Webhook exponential backoff: 1m, 5m, 15m, 1h, 4h, 24h via calculate_next_retry()
+- Auto-disable webhook endpoint after 10 consecutive failures (circuit breaker)
+- Dead letter after 6 failed attempts with retry_dead_letter() for manual retry
+- API key hash-only storage: prefix (16 chars) + SHA-256, never plaintext
+- Full API key returned ONLY ONCE at creation via generate_api_key()
+- Integration configs use vault_secret_id for credentials in Supabase Vault
 
 ### Pending Todos
 
@@ -209,32 +215,37 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 04:42 UTC
-Stopped at: Completed 08-05-PLAN.md (Access Device Lifecycle)
+Last session: 2026-01-30 04:43 UTC
+Stopped at: Completed 08-09-PLAN.md (External Integrations)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue with Phase 8 remaining plans
+**Recommended:** Continue with Phase 8 remaining plans (08-06, 08-07, 08-08)
 
 Phase 8 Progress:
-- 08-01: Violation & Penalty Schema DONE (assumed)
-- 08-02: Election & Voting Schema DONE (assumed)
-- 08-03: Parking Management DONE (assumed)
-- 08-04: Incident Reports DONE (assumed)
+- 08-01: Violation & Penalty Schema DONE
+- 08-02: Election & Voting Schema DONE
+- 08-03: Parking Management DONE
+- 08-04: Incident Reports DONE
 - 08-05: Access Device Lifecycle DONE
 - 08-06: Analytics Functions (TODO)
 - 08-07: Dashboards & Reports (TODO)
 - 08-08: API Rate Limiting (TODO)
-- 08-09: Webhook Infrastructure (TODO)
+- 08-09: External Integrations DONE
 
-Access device lifecycle infrastructure available:
-- device_type enum (rfid_tag, rfid_card, remote, physical_key, transponder, biometric)
-- device_status enum (in_inventory, assigned, lost, damaged, deactivated, retired)
-- access_device_types table with deposit/replacement fees
-- access_devices inventory with serial numbers
-- access_device_assignments with polymorphic assignee
-- access_device_events for complete audit trail
-- assign_device(), return_device(), report_device_lost() functions
-- deactivate_device(), reactivate_device() for security management
-- access_device_inventory view for dashboard summary
+External integrations infrastructure available:
+- webhook_status enum (pending, sending, delivered, failed, retrying, dead_letter)
+- webhook_endpoints table for external integration subscriptions
+- webhook_deliveries queue with retry tracking
+- calculate_next_retry() for exponential backoff (1m, 5m, 15m, 1h, 4h, 24h)
+- queue_webhook() creates deliveries with HMAC-SHA256 signatures
+- get_pending_webhooks() for Edge Function batch processing
+- record_webhook_result() handles success/failure/retry/dead-letter
+- retry_dead_letter() for manual retry after fixes
+- api_keys table with hash-only storage (prefix + SHA-256)
+- generate_api_key() returns full key ONLY ONCE
+- validate_api_key() with scope checking
+- integration_configs with vault_secret_id for credentials
+- integration_sync_logs for sync history
+- api_key_summary and integration_status views for monitoring
