@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 1 of 9 complete (08-01 Incident Management complete)
+Plan: 3 of 9 complete (08-01, 08-02, 08-03)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-01-PLAN.md (Incident Management)
+Last activity: 2026-01-30 - Completed 08-03-PLAN.md (Assemblies and Attendance)
 
-Progress: [##############################-------] 83%
+Progress: [#################################----] 89%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30
-- Average duration: 6.2 min
-- Total execution time: 187 min
+- Total plans completed: 32
+- Average duration: 6.1 min
+- Total execution time: 205 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [##############################-------] 83%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 1 | 21 min | 21 min |
+| 08-governance (partial) | 3 | 39 min | 13 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-03 (8 min), 07-04 (6 min), 07-05 (9 min), 08-01 (21 min)
-- Trend: Phase 8 incident management with JSONB timeline and auto-event triggers
+- Last 5 plans: 07-05 (9 min), 08-01 (21 min), 08-02 (13 min), 08-03 (5 min)
+- Trend: Phase 8 governance with elections, assemblies, and convocatoria quorum
 
 *Updated after each plan completion*
 
@@ -217,6 +217,14 @@ Recent decisions affecting current work:
 - Polymorphic reporter: reported_by (resident), reported_by_guard, reporter_name (external)
 - Status change trigger updates status_changed_at, first_response_at, resolved_at automatically
 - Incident number format: INC-YYYY-NNNNN sequential per community per year
+- Coefficient snapshot at check-in - assembly_attendance copies unit.coefficient for immutable accuracy
+- One attendance per unit via UNIQUE(assembly_id, unit_id)
+- Proxy limit enforced via validate_assembly_proxy_limit() trigger (2 max per Mexican law)
+- Mexican convocatoria quorum: 75% first call, 50%+1 second call, any third call
+- Assembly number format: ASM-YYYY-NNN sequential per community
+- Agreements can link to elections via election_id FK for formal vote documentation
+- arrived_at_convocatoria tracks which call the unit arrived at (1, 2, or 3)
+- Checked-out units excluded from quorum calculation via checkout_attendance()
 
 ### Pending Todos
 
@@ -237,24 +245,24 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 05:00 UTC
-Stopped at: Completed 08-01-PLAN.md (Incident Management)
+Last session: 2026-01-30 05:07 UTC
+Stopped at: Completed 08-03-PLAN.md (Assemblies and Attendance)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 8 Plan 08-02 (Voting & Assemblies)
+**Recommended:** Continue Phase 8 Plan 08-04
 
 Phase 8 Progress:
 - 08-01: Incident Management DONE (JSONB timeline, auto-events, SLA tracking)
-- 08-02: Voting & Assemblies (TODO)
-- 08-03: Parking Inventory (TODO)
-- 08-04: Access Devices (TODO)
-- 08-05: Violations & Penalties (TODO)
-- 08-06: Emergency Contacts (TODO)
-- 08-07: Analytics Summary Tables (TODO)
-- 08-08: Webhooks & Integrations (TODO)
-- 08-09: API Keys & Rate Limiting (TODO)
+- 08-02: Elections & Voting DONE (coefficient snapshot, proxy limit, quorum calculation)
+- 08-03: Assemblies & Attendance DONE (convocatoria progression, quorum 75%/50%+1/any)
+- 08-04: (next plan)
+- 08-05: (TODO)
+- 08-06: (TODO)
+- 08-07: (TODO)
+- 08-08: (TODO)
+- 08-09: (TODO)
 
 Incident management infrastructure available:
 - incident_severity enum (low, medium, high, critical)
@@ -340,3 +348,21 @@ Parking management infrastructure available:
 - cancel/checkin/checkout functions for reservation lifecycle
 - get_todays_parking_reservations() for guard booth dashboard
 - report_parking_violation() with auto plate matching
+
+Assembly management infrastructure available:
+- assembly_type enum (ordinary, extraordinary)
+- assembly_status enum (scheduled -> convocatoria_1 -> convocatoria_2 -> convocatoria_3 -> in_progress -> concluded)
+- attendance_type enum (owner, representative, proxy)
+- assemblies table with convocatoria timestamps and quorum tracking
+- generate_assembly_number() for ASM-YYYY-NNN format
+- assembly_attendance table with coefficient snapshot at check-in
+- assembly_agreements table for resolutions with election linking
+- validate_assembly_proxy_limit() trigger (2-unit max per Mexican law)
+- copy_attendance_coefficient() trigger for auto unit coefficient copy
+- calculate_assembly_quorum() returns 75%/50%+1/any thresholds
+- record_attendance() with quorum recalculation
+- advance_convocatoria() for status progression
+- record_agreement() with auto-numbering
+- checkout_attendance() for early departure tracking
+- get_assembly_summary() for dashboard display
+- assembly_attendance_list view for denormalized reporting
