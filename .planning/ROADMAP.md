@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies ✓
 - [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation ✓
 - [x] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings ✓
-- [ ] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts
+- [x] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts ✓
 - [ ] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config
 - [ ] **Phase 8: Governance & Analytics** - Incidents, voting, parking, keys, violations, metrics, integrations
 
@@ -139,14 +139,14 @@ Plans:
   10. Notifications track type, channel, recipient, and delivery status
   11. Push tokens register FCM/APNs devices
   12. User notification preferences control what and how
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 06-01: Create ticket categories, tickets, assignments, SLAs
-- [ ] 06-02: Create assets, preventive schedules, escalation rules
-- [ ] 06-03: Create conversations, participants, messages, reactions
-- [ ] 06-04: Create document categories, documents, permissions, signatures
-- [ ] 06-05: Create notifications, push tokens, preferences, templates
+- [x] 06-01-PLAN.md - Ticket categories, tickets with state machine, SLA definitions, assignments (Wave 1) ✓
+- [x] 06-02-PLAN.md - Assets, preventive schedules with RRULE, escalation rules (Wave 2) ✓
+- [x] 06-03-PLAN.md - Conversations, participants, messages, read receipts, reactions (Wave 1) ✓
+- [x] 06-04-PLAN.md - Documents, versioning, permissions, regulation signatures (Wave 1) ✓
+- [x] 06-05-PLAN.md - Notifications, push tokens, preferences, templates (Wave 2) ✓
 
 ### Phase 7: Operations & Compliance
 **Goal**: Package management, provider relationships, move coordination, comprehensive audit logging, and system configuration
@@ -221,12 +221,12 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Access Control & Security | 4/4 | Complete ✓ | 2026-01-29 |
 | 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
 | 5. Amenities, Communication & Marketplace | 5/5 | Complete ✓ | 2026-01-29 |
-| 6. Maintenance, Chat, Documents & Notifications | 0/5 | Not started | - |
+| 6. Maintenance, Chat, Documents & Notifications | 5/5 | Complete ✓ | 2026-01-30 |
 | 7. Operations & Compliance | 0/5 | Not started | - |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
-**Total:** 19/38 plans
+**Total:** 24/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-29 - Phase 5 complete*
+*Last updated: 2026-01-30 - Phase 6 complete*
