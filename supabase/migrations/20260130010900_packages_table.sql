@@ -40,11 +40,11 @@ CREATE TABLE package_storage_locations (
   )
 );
 
--- Update timestamp trigger
+-- Update timestamp trigger (uses set_audit_fields from foundation)
 CREATE TRIGGER set_storage_location_timestamp
-  BEFORE UPDATE ON package_storage_locations
+  BEFORE INSERT OR UPDATE ON package_storage_locations
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at();
+  EXECUTE FUNCTION set_audit_fields();
 
 COMMENT ON TABLE package_storage_locations IS
   'Storage locations for packages in community mailroom/guard booth.
@@ -97,7 +97,7 @@ CREATE TABLE packages (
 
   -- Retention policy
   retention_days INTEGER NOT NULL DEFAULT 14 CHECK (retention_days > 0),
-  abandonment_date DATE GENERATED ALWAYS AS ((received_at::DATE + retention_days)) STORED,
+  abandonment_date DATE,  -- Computed via trigger due to TIMESTAMPTZ->DATE immutability issue
 
   -- Notes
   special_instructions TEXT,  -- e.g., "Fragile", "Keep refrigerated"
@@ -114,11 +114,32 @@ CREATE TABLE packages (
   )
 );
 
--- Update timestamp trigger
+-- Update timestamp trigger (uses set_audit_fields from foundation)
 CREATE TRIGGER set_packages_timestamp
-  BEFORE UPDATE ON packages
+  BEFORE INSERT OR UPDATE ON packages
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at();
+  EXECUTE FUNCTION set_audit_fields();
+
+-- Trigger to compute abandonment_date (workaround for TIMESTAMPTZ->DATE immutability)
+CREATE OR REPLACE FUNCTION compute_package_abandonment_date()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Compute abandonment_date from received_at + retention_days
+  NEW.abandonment_date := (NEW.received_at AT TIME ZONE 'UTC')::DATE + NEW.retention_days;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER set_package_abandonment_date
+  BEFORE INSERT OR UPDATE OF received_at, retention_days ON packages
+  FOR EACH ROW
+  EXECUTE FUNCTION compute_package_abandonment_date();
+
+COMMENT ON FUNCTION compute_package_abandonment_date IS
+  'Computes abandonment_date as received_at + retention_days.
+   Using trigger instead of GENERATED column due to TIMESTAMPTZ->DATE immutability.';
 
 COMMENT ON TABLE packages IS
   'Package tracking with carrier info, recipient details, storage location, and state machine.
