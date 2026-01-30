@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 7 of 8 (Operations & Compliance)
-Plan: 2 of 4 complete (07-02 Provider Management complete)
+Plan: 3 of 4 complete (07-03 Move Coordination complete)
 Status: In progress
-Last activity: 2026-01-30 - Completed 07-02-PLAN.md (Provider Management)
+Last activity: 2026-01-30 - Completed 07-03-PLAN.md (Move Coordination)
 
-Progress: [########################..] 92.9%
+Progress: [#########################.] 96.4%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
-- Average duration: 5.5 min
-- Total execution time: 143 min
+- Total plans completed: 27
+- Average duration: 5.6 min
+- Total execution time: 151 min
 
 **By Phase:**
 
@@ -33,10 +33,10 @@ Progress: [########################..] 92.9%
 | 04-financial-engine | 4 | 27 min | 7 min |
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
-| 07-operations | 2 | 12 min | 6 min |
+| 07-operations | 3 | 20 min | 6.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-04 (14 min), 06-05 (6 min), 07-01 (4 min), 07-02 (8 min)
+- Last 5 plans: 06-05 (6 min), 07-01 (4 min), 07-02 (8 min), 07-03 (8 min)
 - Trend: Phase 7 progressing with operations infrastructure
 
 *Updated after each plan completion*
@@ -164,6 +164,12 @@ Recent decisions affecting current work:
 - Personnel full_name is GENERATED from Mexican name format
 - Access schedules use day-of-week array (0=Sunday, 6=Saturday) with time windows
 - is_provider_access_allowed() enables real-time access checks at guard checkpoints
+- 7 validations for move_out (debt_free, keys_returned, vehicles_updated, pets_updated, parking_cleared, inspection_scheduled, deposit_review)
+- 2 validations for move_in (documentation_signed, deposit_review)
+- GENERATED ALWAYS refund_amount for computed deposit refund after deductions
+- check_debt_free() queries unit_balances view from Phase 4
+- Validation waiver requires waiver_reason (CHECK constraint enforced)
+- Deposit workflow functions: process/approve/complete sequence with status validation
 
 ### Pending Todos
 
@@ -182,25 +188,26 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 01:16 UTC
-Stopped at: Completed 07-02-PLAN.md (Provider Management)
+Last session: 2026-01-30 01:17 UTC
+Stopped at: Completed 07-03-PLAN.md (Move Coordination)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 7 with 07-03 (Move Coordination) or 07-04 (Audit & Compliance)
+**Recommended:** Continue Phase 7 with 07-04 (Audit & Compliance)
 
 Phase 7 Progress:
 - 07-01: Package Management Schema DONE
 - 07-02: Provider Management DONE
-- 07-03: Move-In/Move-Out Workflow TODO
+- 07-03: Move Coordination DONE
 - 07-04: Audit Logs & Compliance Reports TODO
 
-Provider management infrastructure available:
-- provider_status, document_status enums
-- providers table with status workflow, specialties array, rating
-- provider_documents with GENERATED is_expired, days_until_expiry
-- provider_documents_expiring view with urgency_level
-- provider_personnel with photo ID and access restrictions
-- provider_access_schedules with day/time windows
-- is_provider_access_allowed() function for guard checkpoint access control
+Move coordination infrastructure available:
+- move_type, move_status, validation_status, deposit_status enums
+- move_requests table with scheduling, moving company, facility reservations
+- move_validations table with auto-generated checklists (7 for move_out, 2 for move_in)
+- create_move_validations() trigger for auto-generation
+- update_validation_summary() trigger for all_validations_passed flag
+- check_debt_free() function queries unit_balances view
+- move_deposits table with GENERATED refund_amount column
+- Workflow functions: process_deposit_refund, approve_deposit_refund, complete_deposit_refund, forfeit_deposit
