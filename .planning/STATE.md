@@ -140,6 +140,10 @@ Recent decisions affecting current work:
 - pg_notify for real-time message delivery to Supabase Realtime subscribers
 - Spanish full-text search with GIN index for message content
 - Guard booth conversations per access_point + date for shift continuity
+- 5-state asset lifecycle: operational, degraded, maintenance, out_of_service, retired
+- MVP RRULE parser for DAILY/WEEKLY/MONTHLY/YEARLY with INTERVAL and BYMONTHDAY
+- 24-hour escalation cooldown prevents notification spam while allowing re-escalation
+- Generated total_cost column on maintenance history (labor_cost + parts_cost)
 - 18 notification types covering all domains: maintenance, chat, documents, general
 - DND bypassed only by emergency_alert for safety-critical notifications
 - Template lookup: community-specific first, then system default (NULLS LAST)
@@ -162,8 +166,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 00:13 UTC
-Stopped at: Completed 06-05-PLAN.md (Push Notifications) - Phase 6 COMPLETE
+Last session: 2026-01-30 00:17 UTC
+Stopped at: Completed 06-02-PLAN.md (Assets & Preventive Maintenance) - Phase 6 COMPLETE
 Resume file: None
 
 ## Next Steps
