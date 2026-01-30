@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 8 of 9 complete (08-07 Violation Tracking complete)
+Plan: 9 of 9 complete (08-06 Emergency Preparedness complete)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-07-PLAN.md (Violation Tracking)
+Last activity: 2026-01-30 - Completed 08-06-PLAN.md (Emergency Preparedness)
 
-Progress: [####################################-] 98%
+Progress: [#####################################] 99%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
-- Average duration: 5.8 min
-- Total execution time: 221 min
+- Total plans completed: 38
+- Average duration: 5.9 min
+- Total execution time: 240 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [####################################-] 98%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 8 | 60 min | 7.5 min |
+| 08-governance (partial) | 9 | 79 min | 8.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-04 (5 min), 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min)
-- Trend: Phase 8 violation tracking with appeals and financial integration
+- Last 5 plans: 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min), 08-06 (19 min)
+- Trend: Phase 8 emergency preparedness with privacy-aware medical tracking
 
 *Updated after each plan completion*
 
@@ -200,6 +200,11 @@ Recent decisions affecting current work:
 - Appeal-granted violations voided (don't count toward future offenses)
 - Violation sanctions permanent audit trail (no soft delete)
 - issue_sanction() creates financial charge via record_charge() for fines
+- Emergency contact priority: lower = call first (1 = primary contact)
+- contact_for array categorizes contacts by purpose (medical, security, general, financial)
+- share_with_security flag controls guard access to medical conditions
+- Evacuation list ordered by floor DESC for fire protocol (higher floors first)
+- Guards can view ALL accessibility needs but ONLY security-shared medical conditions
 
 ### Pending Todos
 
@@ -220,8 +225,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 04:55 UTC
-Stopped at: Completed 08-07-PLAN.md (Violation Tracking)
+Last session: 2026-01-30 04:57 UTC
+Stopped at: Completed 08-06-PLAN.md (Emergency Preparedness)
 Resume file: None
 
 ## Next Steps
@@ -234,7 +239,7 @@ Phase 8 Progress:
 - 08-03: Parking Management DONE
 - 08-04: Incident Reports DONE
 - 08-05: Access Device Lifecycle DONE
-- 08-06: Emergency Contacts DONE
+- 08-06: Emergency Preparedness DONE (contacts, medical, accessibility, evacuation)
 - 08-07: Violation Tracking DONE (offense counting, sanctions, appeals)
 - 08-08: API Rate Limiting (TODO)
 - 08-09: External Integrations DONE
@@ -277,3 +282,18 @@ Violation tracking infrastructure available:
 - update_violation_on_appeal() trigger for status sync
 - issue_sanction() function with record_charge() integration
 - get_violation_history() for escalation decisions
+
+Emergency preparedness infrastructure available:
+- emergency_contact_relationship enum (spouse, parent, child, sibling, friend, doctor, employer, neighbor, other)
+- emergency_contacts table with priority ordering (lower = call first)
+- contact_for array for categorizing contacts (medical, security, general, financial)
+- get_emergency_contacts(resident_id) returns contacts in priority order
+- get_emergency_contacts_for_unit(unit_id) for guard booth access
+- medical_condition_type enum (allergy, chronic_condition, disability, medication, other)
+- medical_severity enum (mild, moderate, severe, life_threatening)
+- medical_conditions table with privacy controls (share_with_security, share_with_neighbors)
+- accessibility_need_type enum (wheelchair, visual, hearing, cognitive, mobility, respiratory, other)
+- mobility_device_type enum (wheelchair, walker, scooter, cane, other)
+- accessibility_needs table with evacuation requirements
+- security_medical_summary view for guard booth quick access
+- get_evacuation_priority_list(community_id) ordered by floor (highest first)
