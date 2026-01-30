@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 7 of 9 complete (08-02 Elections & Voting complete)
+Plan: 8 of 9 complete (08-07 Violation Tracking complete)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-02-PLAN.md (Elections & Voting)
+Last activity: 2026-01-30 - Completed 08-07-PLAN.md (Violation Tracking)
 
-Progress: [##################################-] 97%
+Progress: [####################################-] 98%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
-- Average duration: 5.7 min
-- Total execution time: 204 min
+- Total plans completed: 37
+- Average duration: 5.8 min
+- Total execution time: 221 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [##################################-] 97%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 7 | 43 min | 6.1 min |
+| 08-governance (partial) | 8 | 60 min | 7.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-03 (5 min), 08-04 (5 min), 08-05 (5 min), 08-09 (5 min), 08-02 (13 min)
-- Trend: Phase 8 elections completed with Mexican law compliance
+- Last 5 plans: 08-04 (5 min), 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min)
+- Trend: Phase 8 violation tracking with appeals and financial integration
 
 *Updated after each plan completion*
 
@@ -195,6 +195,11 @@ Recent decisions affecting current work:
 - API key hash-only storage: prefix (16 chars) + SHA-256, never plaintext
 - Full API key returned ONLY ONCE at creation via generate_api_key()
 - Integration configs use vault_secret_id for credentials in Supabase Vault
+- 12-month rolling window for violation offense counting (standard HOA practice)
+- Only confirmed/sanctioned/closed violations count toward offense number
+- Appeal-granted violations voided (don't count toward future offenses)
+- Violation sanctions permanent audit trail (no soft delete)
+- issue_sanction() creates financial charge via record_charge() for fines
 
 ### Pending Todos
 
@@ -215,13 +220,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 04:51 UTC
-Stopped at: Completed 08-02-PLAN.md (Elections & Voting)
+Last session: 2026-01-30 04:55 UTC
+Stopped at: Completed 08-07-PLAN.md (Violation Tracking)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue with Phase 8 remaining plans (08-06, 08-07, 08-08)
+**Recommended:** Complete Phase 8 final plan (08-08)
 
 Phase 8 Progress:
 - 08-01: Violation & Penalty Schema DONE
@@ -229,8 +234,8 @@ Phase 8 Progress:
 - 08-03: Parking Management DONE
 - 08-04: Incident Reports DONE
 - 08-05: Access Device Lifecycle DONE
-- 08-06: Analytics Functions (TODO)
-- 08-07: Dashboards & Reports (TODO)
+- 08-06: Emergency Contacts DONE
+- 08-07: Violation Tracking DONE (offense counting, sanctions, appeals)
 - 08-08: API Rate Limiting (TODO)
 - 08-09: External Integrations DONE
 
@@ -260,3 +265,15 @@ External integrations infrastructure available:
 - integration_configs with vault_secret_id for credentials
 - integration_sync_logs for sync history
 - api_key_summary and integration_status views for monitoring
+
+Violation tracking infrastructure available:
+- violation_severity enum (minor, moderate, major, severe)
+- sanction_type enum (verbal_warning to legal_action)
+- violation_types table with configurable penalty schedules
+- violations table with automatic offense number calculation
+- violation_sanctions table for warnings, fines, suspensions
+- violation_appeals table with hearing workflow
+- calculate_offense_number() trigger (12-month window)
+- update_violation_on_appeal() trigger for status sync
+- issue_sanction() function with record_charge() integration
+- get_violation_history() for escalation decisions
