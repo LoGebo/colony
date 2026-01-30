@@ -162,14 +162,14 @@ CREATE POLICY webhook_endpoints_select ON webhook_endpoints
   USING (
     community_id = (SELECT get_current_community_id())
     AND deleted_at IS NULL
-    AND has_permission('config:read')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'super_admin', 'community_admin')
   );
 
 CREATE POLICY webhook_endpoints_insert ON webhook_endpoints
   FOR INSERT
   WITH CHECK (
     community_id = (SELECT get_current_community_id())
-    AND has_permission('config:write')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'super_admin', 'community_admin')
   );
 
 CREATE POLICY webhook_endpoints_update ON webhook_endpoints
@@ -177,14 +177,14 @@ CREATE POLICY webhook_endpoints_update ON webhook_endpoints
   USING (
     community_id = (SELECT get_current_community_id())
     AND deleted_at IS NULL
-    AND has_permission('config:write')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'super_admin', 'community_admin')
   );
 
 CREATE POLICY webhook_endpoints_delete ON webhook_endpoints
   FOR DELETE
   USING (
     community_id = (SELECT get_current_community_id())
-    AND has_permission('config:write')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'super_admin', 'community_admin')
   );
 
 -- Webhook deliveries: Admins can SELECT, system can full CRUD
@@ -192,7 +192,7 @@ CREATE POLICY webhook_deliveries_select ON webhook_deliveries
   FOR SELECT
   USING (
     community_id = (SELECT get_current_community_id())
-    AND has_permission('config:read')
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'super_admin', 'community_admin')
   );
 
 -- Service role for queue processing (Edge Functions)
