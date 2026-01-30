@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 9 of 9 complete (08-06 Emergency Preparedness complete)
+Plan: 4 of 9 complete (08-04 Parking Management complete)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-06-PLAN.md (Emergency Preparedness)
+Last activity: 2026-01-30 - Completed 08-04-PLAN.md (Parking Management)
 
-Progress: [#####################################] 99%
+Progress: [#################################----] 93%
 
 ## Performance Metrics
 
@@ -37,8 +37,8 @@ Progress: [#####################################] 99%
 | 08-governance (partial) | 9 | 79 min | 8.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min), 08-06 (19 min)
-- Trend: Phase 8 emergency preparedness with privacy-aware medical tracking
+- Last 5 plans: 08-05 (5 min), 08-09 (5 min), 08-02 (13 min), 08-07 (17 min), 08-04 (8 min)
+- Trend: Phase 8 parking management with exclusion constraints for reservations
 
 *Updated after each plan completion*
 
@@ -205,6 +205,12 @@ Recent decisions affecting current work:
 - share_with_security flag controls guard access to medical conditions
 - Evacuation list ordered by floor DESC for fire protocol (higher floors first)
 - Guards can view ALL accessibility needs but ONLY security-shared medical conditions
+- Parking spot denormalized assigned_unit_id with trigger maintenance
+- Partial unique index ensures one active assignment per parking spot
+- Time slots stored as DATE + TIME for timezone-aware exclusion constraint
+- Parking exclusion constraint with '[)' bounds for adjacent slot compatibility
+- Auto vehicle linking in violations via plate_normalized matching
+- violation_record_id prepared for Phase 8-07 formal violations integration
 
 ### Pending Todos
 
@@ -225,8 +231,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 04:57 UTC
-Stopped at: Completed 08-06-PLAN.md (Emergency Preparedness)
+Last session: 2026-01-30 04:56 UTC
+Stopped at: Completed 08-04-PLAN.md (Parking Management)
 Resume file: None
 
 ## Next Steps
@@ -297,3 +303,21 @@ Emergency preparedness infrastructure available:
 - accessibility_needs table with evacuation requirements
 - security_medical_summary view for guard booth quick access
 - get_evacuation_priority_list(community_id) ordered by floor (highest first)
+
+Parking management infrastructure available:
+- parking_spot_type enum (assigned, visitor, commercial, disabled, loading, reserved)
+- parking_spot_status enum (available, occupied, reserved, maintenance, blocked)
+- parking_violation_type enum (6 violation categories)
+- parking_violation_status enum (5-state resolution workflow)
+- parking_assignment_type enum (ownership, rental, temporary)
+- parking_reservation_status enum (5-state reservation workflow)
+- parking_spots table with inventory and denormalized assigned_unit_id
+- parking_assignments table with partial unique for one active per spot
+- parking_reservations table with exclusion constraint preventing overlap
+- parking_violations table with evidence storage and auto vehicle linking
+- sync_parking_spot_assignment() trigger for denormalized data maintenance
+- is_parking_available() for time slot availability checks
+- create_parking_reservation() with full validation
+- cancel/checkin/checkout functions for reservation lifecycle
+- get_todays_parking_reservations() for guard booth dashboard
+- report_parking_violation() with auto plate matching
