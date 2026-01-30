@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 8 of 8 (Governance & Analytics)
-Plan: 3 of 9 complete (08-01, 08-02, 08-03)
+Plan: 4 of 9 complete (08-01, 08-02, 08-03, 08-08)
 Status: In Progress
-Last activity: 2026-01-30 - Completed 08-03-PLAN.md (Assemblies and Attendance)
+Last activity: 2026-01-30 - Completed 08-08-PLAN.md (Analytics KPIs)
 
-Progress: [#################################----] 89%
+Progress: [##################################---] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
-- Average duration: 6.1 min
-- Total execution time: 205 min
+- Total plans completed: 33
+- Average duration: 6.2 min
+- Total execution time: 217 min
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [#################################----] 89%
 | 05-amenities | 5 | 32 min | 6.4 min |
 | 06-maintenance | 5 | 55 min | 11 min |
 | 07-operations | 5 | 35 min | 7 min |
-| 08-governance (partial) | 3 | 39 min | 13 min |
+| 08-governance (partial) | 4 | 51 min | 12.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-05 (9 min), 08-01 (21 min), 08-02 (13 min), 08-03 (5 min)
-- Trend: Phase 8 governance with elections, assemblies, and convocatoria quorum
+- Last 5 plans: 08-01 (21 min), 08-02 (13 min), 08-03 (5 min), 08-08 (12 min)
+- Trend: Phase 8 governance with elections, assemblies, KPI analytics
 
 *Updated after each plan completion*
 
@@ -225,6 +225,11 @@ Recent decisions affecting current work:
 - Agreements can link to elections via election_id FK for formal vote documentation
 - arrived_at_convocatoria tracks which call the unit arrived at (1, 2, or 3)
 - Checked-out units excluded from quorum calculation via checkout_attendance()
+- Summary tables over materialized views for PowerSync offline-sync compatibility
+- BRIN indexes for time-series KPI data (1000x smaller than B-tree)
+- UPSERT pattern for idempotent KPI computation
+- Custom set_kpi_timestamps() trigger since KPIs have no created_by context
+- pg_cron staggered schedules: daily 1am, weekly 2am Monday, monthly 3am 1st
 
 ### Pending Todos
 
@@ -245,23 +250,23 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30 05:07 UTC
-Stopped at: Completed 08-03-PLAN.md (Assemblies and Attendance)
+Last session: 2026-01-30 05:12 UTC
+Stopped at: Completed 08-08-PLAN.md (Analytics KPIs)
 Resume file: None
 
 ## Next Steps
 
-**Recommended:** Continue Phase 8 Plan 08-04
+**Recommended:** Continue Phase 8 (remaining plans)
 
 Phase 8 Progress:
 - 08-01: Incident Management DONE (JSONB timeline, auto-events, SLA tracking)
 - 08-02: Elections & Voting DONE (coefficient snapshot, proxy limit, quorum calculation)
 - 08-03: Assemblies & Attendance DONE (convocatoria progression, quorum 75%/50%+1/any)
-- 08-04: (next plan)
+- 08-04: (TODO)
 - 08-05: (TODO)
 - 08-06: (TODO)
 - 08-07: (TODO)
-- 08-08: (TODO)
+- 08-08: Analytics KPIs DONE (summary tables, pg_cron, BRIN indexes)
 - 08-09: (TODO)
 
 Incident management infrastructure available:
@@ -366,3 +371,20 @@ Assembly management infrastructure available:
 - checkout_attendance() for early departure tracking
 - get_assembly_summary() for dashboard display
 - assembly_attendance_list view for denormalized reporting
+
+Analytics KPI infrastructure available:
+- kpi_daily table with 25+ daily metrics (access, security, financial, amenities, packages, maintenance)
+- kpi_weekly table with trend calculations (% change vs previous week)
+- kpi_monthly table with financial summaries and delinquency buckets (30/60/90 days)
+- compute_daily_kpis() aggregates from access_logs, incidents, transactions, tickets, packages
+- compute_weekly_kpis() aggregates from kpi_daily with trend calculation
+- compute_monthly_kpis() includes collection rate, avg resolution times, utilization
+- compute_all_*_kpis() for batch processing all communities
+- backfill_kpis() for historical data population
+- refresh_kpis() for manual refresh with week/month processing
+- get_pending_kpi_dates() identifies gaps in KPI data
+- pg_cron jobs: daily 1am, weekly 2am Monday, monthly 3am 1st
+- cron_job_status view for monitoring
+- BRIN indexes for efficient time-series queries
+- UPSERT pattern for idempotent computation
+- Summary tables (not materialized views) for PowerSync compatibility
