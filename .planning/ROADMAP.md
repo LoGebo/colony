@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation ✓
 - [x] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings ✓
 - [x] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts ✓
-- [ ] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config
+- [x] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config ✓
 - [ ] **Phase 8: Governance & Analytics** - Incidents, voting, parking, keys, violations, metrics, integrations
 
 ## Phase Details
@@ -169,11 +169,11 @@ Plans:
 **Plans**: 5 plans in 2 waves
 
 Plans:
-- [ ] 07-01-PLAN.md - Packages, storage locations, pickup codes (PIN/QR with HMAC), signatures (Wave 1)
-- [ ] 07-02-PLAN.md - Providers, documents with expiration tracking, personnel, access schedules (Wave 1)
-- [ ] 07-03-PLAN.md - Move requests, auto-generated validations, damage deposits with refund workflow (Wave 1)
-- [ ] 07-04-PLAN.md - Audit schema, immutable audit_log, user sessions, security events (Wave 2)
-- [ ] 07-05-PLAN.md - Community settings, JSONB feature flags, roles, permissions, RBAC functions (Wave 2)
+- [x] 07-01-PLAN.md - Packages, storage locations, pickup codes (PIN/QR with HMAC), signatures (Wave 1) ✓
+- [x] 07-02-PLAN.md - Providers, documents with expiration tracking, personnel, access schedules (Wave 1) ✓
+- [x] 07-03-PLAN.md - Move requests, auto-generated validations, damage deposits with refund workflow (Wave 1) ✓
+- [x] 07-04-PLAN.md - Audit schema, immutable audit_log, user sessions, security events (Wave 2) ✓
+- [x] 07-05-PLAN.md - Community settings, JSONB feature flags, roles, permissions, RBAC functions (Wave 2) ✓
 
 ### Phase 8: Governance & Analytics
 **Goal**: Complete the system with incident management, formal voting, parking, keys, violations, pre-computed analytics, and external integrations
@@ -222,11 +222,11 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
 | 5. Amenities, Communication & Marketplace | 5/5 | Complete ✓ | 2026-01-29 |
 | 6. Maintenance, Chat, Documents & Notifications | 5/5 | Complete ✓ | 2026-01-30 |
-| 7. Operations & Compliance | 0/5 | Planned | - |
+| 7. Operations & Compliance | 5/5 | Complete ✓ | 2026-01-30 |
 | 8. Governance & Analytics | 0/9 | Not started | - |
 
-**Total:** 24/38 plans
+**Total:** 29/38 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-30 - Phase 7 planned*
+*Last updated: 2026-01-30 - Phase 7 complete*
