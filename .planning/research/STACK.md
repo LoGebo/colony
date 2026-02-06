@@ -1,550 +1,577 @@
-# Technology Stack for UPOE
+# Stack Research: UPOE Frontend Applications
 
-**Project:** UPOE - Unified Property Operations Ecosystem
-**Domain:** Multi-tenant property management SaaS for gated communities
-**Researched:** 2026-01-29
-**Overall Confidence:** HIGH (based on official Supabase docs, PowerSync docs, and 2026 production reviews)
+**Domain:** React Native (Expo) mobile app + Next.js admin dashboard consuming Supabase backend
+**Researched:** 2026-02-06
+**Confidence:** HIGH (verified via npm registries, official docs, multiple credible sources)
 
 ---
 
 ## Executive Summary
 
-For UPOE's requirements (multi-tenant RLS, offline-first with 30-day sync, Expo mobile + Next.js web), the optimal 2026 Supabase stack combines:
+This document covers the frontend-specific technology stack for building two applications on top of UPOE's existing Supabase backend (116 tables, 399 RLS policies, 206 functions). The backend stack (Supabase, PostgreSQL, RLS, Edge Functions) is already validated and NOT re-evaluated here.
 
-1. **Supabase** as the backend platform (Auth, Database, RLS, Storage, Edge Functions, Realtime)
-2. **PowerSync** as the offline-first sync layer (bridges Supabase Postgres to local SQLite)
-3. **@supabase/supabase-js v2.90+** for web and **@powersync/react-native** for mobile
-4. **Row-Level Security with JWT claims** for multi-tenant isolation (community_id in app_metadata)
+**Key decisions:**
 
-This architecture supports the scale requirements (50K access records, 10K vehicles, 5K residents per community) while enabling true offline-first operation with eventual consistency.
+1. **Expo SDK 54** (stable) with React Native 0.81 -- SDK 55 is still in beta as of Feb 2026; start on SDK 54, upgrade to 55 once stable
+2. **Expo Router v4** for file-based navigation with built-in `Stack.Protected` for role-based auth guards
+3. **NativeWind 4.1** for mobile styling (Tailwind CSS syntax shared with admin dashboard's Tailwind 4)
+4. **TanStack Query v5** as the universal data-fetching layer for both mobile and web
+5. **Zustand v5** for lightweight client state (auth session, UI preferences)
+6. **React Hook Form + Zod v4** for form validation across both platforms
+7. **shadcn/ui** for the admin dashboard component library (already uses Tailwind 4)
+8. **react-native-mmkv** for fast, encrypted local storage on mobile
+9. **@supabase/ssr** for Next.js server-side auth with middleware token refresh
 
----
-
-## Recommended Stack
-
-### Core Platform: Supabase
-
-| Component | Version/Tier | Purpose | Rationale |
-|-----------|--------------|---------|-----------|
-| Supabase Platform | Pro ($25/mo minimum) | Backend-as-a-Service | Free tier pauses after 7 days inactivity - unsuitable for production. Pro provides 500 Realtime connections, 8GB database, daily backups |
-| PostgreSQL | 15 or 17 | Primary database | Battle-tested in 1M+ Supabase projects. Use v17 for latest features |
-| Supabase Auth | Included | Authentication | Native JWT with custom claims for tenant_id. Supports email, phone, social auth |
-| Supabase RLS | Included | Multi-tenant isolation | Database-level security using community_id in JWT claims |
-| Supabase Realtime | Included | Live updates | Broadcast for ephemeral events, Postgres Changes for data sync |
-| Supabase Storage | Included | File storage | Documents, photos, vehicle images. S3-compatible with RLS |
-| Supabase Edge Functions | Included | Serverless compute | Webhooks, Stripe integration, notification dispatch |
-
-**Sources:**
-- [Supabase Review 2026](https://hackceleration.com/supabase-review/) - 8-month production testing across 6 projects
-- [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)
-
-### Database Extensions
-
-| Extension | Purpose | Why Enable |
-|-----------|---------|------------|
-| `uuid-ossp` | UUID generation | Primary keys for all entities (access_logs, vehicles, residents) |
-| `pg_cron` | Job scheduling | HOA fee due date reminders, maintenance schedule triggers, report generation |
-| `pg_trgm` | Trigram text search | Fast fuzzy search for residents, vehicles by partial plate |
-| `pgcrypto` | Encryption | Encrypt sensitive resident data at rest |
-| `postgis` | Geospatial | Community boundary mapping, emergency location tracking |
-| `pg_net` | Async HTTP | Call external APIs from database triggers (push notifications) |
-
-**Do NOT enable:**
-| Extension | Reason to Skip |
-|-----------|----------------|
-| `pgvector` | No AI/embedding use case in property management. Adds overhead |
-| `pgroonga` | Overkill for community-scoped searches. pg_trgm sufficient |
-
-**Source:** [Supabase Extensions Docs](https://supabase.com/docs/guides/database/extensions)
-
-### Offline-First: PowerSync
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `@powersync/react-native` | 1.28.1+ | React Native/Expo SDK for local SQLite sync |
-| `@powersync/op-sqlite` | Latest | SQLite adapter with encryption (recommended over quick-sqlite) |
-| PowerSync Cloud | Free/Pro | Sync service between Supabase Postgres and client SQLite |
-
-**Why PowerSync over alternatives:**
-
-| Option | Verdict | Reason |
-|--------|---------|--------|
-| **PowerSync** | RECOMMENDED | Purpose-built for Supabase. Non-invasive (no schema changes). Handles 30-day offline. Background sync with Expo. Rust-based sync client as of Jan 2026 |
-| WatermelonDB | Not recommended | More complex setup, less Supabase integration, requires schema changes |
-| RxDB + Supabase plugin | Not recommended | Requires soft-delete pattern, more boilerplate, less battle-tested with Supabase |
-| Brick (Flutter only) | N/A | Flutter-only, not applicable for Expo |
-
-**PowerSync handles UPOE's scale:**
-- 50K access records: SQLite handles millions of rows locally
-- 30 days offline: PowerSync queues writes indefinitely, syncs on reconnect
-- Background sync: Expo background tasks integration available
-
-**Sources:**
-- [PowerSync + Supabase Integration](https://www.powersync.com/blog/bringing-offline-first-to-supabase)
-- [PowerSync React Native SDK](https://docs.powersync.com/client-sdks/reference/react-native-and-expo)
-- [PowerSync Release Notes Jan 2026](https://releases.powersync.com/announcements/react-native-client-sdk)
-
-### Frontend: Mobile (Expo)
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `expo` | SDK 52+ | React Native framework with managed workflow |
-| `@powersync/react-native` | 1.28.1+ | Offline-first sync with local SQLite |
-| `@powersync/op-sqlite` | Latest | SQLite adapter (required peer dependency) |
-| `@supabase/supabase-js` | 2.90.1+ | Supabase client for Auth and direct API calls |
-| `expo-secure-store` | Latest | Encrypted storage for auth tokens |
-| `react-native-url-polyfill` | Latest | Required polyfill for Supabase client |
-| `@react-native-async-storage/async-storage` | Latest | Session persistence |
-
-**Installation:**
-```bash
-# Core Supabase
-npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill expo-secure-store
-
-# PowerSync offline-first
-npx expo install @powersync/react-native @powersync/op-sqlite @op-engineering/op-sqlite
-
-# If using Expo Go for development (limited - prefer dev builds)
-npx expo install @powersync/adapter-sql-js
-```
-
-**Critical Note:** PowerSync requires native modules. You MUST use Expo CNG (Continuous Native Generation) or development builds. Expo Go sandbox does not support the native SQLite adapters.
-
-**Sources:**
-- [Supabase Expo Quickstart](https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native)
-- [Expo Supabase Guide](https://docs.expo.dev/guides/using-supabase/)
-- [PowerSync Expo Background Sync](https://www.powersync.com/blog/keep-background-apps-fresh-with-expo-background-tasks-and-powersync)
-
-### Frontend: Web (Next.js)
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `next` | 15+ | React framework with App Router |
-| `@supabase/supabase-js` | 2.90.1+ | Supabase client |
-| `@supabase/ssr` | Latest | Server-side auth (replaces deprecated auth-helpers) |
-
-**Installation:**
-```bash
-npm install @supabase/supabase-js @supabase/ssr
-```
-
-**Key Setup Requirements:**
-
-1. **Create client utilities** in `utils/supabase/`:
-   - `client.ts` - Browser client using `createBrowserClient`
-   - `server.ts` - Server client using `createServerClient`
-   - `middleware.ts` - Auth token refresh proxy
-
-2. **Always use `getUser()` not `getSession()`** in server code - `getSession()` doesn't revalidate tokens
-
-3. **Environment variables** must be prefixed with `NEXT_PUBLIC_` for client access
-
-**Sources:**
-- [Supabase Next.js SSR Setup](https://supabase.com/docs/guides/auth/server-side/nextjs)
-- [@supabase/ssr Package](https://www.npmjs.com/package/@supabase/ssr)
+The existing `@upoe/shared` package (types, Supabase client factory, constants) is the integration bridge. Both apps import from it.
 
 ---
 
-## Supabase Features: What to Use
+## Existing Foundation (DO NOT Add Again)
 
-### Authentication (USE)
+These are already in the monorepo. Listed for reference only.
 
-**Configuration for multi-tenant:**
+| Package | Location | Version | Purpose |
+|---------|----------|---------|---------|
+| `@supabase/supabase-js` | `@upoe/shared` | ^2.49.1 (upgrade to ^2.95) | Supabase client |
+| `next` | `@upoe/admin` | 16.1.6 | Web framework |
+| `react` | `@upoe/admin` | 19.2.3 | UI library |
+| `react-dom` | `@upoe/admin` | 19.2.3 | DOM rendering |
+| `tailwindcss` | `@upoe/admin` | ^4 (4.1.18 installed) | CSS framework |
+| `@tailwindcss/postcss` | `@upoe/admin` | ^4 | PostCSS plugin |
+| `typescript` | all packages | ^5 (5.9.3 installed) | Type system |
 
+**Action needed:** Upgrade `@supabase/supabase-js` from ^2.49.1 to ^2.95.0 in `@upoe/shared` for latest auth improvements and bug fixes.
+
+---
+
+## Recommended Stack: Mobile App (`@upoe/mobile`)
+
+### Core Framework
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Expo SDK | 54 (stable) | React Native framework | Current stable SDK. SDK 55 is beta only (Feb 2026). SDK 54 includes RN 0.81, React 19.1, precompiled iOS builds. Last SDK to support Legacy Architecture fallback, though New Architecture should be default. |
+| React Native | 0.81.x | Mobile runtime | Bundled with Expo SDK 54. Includes precompiled XCFrameworks for iOS (120s -> 10s clean builds). |
+| React | 19.1.x | UI library | Bundled with Expo SDK 54. Hooks, Suspense, transitions available. |
+| Expo Router | ~4.0 | File-based navigation | Built on React Navigation. File-based routing matches Next.js mental model. `Stack.Protected` provides declarative auth guards. Typed routes, deep linking, universal links for free. |
+
+**Confidence:** HIGH -- SDK 54 stable confirmed via [Expo Changelog](https://expo.dev/changelog/sdk-54), npm shows 54.0.33 as latest.
+
+### Navigation & Routing
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `expo-router` | ~4.0 | File-based routing | Comes with Expo SDK 54. File-system routing, deep links, typed routes. `Stack.Protected` for role-based access (UPOE has 6 roles). |
+| `react-native-screens` | (bundled) | Native screen optimization | Installed via `npx expo install`. Required dependency of Expo Router. |
+| `react-native-safe-area-context` | (bundled) | Safe area handling | Required for proper layout on notch/island devices. |
+
+**Why NOT React Navigation directly:** Expo Router IS React Navigation under the hood, but adds file-based routing, typed routes, and `Stack.Protected`. No reason to use raw React Navigation in a new Expo project.
+
+**Confidence:** HIGH -- [Expo Router docs](https://docs.expo.dev/router/introduction/) confirm file-based routing, protected routes.
+
+### Styling
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `nativewind` | ^4.1 (4.2.1 latest) | Tailwind CSS for React Native | Unifies styling between mobile and web. Admin dashboard uses Tailwind 4; NativeWind lets mobile use the same utility classes. v4.1 is production-ready with fast-refresh, lightningcss compiler. |
+| `tailwindcss` | ^4.0 | CSS engine (peer dep) | Required peer dependency for NativeWind 4.1+. |
+
+**Why NOT Tamagui:** While Tamagui has excellent build-time optimization, NativeWind is the pragmatic choice because the admin dashboard already uses Tailwind 4. Sharing a mental model and utility class vocabulary between mobile and web developers reduces cognitive overhead. NativeWind 4.1 supports most Tailwind features including animations (via reanimated).
+
+**Why NOT Gluestack UI:** Gluestack uses NativeWind under the hood. Adding it would be adding a component library on top of a styling library. For UPOE, building custom components with NativeWind gives more control over the Spanish-language UI.
+
+**NativeWind + Reanimated note:** NativeWind does NOT support Reanimated v4 as of Jan 2026. Use Reanimated v3 with NativeWind 4.1. This is fine -- Reanimated v3 is fully featured and stable.
+
+**Confidence:** HIGH -- NativeWind 4.2.1 verified on [npm](https://www.npmjs.com/package/nativewind), [v4.1 announcement](https://www.nativewind.dev/blog/announcement-nativewind-v4-1).
+
+### Data Fetching & Server State
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `@tanstack/react-query` | ^5.90 | Server state management | De facto standard for React data fetching in 2026. Caching, background refetch, optimistic updates, offline support. Works identically on mobile and web. |
+| `@tanstack/react-query-devtools` | ^5.90 | Development tools (web only) | Essential for debugging cache state during admin dashboard development. |
+
+**Why TanStack Query over raw Supabase subscriptions:** Supabase's `.select()` returns raw data. TanStack Query adds caching, deduplication, background refetching, retry logic, and optimistic updates. For a 116-table schema, you need a disciplined caching layer. TanStack Query also integrates cleanly with Supabase Realtime for cache invalidation.
+
+**Pattern for UPOE:**
 ```typescript
-// When user signs up or is added to a community
-const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
-  userId,
-  {
-    app_metadata: {
-      community_id: 'uuid-of-community',
-      role: 'resident' // or 'guard', 'admin', 'super_admin'
-    }
-  }
-)
+// Shared hook in @upoe/shared or platform-specific packages
+function useResidents(communityId: string) {
+  return useQuery({
+    queryKey: ['residents', communityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('residents')
+        .select('*, occupancies(unit:units(*))')
+        .order('last_name');
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 min for resident data
+  });
+}
 ```
 
-**Why app_metadata not user_metadata:**
-- `app_metadata` is secure, cannot be modified by user
-- `user_metadata` is editable by user - NEVER use for tenant isolation
+**Confidence:** HIGH -- v5.90.19 verified on [npm](https://www.npmjs.com/package/@tanstack/react-query). [Official React Native docs](https://tanstack.com/query/v5/docs/framework/react/react-native).
 
-**RLS policy using JWT claims:**
-```sql
-CREATE POLICY "Users can only see their community data"
-ON residents
-FOR ALL
-USING (
-  community_id = (auth.jwt() -> 'app_metadata' ->> 'community_id')::uuid
-);
-```
+### Client State Management
 
-**Sources:**
-- [Multi-Tenant RLS Deep Dive](https://dev.to/blackie360/-enforcing-row-level-security-in-supabase-a-deep-dive-into-lockins-multi-tenant-architecture-4hd2)
-- [Supabase RLS Docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `zustand` | ^5.0 (5.0.11 latest) | Client-side state | ~3KB bundle. For auth session, UI preferences (dark mode, selected community), navigation state. No boilerplate. Works cross-platform. |
 
-### Row-Level Security (USE - Critical)
+**Why NOT Redux Toolkit:** UPOE's client state is small -- auth session, UI preferences, current community selection. Zustand handles this with zero boilerplate. Redux is overkill. Server state is handled by TanStack Query.
 
-**Best practices for UPOE:**
+**Why NOT Jotai:** Zustand's single-store model is simpler for team onboarding and for the relatively small client state UPOE needs. Jotai's atomic model excels for complex interdependent state, which isn't UPOE's pattern.
 
-1. **Index all columns used in RLS policies:**
-```sql
-CREATE INDEX idx_residents_community_id ON residents(community_id);
-CREATE INDEX idx_access_logs_community_id ON access_logs(community_id);
-CREATE INDEX idx_vehicles_community_id ON vehicles(community_id);
-```
+**Confidence:** HIGH -- v5.0.11 verified on [npm](https://www.npmjs.com/package/zustand).
 
-2. **Use JWT claims instead of subqueries:**
-```sql
--- GOOD: Fast, uses JWT claim directly
-CREATE POLICY "community_isolation" ON access_logs
-USING (community_id = (auth.jwt() -> 'app_metadata' ->> 'community_id')::uuid);
+### Forms & Validation
 
--- BAD: Slow, requires subquery to profiles table
-CREATE POLICY "community_isolation" ON access_logs
-USING (community_id = (SELECT community_id FROM profiles WHERE id = auth.uid()));
-```
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `react-hook-form` | ^7.71 | Form state management | Uncontrolled components = minimal re-renders. Works on React Native and web. 4.9M weekly downloads, double Formik's. |
+| `zod` | ^4.3 (4.3.5 latest) | Schema validation | TypeScript-first. Infers types from schemas. Shared validation between mobile and web. v4 is a major improvement: unified error API, smaller bundle. |
+| `@hookform/resolvers` | ^5.2 | Bridge RHF + Zod | Connects react-hook-form with zod. v5.2 supports Zod v3.25+ and v4.0+ with auto-detection. |
 
-3. **Enable RLS on ALL tables**, even internal ones:
-```sql
-ALTER TABLE access_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE residents ENABLE ROW LEVEL SECURITY;
--- etc for all tables
-```
+**Why Zod v4 over v3:** Zod 4 is 2x faster, smaller bundle, and has a cleaner error API. The migration is manageable (see PITFALLS.md). During transition, import via `zod/v4` subpath if needed. `@hookform/resolvers` v5.2 auto-detects the version.
 
-**Source:** [AntStack Multi-Tenant RLS Guide](https://www.antstack.com/blog/multi-tenant-applications-with-rls-on-supabase-postgress/)
-
-### Realtime (USE Selectively)
-
-**Three modes for different UPOE features:**
-
-| Mode | Use For | Example |
-|------|---------|---------|
-| **Broadcast** | Ephemeral events, no persistence needed | Panic button alerts, guard notifications |
-| **Presence** | Track who's online | Guard duty status, admin dashboard presence |
-| **Postgres Changes** | Data sync, needs persistence | New access log entries, visitor arrivals |
-
-**Performance optimization for scale:**
-
+**Pattern for UPOE:**
 ```typescript
-// GOOD: Subscribe only to INSERTs on specific table
-supabase
-  .channel('access-logs')
-  .on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'access_logs' },
-    handleNewAccessLog
-  )
-  .subscribe()
+// Shared schema in @upoe/shared
+import { z } from 'zod';
 
-// BAD: Subscribe to all changes
-supabase
-  .channel('all-changes')
-  .on('postgres_changes', { event: '*', schema: 'public' }, handler)
-  .subscribe()
+export const residentFormSchema = z.object({
+  first_name: z.string().min(1, 'Nombre es requerido'),
+  last_name: z.string().min(1, 'Apellido es requerido'),
+  email: z.email('Email invalido'),
+  phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Telefono invalido'),
+  unit_id: z.string().uuid(),
+});
+
+export type ResidentFormData = z.infer<typeof residentFormSchema>;
 ```
 
-**At scale (10K+ concurrent):** Use Broadcast from Database pattern instead of direct Postgres Changes. Stream to a public table without RLS, then re-broadcast to clients.
+**Confidence:** HIGH -- versions verified on npm. [Zod v4 release notes](https://zod.dev/v4).
 
-**Sources:**
-- [Supabase Realtime Benchmarks](https://supabase.com/docs/guides/realtime/benchmarks)
-- [Realtime Broadcast Feature](https://supabase.com/docs/guides/realtime/broadcast)
+### Storage & Persistence (Mobile)
 
-### Storage (USE)
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `react-native-mmkv` | ^4.1 (4.1.2 latest) | Fast key-value storage | 30x faster than AsyncStorage. Synchronous API. Encryption support. Use as Supabase auth session store. |
+| `expo-secure-store` | (bundled with SDK 54) | Encryption key storage | iOS Keychain / Android Keystore. 2KB limit -- too small for Supabase session, but perfect for storing the encryption key used with MMKV. |
 
-**Bucket structure for UPOE:**
+**Why NOT AsyncStorage alone:** AsyncStorage is async and unencrypted. MMKV is synchronous (no async/await needed), 30x faster, and supports encryption. For a security-focused app like UPOE (gate access, resident data), encrypted storage is not optional.
 
-```
-upoe-storage/
-├── communities/
-│   └── {community_id}/
-│       ├── documents/      # HOA docs, meeting minutes
-│       ├── announcements/  # Images for announcements
-│       └── amenities/      # Amenity photos
-├── residents/
-│   └── {resident_id}/
-│       ├── profile/        # Profile photos
-│       └── documents/      # Personal docs
-├── vehicles/
-│   └── {vehicle_id}/
-│       └── photos/         # Vehicle registration photos
-└── access-logs/
-    └── {date}/
-        └── {log_id}/       # LPR captures, visitor photos
-```
+**Hybrid pattern for Supabase auth:**
+1. Generate encryption key with `expo-crypto`
+2. Store encryption key in `expo-secure-store` (hardware-backed, 2KB limit is fine for a key)
+3. Initialize MMKV with that encryption key
+4. Use MMKV as Supabase client's custom storage adapter
 
-**RLS for storage:**
-```sql
--- Residents can only access their community's files
-CREATE POLICY "community_files_access" ON storage.objects
-FOR SELECT USING (
-  bucket_id = 'upoe-storage' AND
-  (storage.foldername(name))[2] = (auth.jwt() -> 'app_metadata' ->> 'community_id')
-);
-```
+**Known issue:** react-native-mmkv 4.1.0/4.1.1 had Android build failures with Expo SDK 54 (NitroModules compilation error). Version 4.1.2 should address this -- verify before adopting.
 
-**For large files (vehicle photos, LPR captures):** Use resumable uploads via TUS protocol or S3 multipart for files >6MB.
+**Confidence:** MEDIUM -- v4.1.2 verified on npm, but the SDK 54 compatibility issue was reported on [GitHub](https://github.com/mrousavy/react-native-mmkv/issues/985). Test early.
 
-**Source:** [Supabase Storage Docs](https://supabase.com/docs/guides/storage)
+### Image & Media Handling
 
-### Edge Functions (USE for Specific Cases)
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `expo-image` | (bundled with SDK 54) | Image component | Replaces React Native's `<Image>`. Built on Glide (Android) + SDWebImage (iOS). Caching, blurhash, animated images. Official Expo recommendation. |
+| `expo-image-picker` | (bundled with SDK 54) | Photo/video selection | Camera roll access + camera capture. Returns file URI for Supabase Storage upload. |
+| `expo-camera` | (bundled with SDK 54) | Camera access | QR code scanning (visitor access), photo capture for incidents/evidence. |
+| `expo-file-system` | (bundled with SDK 54) | File operations | SDK 54 stabilized the new API (was expo-file-system/next, now default). Needed for file uploads to Supabase Storage. |
 
-**Good use cases for UPOE:**
-- Stripe webhook handler (payment processing)
-- Push notification dispatch
-- Email notification aggregation
-- External API integrations (LPR systems, access control hardware)
+**Image upload to Supabase Storage pattern:**
+```typescript
+import * as ImagePicker from 'expo-image-picker';
 
-**Pattern: Use pg_cron for scheduling, not HTTP triggers:**
+const result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: ['images'],
+  quality: 0.8,
+});
 
-```sql
--- Schedule HOA fee reminder check every day at 9 AM
-SELECT cron.schedule(
-  'hoa-fee-reminders',
-  '0 9 * * *',
-  $$
-  SELECT net.http_post(
-    'https://your-project.supabase.co/functions/v1/send-fee-reminders',
-    '{}',
-    '{"Authorization": "Bearer your-service-key"}'
-  )
-  $$
-);
+if (!result.canceled) {
+  const file = result.assets[0];
+  const formData = new FormData();
+  formData.append('file', {
+    uri: file.uri,
+    type: file.mimeType ?? 'image/jpeg',
+    name: file.fileName ?? 'upload.jpg',
+  } as any);
+
+  await supabase.storage
+    .from(STORAGE_BUCKETS.AVATARS)
+    .upload(getAvatarPath(userId, filename), formData);
+}
 ```
 
-**Why polling over webhooks:** If 1,000 residents get fee reminders at once, webhooks fire 1,000 Edge Functions instantly. Polling with pg_cron processes a queue gradually.
+**Confidence:** HIGH -- All are first-party Expo packages bundled with SDK 54. [expo-image docs](https://docs.expo.dev/versions/latest/sdk/image/).
 
-**Source:** [Processing Large Jobs with Edge Functions](https://supabase.com/blog/processing-large-jobs-with-edge-functions)
+### Push Notifications
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `expo-notifications` | ~0.32 (0.32.16 latest) | Push notification handling | Manages FCM (Android) + APNs (iOS). Token registration, notification display, action handling. Works with Expo Push Service or direct FCM/APNs. |
+| `expo-device` | (bundled) | Device detection | Required to check if running on physical device (push notifications don't work on simulators). |
+| `expo-constants` | (bundled) | Project ID access | Needed for `getExpoPushTokenAsync({ projectId })`. |
+
+**Integration with existing backend:**
+The database already has `push_tokens` and `notifications` tables. The `send-push` Edge Function exists. Frontend needs to:
+1. Register device token on login using `expo-notifications`
+2. Save token to `push_tokens` table via Supabase
+3. Handle incoming notifications with notification handlers
+
+**Important (SDK 54):** Push notifications no longer work in Expo Go. A Development Build is required for testing.
+
+**Confidence:** HIGH -- [Expo notifications docs](https://docs.expo.dev/push-notifications/push-notifications-setup/).
+
+### Animations
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `react-native-reanimated` | v3.x | Animations | v3 is required for NativeWind 4.1 compatibility. Do NOT use v4 (requires New Arch only AND is incompatible with NativeWind). v3 is fully featured for all UPOE animation needs. |
+| `react-native-gesture-handler` | (bundled) | Gesture detection | Swipe-to-dismiss, pull-to-refresh, drag interactions. Required by Expo Router. |
+
+**Confidence:** HIGH -- NativeWind v4.1 + Reanimated v3 is the documented stable combination. [Expo Reanimated docs](https://docs.expo.dev/versions/latest/sdk/reanimated/).
+
+### Internationalization
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `i18next` | ^25.8 | i18n framework | Most mature i18n solution. 100+ locales. Works on mobile and web. |
+| `react-i18next` | ^16.5 | React bindings | Hooks-based API. useTranslation() hook works in both React Native and Next.js. |
+| `expo-localization` | ~17.0 | Device locale detection | Detects device language to auto-set locale. Expo first-party. |
+| `date-fns` | ^4.x | Date formatting with locale | Tree-shakeable. Spanish locale support. Functional API. Preferred over dayjs for a project this size where tree-shaking matters. |
+
+**UPOE is Spanish-first for Mexican market.** All UI strings in Spanish by default. i18next enables future expansion to English without refactoring. Locale files go in `@upoe/shared` so both apps share translations.
+
+**Confidence:** HIGH -- versions verified on npm. [Expo localization docs](https://docs.expo.dev/guides/localization/).
 
 ---
 
-## What NOT to Use (and Why)
+## Recommended Stack: Admin Dashboard (`@upoe/admin`)
 
-### DO NOT: Use Supabase UI for Schema Management
+### Already Installed (Extend, Don't Replace)
 
-**Problem:** Creating tables via Supabase Studio dashboard leads to:
-- No version control
-- Impossible to replicate across environments (dev/staging/prod)
-- Migration nightmares
+Next.js 16.1.6, React 19.2.3, Tailwind CSS 4.1.18 are already in `@upoe/admin`.
 
-**Instead:** Use migrations via Supabase CLI or an ORM like Drizzle:
+### Supabase SSR Integration
 
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `@supabase/ssr` | ^0.8.0 | Server-side auth | Replaces deprecated @supabase/auth-helpers. Handles cookie-based sessions, middleware token refresh. Required for Next.js App Router. |
+
+**Critical setup requirements:**
+1. Create `utils/supabase/client.ts` -- browser client via `createBrowserClient`
+2. Create `utils/supabase/server.ts` -- server client via `createServerClient` with cookie access
+3. Create `middleware.ts` -- calls `updateSession()` to refresh expired tokens
+4. ALWAYS use `supabase.auth.getUser()` in Server Components (NOT `getSession()` which doesn't revalidate)
+
+**Confidence:** HIGH -- v0.8.0 verified on npm. [Official Supabase Next.js SSR guide](https://supabase.com/docs/guides/auth/server-side/nextjs).
+
+### UI Components
+
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `shadcn/ui` | latest (CLI-based) | Component library | Not an npm package -- components are copied into the project. Built on Radix UI primitives. Fully customizable. Tailwind 4 support confirmed. React 19 compatible. |
+| `radix-ui` | unified package | Accessible primitives | shadcn/ui's Feb 2026 update uses the unified `radix-ui` package instead of individual `@radix-ui/react-*` packages. |
+| `lucide-react` | latest | Icons | Default icon library for shadcn/ui. Consistent, tree-shakeable. |
+
+**Why NOT Material UI or Ant Design:** shadcn/ui is the dominant choice for Next.js + Tailwind projects in 2026. Components are owned (copied into project, not imported from node_modules), fully customizable, and use the same Tailwind classes the project already has. MUI and Ant Design bring their own styling systems that would conflict with Tailwind 4.
+
+**Setup:**
 ```bash
-# Generate migration
-supabase db diff -f add_access_logs_table
-
-# Apply migration
-supabase db push
+npx shadcn@latest init
+# Select: New York style, Tailwind CSS v4, unified radix-ui
 ```
 
-**Source:** [3 Biggest Mistakes Using Supabase](https://medium.com/@lior_amsalem/3-biggest-mistakes-using-supabase-854fe45712e3)
+**Confidence:** HIGH -- [shadcn/ui changelog](https://ui.shadcn.com/docs/changelog) confirms Tailwind v4 and React 19 support.
 
-### DO NOT: Put Complex Business Logic in RLS Policies
+### Data Tables
 
-**Problem:**
-- Hard to debug (no console.log in SQL)
-- Performance issues with complex joins
-- Logic scattered between app and database
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `@tanstack/react-table` | ^8.x | Headless table logic | Server-side pagination, sorting, filtering for admin tables (residents, payments, access logs). shadcn/ui's DataTable component is built on this. |
 
-**Instead:** Use RLS only for tenant isolation (community_id checks). Put business logic in your app code or Edge Functions.
+**Why headless table:** UPOE's admin dashboard needs tables for 116 database tables worth of data. TanStack Table provides sorting, filtering, pagination logic; shadcn/ui provides the visual components. Server-side processing handles the scale.
 
-```sql
--- GOOD: Simple tenant isolation
-CREATE POLICY "tenant_isolation" ON payments
-USING (community_id = (auth.jwt() -> 'app_metadata' ->> 'community_id')::uuid);
+**Confidence:** HIGH -- [shadcn/ui DataTable docs](https://ui.shadcn.com/docs/components/radix/data-table).
 
--- BAD: Complex business logic in RLS
-CREATE POLICY "payment_access" ON payments
-USING (
-  community_id = ... AND
-  (
-    (status = 'pending' AND created_by = auth.uid()) OR
-    (status = 'approved' AND role = 'admin') OR
-    (amount < 1000 AND department = 'maintenance')
-  )
-);
-```
+### Charts & Analytics
 
-**Source:** [AntStack: What I Don't Like About Supabase](https://www.antstack.com/blog/what-i-don-t-like-about-supabase/)
+| Library | Version | Purpose | Why Recommended |
+|---------|---------|---------|-----------------|
+| `recharts` | ^3.7 (3.7.0 latest) | Dashboard charts | Most popular React charting library. 10 years of stability. The database already has KPI summary tables (Phase 8). Recharts visualizes them: line charts for trends, bar charts for comparisons, area charts for usage. |
 
-### DO NOT: Use service_role Key in Client Code
+**Why NOT Tremor:** Tremor is built ON TOP of Recharts. Using Recharts directly gives more control and avoids an abstraction layer. For an admin dashboard with custom KPI visualizations, direct Recharts is better.
 
-**Problem:** Service role bypasses ALL RLS. If exposed, attacker has full database access.
+**Why NOT Chart.js:** Recharts is React-native (uses React components as API). Chart.js uses imperative canvas API that doesn't integrate as cleanly with React 19 Server Components.
 
-**Instead:**
-- Use `anon` key in client code
-- Use `service_role` only in Edge Functions and server-side code
-- Store keys in environment variables, never in code
+**Confidence:** HIGH -- v3.7.0 verified on npm. [Recharts releases](https://github.com/recharts/recharts/releases).
 
-### DO NOT: Rely on Free Tier for Production
+### Date Handling (Web-specific)
 
-**Problem:**
-- Projects pause after 7 days inactivity
-- 3 emails/hour limit breaks auth flows
-- 500MB database fills quickly with access logs
-
-**Instead:** Start with Pro tier ($25/mo) from day one for any production workload.
-
-### DO NOT: Enable Realtime on All Tables
-
-**Problem:** Every table change broadcasts to all subscribers, causing:
-- Bandwidth waste
-- Client-side processing overhead
-- Database load from CDC checks
-
-**Instead:** Enable Realtime only on tables that need live updates:
-
-```sql
--- In Supabase dashboard or via SQL:
--- Enable only for tables needing real-time
-ALTER PUBLICATION supabase_realtime ADD TABLE access_logs;
-ALTER PUBLICATION supabase_realtime ADD TABLE emergency_alerts;
--- Do NOT add: residents, vehicles, payments (these can poll or use PowerSync)
-```
-
-### DO NOT: Use Supabase for Heavy Compute
-
-**Problem:** Edge Functions have:
-- 150ms CPU time limit (free) / 400ms (Pro)
-- 1MB response size limit
-- No persistent state
-
-**Instead:** For heavy compute (report generation, batch processing, ML):
-- Use external compute (AWS Lambda, Cloud Run)
-- Trigger via pg_cron + pg_net
-- Or use Supabase as database only
+For the admin dashboard, use the same `date-fns` from the shared package. The Spanish locale (`date-fns/locale/es`) handles Mexican date formatting conventions.
 
 ---
 
-## Multi-Tenant Architecture Summary
+## Recommended Stack: Shared (`@upoe/shared`)
 
-### Schema Design Pattern
+### Current Exports (Keep)
 
-```sql
--- Every table includes community_id
-CREATE TABLE residents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  community_id UUID NOT NULL REFERENCES communities(id),
-  -- ... other fields
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+- `Database` types (393KB auto-generated)
+- `createSupabaseClient()` factory
+- `SYSTEM_ROLES`, `ROLE_LABELS`, `isAdminRole()`
+- `STORAGE_BUCKETS`, `getStoragePath()`, `getAvatarPath()`
 
--- Index for RLS performance
-CREATE INDEX idx_residents_community ON residents(community_id);
+### New Shared Libraries to Add
 
--- RLS policy using JWT claims
-ALTER TABLE residents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "community_isolation" ON residents
-FOR ALL USING (
-  community_id = (auth.jwt() -> 'app_metadata' ->> 'community_id')::uuid
-);
-```
+| Library | Version | Purpose | Where Used |
+|---------|---------|---------|------------|
+| `zod` | ^4.3 | Validation schemas | Both apps: form validation, API response validation |
+| `date-fns` | ^4.x | Date utilities | Both apps: date formatting with Spanish locale |
+| `i18next` | ^25.8 | i18n core | Both apps: translation strings |
 
-### User Onboarding Flow
-
-1. User signs up (email/phone)
-2. Admin invites user to community
-3. Backend updates user's `app_metadata.community_id`
-4. JWT now contains community_id claim
-5. All queries automatically filtered by RLS
-
-### Offline-First Data Flow
-
-```
-[Mobile App]
-    |
-    v
-[Local SQLite (PowerSync SDK)]
-    |
-    | (background sync)
-    v
-[PowerSync Cloud Service]
-    |
-    | (streaming sync)
-    v
-[Supabase Postgres]
-    |
-    v
-[RLS filters by community_id]
-```
+**Shared code categories to add to `@upoe/shared`:**
+1. **Zod schemas** -- validation rules shared between mobile forms and admin forms
+2. **i18n translation files** -- Spanish strings used by both apps
+3. **Date formatting utilities** -- consistent date display across platforms
+4. **TanStack Query key factories** -- consistent cache key naming
+5. **Supabase query helpers** -- typed query functions both apps can use
 
 ---
 
-## Version Summary
+## Development Tools
 
-| Package | Version | Last Verified |
-|---------|---------|---------------|
-| `@supabase/supabase-js` | 2.90.1 | Jan 2026 |
-| `@supabase/ssr` | Latest (use with above) | Jan 2026 |
-| `@powersync/react-native` | 1.28.1 | Jan 2026 |
-| `@powersync/op-sqlite` | Latest | Jan 2026 |
-| Supabase CLI | Requires Node.js 20+ | Jan 2026 |
-| PostgreSQL (Supabase) | 15 or 17 | Jan 2026 |
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `@tanstack/react-query-devtools` | Query cache inspector | Admin dashboard only (web). Invaluable for debugging stale data. |
+| `@dev-plugins/react-native-mmkv` | MMKV inspector | Expo DevTools plugin. Inspect stored key-values during development. |
+| `expo-dev-client` | Development builds | Required for testing native modules (push notifications, camera, MMKV). Expo Go is insufficient. |
+| React Compiler | Auto-memoization | Stable in Next.js 16. Enable in `next.config.ts`. Eliminates manual `useMemo`/`useCallback`. |
 
 ---
 
 ## Installation Commands
 
-### Mobile (Expo)
+### Mobile (`@upoe/mobile`)
 
 ```bash
-# Initialize Expo project
-npx create-expo-app upoe-mobile --template expo-template-blank-typescript
+# Initialize (if not already done)
+npx create-expo-app@latest packages/mobile --template tabs
 
-# Supabase client
-npx expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill expo-secure-store
+# Core Expo modules
+npx expo install expo-router react-native-screens react-native-safe-area-context react-native-gesture-handler react-native-reanimated
 
-# PowerSync offline-first (use dev builds, not Expo Go)
-npx expo install @powersync/react-native @powersync/op-sqlite @op-engineering/op-sqlite
+# Styling
+npx expo install nativewind tailwindcss
 
-# Additional utilities
-npx expo install expo-background-task  # For background sync
+# Data layer
+pnpm add @tanstack/react-query zustand
+
+# Forms
+pnpm add react-hook-form @hookform/resolvers zod
+
+# Storage
+npx expo install react-native-mmkv react-native-nitro-modules expo-secure-store expo-crypto
+
+# Auth support
+npx expo install @react-native-async-storage/async-storage react-native-url-polyfill
+
+# Media
+npx expo install expo-image expo-image-picker expo-camera expo-file-system
+
+# Push notifications
+npx expo install expo-notifications expo-device expo-constants
+
+# i18n
+npx expo install expo-localization
+pnpm add i18next react-i18next
+
+# Date handling
+pnpm add date-fns
+
+# Dev tools
+npx expo install expo-dev-client
+pnpm add -D @dev-plugins/react-native-mmkv
 ```
 
-### Web (Next.js)
+### Admin Dashboard (`@upoe/admin`)
 
 ```bash
-# Initialize Next.js project
-npx create-next-app@latest upoe-web --typescript --tailwind --app
+# Supabase SSR
+pnpm add @supabase/ssr
 
-# Supabase
-npm install @supabase/supabase-js @supabase/ssr
+# UI components (shadcn/ui init)
+npx shadcn@latest init
+npx shadcn@latest add button card input table dialog form select tabs badge avatar dropdown-menu sheet toast
+
+# Data layer
+pnpm add @tanstack/react-query @tanstack/react-table zustand
+
+# Forms
+pnpm add react-hook-form @hookform/resolvers zod
+
+# Charts
+pnpm add recharts
+
+# i18n
+pnpm add i18next react-i18next
+
+# Date handling
+pnpm add date-fns
+
+# Dev tools
+pnpm add -D @tanstack/react-query-devtools
 ```
 
-### Development Tools
+### Shared Package (`@upoe/shared`)
 
 ```bash
-# Supabase CLI (requires Node.js 20+)
-npm install -g supabase
-
-# Local development
-supabase init
-supabase start
-supabase db diff -f initial_schema
+# Add shared dependencies
+pnpm add zod date-fns i18next
 ```
+
+---
+
+## Alternatives Considered
+
+| Category | Recommended | Alternative | Why Not Alternative |
+|----------|-------------|-------------|---------------------|
+| Navigation | Expo Router v4 | React Navigation (raw) | Expo Router IS React Navigation + file-based routing + typed routes + Stack.Protected. No reason to go lower-level. |
+| Mobile styling | NativeWind 4.1 | Tamagui | Tamagui is excellent but introduces a different styling paradigm. NativeWind matches the Tailwind 4 already used in admin dashboard. Shared vocabulary > marginal performance gain. |
+| Mobile styling | NativeWind 4.1 | StyleSheet.create | Manual styles don't scale for a 100+ screen app. No design token sharing with web. |
+| Data fetching | TanStack Query v5 | SWR | TanStack Query has richer features (optimistic updates, infinite queries, dependent queries). Wider adoption. Better React Native support. |
+| Client state | Zustand v5 | Redux Toolkit | UPOE's client state is small (auth, UI prefs). Redux adds unnecessary boilerplate. |
+| Client state | Zustand v5 | Jotai | Zustand's centralized store is simpler for team onboarding. UPOE doesn't need Jotai's atomic fine-grained reactivity. |
+| Forms | React Hook Form | Formik | RHF has 2x the downloads, uncontrolled components = fewer re-renders. Formik is in maintenance mode. |
+| Validation | Zod v4 | Yup | Zod is TypeScript-first with type inference. Yup requires separate type definitions. Zod v4 is faster and smaller. |
+| Web components | shadcn/ui | Material UI | MUI brings its own styling (Emotion). Conflicts with Tailwind 4. shadcn/ui is built for Tailwind. |
+| Web components | shadcn/ui | Ant Design | Ant Design's styling conflicts with Tailwind. Also, Ant Design's Chinese-first documentation is less ideal for the team. |
+| Charts | Recharts 3 | Chart.js | Recharts uses React components as API. Chart.js is imperative/canvas-based. React 19 integration is cleaner with Recharts. |
+| Charts | Recharts 3 | Tremor | Tremor wraps Recharts. Direct Recharts gives more control for custom KPI dashboards. |
+| Storage | MMKV | AsyncStorage | MMKV is 30x faster, synchronous, and supports encryption. AsyncStorage is async and unencrypted. |
+| i18n | i18next | expo-localization alone | expo-localization only detects device locale. i18next provides the full translation framework. They complement each other. |
+| Date | date-fns | dayjs | dayjs is smaller (6KB vs 18KB) but date-fns is tree-shakeable and functional. For a project importing selectively, final bundle is similar. date-fns has better TypeScript support. |
+
+---
+
+## What NOT to Use (and Why)
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `@supabase/auth-helpers-nextjs` | Deprecated. No longer maintained. | `@supabase/ssr` ^0.8.0 |
+| `@supabase/auth-helpers-react` | Deprecated. | `@supabase/supabase-js` directly with TanStack Query |
+| `react-native-fast-image` | Unmaintained. expo-image uses same native libraries (Glide, SDWebImage) with better DX. | `expo-image` |
+| `Formik` | Maintenance mode. 2x fewer downloads than RHF. Controlled components = more re-renders. | `react-hook-form` |
+| `Yup` | No TypeScript type inference. Requires separate type definitions. | `zod` v4 |
+| `styled-components` / `emotion` | Extra runtime, conflicts with Tailwind paradigm. | NativeWind (mobile), Tailwind CSS (web) |
+| `MobX` | Overkill for UPOE's client state. Adds complexity. | Zustand |
+| `react-native-reanimated` v4 | Incompatible with NativeWind 4.1. New Arch only. | Reanimated v3.x |
+| `expo-sqlite` for general storage | SQLite is for relational data. Key-value storage should use MMKV. | `react-native-mmkv` |
+| `@react-navigation/native` (direct) | Lower-level than needed. Expo Router wraps it with file-based routing. | `expo-router` |
+| `NativeWind v5` | Still in preview (Feb 2026). Not production-ready. | NativeWind ^4.1 |
+| `Expo SDK 55` | Beta only as of Feb 2026. Wait for stable release. | Expo SDK 54 |
+
+---
+
+## Version Compatibility Matrix
+
+| Package A | Compatible With | Notes |
+|-----------|-----------------|-------|
+| Expo SDK 54 | React Native 0.81.x, React 19.1.x | Bundled versions. Do not override. |
+| NativeWind 4.1+ | Tailwind CSS 4.x, Reanimated v3.x | Does NOT work with Reanimated v4. |
+| react-native-mmkv 4.1.2 | Expo SDK 54 | Had build issues in 4.1.0/4.1.1 on Android. Verify 4.1.2 fixes them. |
+| Zod v4.3 | @hookform/resolvers 5.2+ | Auto-detects Zod v3 vs v4 at runtime. |
+| @supabase/ssr 0.8.0 | Next.js 16.x, @supabase/supabase-js 2.x | Required for App Router cookie auth. |
+| shadcn/ui (Feb 2026) | React 19, Tailwind 4, unified radix-ui package | New York style uses single radix-ui package. |
+| TanStack Query v5.90 | React 19, React Native 0.81 | Works on both platforms with same API. |
+| recharts 3.7 | React 19 | Verified compatible. Uses React components API. |
+| Next.js 16.1.6 | React 19.2.3, Tailwind 4, Turbopack | Turbopack is default for dev and build. React Compiler stable. |
+
+---
+
+## Stack Patterns by Platform
+
+**Mobile-only packages** (install in `@upoe/mobile` only):
+- expo-router, expo-image, expo-image-picker, expo-camera, expo-file-system
+- expo-notifications, expo-device, expo-constants
+- expo-secure-store, expo-localization, expo-crypto
+- react-native-mmkv, react-native-reanimated, react-native-gesture-handler
+- nativewind
+- react-native-screens, react-native-safe-area-context
+
+**Web-only packages** (install in `@upoe/admin` only):
+- @supabase/ssr
+- shadcn/ui components (copied into project)
+- radix-ui, lucide-react
+- @tanstack/react-table
+- recharts
+- @tanstack/react-query-devtools
+
+**Shared packages** (install in `@upoe/shared`):
+- zod, date-fns, i18next
+
+**Both platforms** (install in each app separately):
+- @tanstack/react-query
+- react-hook-form, @hookform/resolvers
+- zustand
+- react-i18next
+
+---
+
+## Upgrade Path: SDK 54 to SDK 55
+
+When Expo SDK 55 reaches stable (expected mid-February to March 2026):
+
+1. **Benefits:** React Native 0.83, React 19.2, Hermes v1, smaller OTA updates, new default template
+2. **Breaking:** Legacy Architecture fully removed, New Architecture is the only option
+3. **Action items:**
+   - Verify react-native-mmkv compatibility with RN 0.83
+   - Verify NativeWind compatibility with SDK 55 (Reanimated v4 still not supported)
+   - If using Reanimated, may need temporary override for react-native-worklets
+   - Run `npx expo install --fix` to resolve peer dependency issues
+4. **Risk:** LOW -- SDK 54 already defaults to New Architecture. The team should already be on New Arch.
 
 ---
 
 ## Sources
 
-### Official Documentation
-- [Supabase Docs](https://supabase.com/docs)
-- [Supabase RLS Guide](https://supabase.com/docs/guides/database/postgres/row-level-security)
-- [Supabase Extensions](https://supabase.com/docs/guides/database/extensions)
-- [Supabase Next.js SSR](https://supabase.com/docs/guides/auth/server-side/nextjs)
-- [Supabase Expo Quickstart](https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native)
+### Official Documentation (HIGH confidence)
+- [Expo SDK 54 Changelog](https://expo.dev/changelog/sdk-54) -- SDK features and bundled versions
+- [Expo Router Introduction](https://docs.expo.dev/router/introduction/) -- File-based routing
+- [Expo Router Protected Routes](https://docs.expo.dev/router/advanced/protected/) -- Stack.Protected for auth
+- [Expo Notifications Setup](https://docs.expo.dev/push-notifications/push-notifications-setup/) -- Push notification configuration
+- [Expo Using Supabase Guide](https://docs.expo.dev/guides/using-supabase/) -- Official integration guide
+- [Supabase Next.js SSR Setup](https://supabase.com/docs/guides/auth/server-side/nextjs) -- @supabase/ssr with App Router
+- [Supabase Expo Quickstart](https://supabase.com/docs/guides/getting-started/quickstarts/expo-react-native) -- Getting started
+- [TanStack Query React Native Docs](https://tanstack.com/query/v5/docs/framework/react/react-native) -- Official RN support
+- [NativeWind v4.1 Announcement](https://www.nativewind.dev/blog/announcement-nativewind-v4-1) -- Stable release notes
+- [shadcn/ui Changelog](https://ui.shadcn.com/docs/changelog) -- React 19 + Tailwind 4 support
+- [Zod v4 Release Notes](https://zod.dev/v4) -- Breaking changes and improvements
+- [Next.js 16 Blog Post](https://nextjs.org/blog/next-16) -- Features and React 19.2
 
-### PowerSync
-- [PowerSync + Supabase Integration](https://www.powersync.com/blog/bringing-offline-first-to-supabase)
-- [PowerSync React Native SDK](https://docs.powersync.com/client-sdks/reference/react-native-and-expo)
-- [PowerSync Background Sync with Expo](https://www.powersync.com/blog/keep-background-apps-fresh-with-expo-background-tasks-and-powersync)
+### npm Registry (HIGH confidence -- version verification)
+- [@tanstack/react-query](https://www.npmjs.com/package/@tanstack/react-query) -- v5.90.19
+- [zustand](https://www.npmjs.com/package/zustand) -- v5.0.11
+- [react-hook-form](https://www.npmjs.com/package/react-hook-form) -- v7.71.1
+- [zod](https://www.npmjs.com/package/zod) -- v4.3.5
+- [@hookform/resolvers](https://www.npmjs.com/package/@hookform/resolvers) -- v5.2.2
+- [nativewind](https://www.npmjs.com/package/nativewind) -- v4.2.1
+- [recharts](https://www.npmjs.com/package/recharts) -- v3.7.0
+- [@supabase/ssr](https://www.npmjs.com/package/@supabase/ssr) -- v0.8.0
+- [@supabase/supabase-js](https://www.npmjs.com/package/@supabase/supabase-js) -- v2.95.2
+- [react-native-mmkv](https://www.npmjs.com/package/react-native-mmkv) -- v4.1.2
+- [i18next](https://www.npmjs.com/package/i18next) -- v25.8.3
+- [react-i18next](https://www.npmjs.com/package/react-i18next) -- v16.5.4
 
-### Best Practices & Reviews
-- [Supabase Review 2026](https://hackceleration.com/supabase-review/) - 8-month production testing
-- [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)
-- [Multi-Tenant RLS Architecture](https://dev.to/blackie360/-enforcing-row-level-security-in-supabase-a-deep-dive-into-lockins-multi-tenant-architecture-4hd2)
-- [Common Supabase Pitfalls](https://hrekov.com/blog/supabase-common-mistakes)
+### Community Resources (MEDIUM confidence -- verified with official docs)
+- [Expo SDK 55 Beta Changelog](https://expo.dev/changelog/sdk-55-beta) -- Upcoming features
+- [NativeWind + Reanimated v4 incompatibility](https://github.com/nativewind/nativewind) -- Known limitation
+- [react-native-mmkv SDK 54 Android build issue](https://github.com/mrousavy/react-native-mmkv/issues/985) -- Compatibility risk
+- [Supabase MMKV session storage pattern](https://github.com/supabase/supabase/issues/6348) -- Integration approach
 
-### GitHub Discussions
-- [Supabase Offline Discussion](https://github.com/orgs/supabase/discussions/357)
-- [supabase-js Releases](https://github.com/supabase/supabase-js/releases)
+---
+*Stack research for: UPOE Frontend Applications (React Native Expo + Next.js Admin Dashboard)*
+*Researched: 2026-02-06*

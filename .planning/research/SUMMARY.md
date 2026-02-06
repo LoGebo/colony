@@ -1,420 +1,354 @@
 # Project Research Summary
 
-**Project:** UPOE - Unified Property Operations Ecosystem
-**Domain:** Multi-tenant Property Management SaaS (Gated Communities, HOA, Condos)
-**Researched:** 2026-01-29
+**Project:** UPOE v2.0 - Frontend Applications
+**Domain:** Gated Community Property Management (Mobile + Web Admin)
+**Researched:** 2026-02-06
 **Confidence:** HIGH
 
 ## Executive Summary
 
-UPOE is a multi-tenant property management platform serving gated communities and HOAs. Research reveals this domain requires rigorous data isolation, offline-first mobile capabilities for security guards, and audit-grade financial tracking. The optimal architecture combines **Supabase** (backend platform with PostgreSQL, Auth, RLS, Storage, Edge Functions) with **PowerSync** (offline-first sync layer) and **Expo/Next.js** frontends.
+UPOE v2.0 builds React Native (Expo SDK 54) mobile app and Next.js 16 admin dashboard on top of a fully complete Supabase backend (116 tables, 399 RLS policies, 206 functions). This is a frontend-focused milestone consuming an existing, production-ready backend. The recommended approach leverages Expo Router for role-based mobile navigation (6 roles: resident, guard, admin, manager, provider, super_admin), Next.js App Router with server components for the admin dashboard, and TanStack Query v5 as the universal data layer across both platforms.
 
-The recommended approach prioritizes **database-level security through Row-Level Security (RLS)** for tenant isolation, **double-entry accounting** for financial integrity, and **domain-specific conflict resolution strategies** for offline sync. The key architectural decision is using community_id in JWT app_metadata (not user_metadata) to enforce multi-tenant isolation at the PostgreSQL level, making data leaks architecturally impossible rather than relying on application-layer filtering.
+The critical architectural decision is **separation of concerns**: The @upoe/shared package provides types, constants, validation schemas, and query key factories, but each platform creates its own Supabase client with platform-specific auth storage (expo-sqlite for mobile, cookies via @supabase/ssr for web). This prevents the single most common pitfall — using the wrong auth configuration across platforms.
 
-Critical risks include RLS misconfiguration (83% of Supabase breaches involve this), financial data type errors (using float instead of NUMERIC), and offline sync conflicts without defined resolution strategies. These must be addressed in Phase 1 foundation work - they are architectural decisions that become extremely expensive to fix later.
+The key risk is auth misconfiguration causing session loss. The mitigation strategy is to build auth infrastructure FIRST in both apps before any feature code, verify token persistence across app restarts (mobile) and automatic token refresh via middleware (web), and enforce role-based access via RLS policies (not just frontend route guards).
 
 ## Key Findings
 
-### Recommended Stack
+### Recommended Stack (from STACK.md)
 
-**Core Platform: Supabase Pro** provides all backend services in a unified platform. For UPOE's scale (50K access records, 10K vehicles, 5K residents per community), Supabase's multi-tenant RLS architecture is battle-tested and production-ready. The Pro tier ($25/mo minimum) is required - Free tier pauses after 7 days inactivity.
+Mobile and web share data-layer libraries but diverge on platform-specific concerns. The shared foundation (Supabase client, TanStack Query, Zustand, React Hook Form, Zod v4) provides consistency. Platform-specific choices (NativeWind vs shadcn/ui, expo-sqlite vs cookie storage) respect each platform's strengths.
 
 **Core technologies:**
-- **Supabase (PostgreSQL 17)**: Backend platform with built-in Auth, RLS, Realtime, Storage, Edge Functions - eliminates need for separate backend services, enforces security at database layer
-- **PowerSync**: Offline-first sync between Supabase Postgres and client SQLite - purpose-built for Supabase, handles 30-day offline requirement, non-invasive (no schema changes)
-- **Expo (SDK 52+)**: Mobile framework with managed workflow - enables true offline-first with local SQLite via PowerSync, requires development builds (not Expo Go) for native modules
-- **Next.js 15**: Web framework with App Router - SSR support via @supabase/ssr package, server-side auth token validation
-- **PostgreSQL Extensions**: uuid-ossp (primary keys), pg_cron (scheduled jobs), pg_trgm (fuzzy search), pgcrypto (encryption), postgis (geospatial), pg_net (webhooks)
+- **Expo SDK 54** with React Native 0.81 and Expo Router v4 — Stable SDK with file-based routing, Stack.Protected for declarative role-based navigation
+- **Next.js 16** with React 19.2 and App Router — Server Components for initial data fetching, client components for interactivity
+- **TanStack Query v5** — Universal server-state management for both platforms with caching, optimistic updates, background refetch
+- **Zustand v5** — Lightweight client state (UI preferences, auth context) to complement TanStack Query
+- **NativeWind 4.1** (mobile) + **Tailwind CSS 4** (web) — Shared utility-class vocabulary, divergent implementations
+- **shadcn/ui** (web) — Component library built on Radix UI with Tailwind 4 support
+- **Zod v4** + **React Hook Form** — Shared validation schemas across platforms with type inference
+- **expo-sqlite** (mobile storage) + **@supabase/ssr** (web cookies) — Platform-appropriate auth session persistence
 
-**Critical version requirements:**
-- @supabase/supabase-js: 2.90.1+ (latest security patches)
-- @powersync/react-native: 1.28.1+ (Rust-based sync client)
-- PostgreSQL: Use v17 for latest features (v15 minimum)
+**Critical upgrade:** @supabase/supabase-js from 2.49.1 to 2.95+ in @upoe/shared for latest auth improvements.
 
-### Expected Features
+### Expected Features (from FEATURES.md)
 
-Research across property management systems (Buildium, Vantaca, Wild Apricot) and visitor management platforms (Proptia, EntranceIQ, GateHouse) reveals clear feature expectations.
+Research identified feature priorities across three distinct user experiences: resident mobile app, guard mobile app, and admin web dashboard.
 
-**Must have (table stakes):**
-- Unit/Property Registry with hierarchy (Community → Building → Unit) - foundation for everything
-- Resident Profiles with KYC status tracking - users need accounts with document verification
-- Ownership/Tenancy Tracking - support both property owners and tenants in same unit
-- Monthly Fee Management with charge generation - primary HOA revenue mechanism
-- Payment Recording with balance tracking - money-in functionality with aging reports
-- Basic Visitor Pre-registration - name, date, QR code for security baseline
-- Visitor Entry/Exit Logging - immutable audit trail of who came when
-- Maintenance Request Workflow - submit, track, assign, resolve cycle
-- Basic Announcements - broadcast messages to community members
-- Document Storage - bylaws, meeting minutes, HOA policies
-- Multi-tenant Data Isolation - row-level security is non-negotiable for SaaS
-- Soft Deletes - deleted_at pattern required for offline sync (clients need deletion notifications)
+**Must have (table stakes for MVP):**
+- **Resident app:** Auth + onboarding, home dashboard, visitor pre-registration with QR codes, account balance + payment history, payment proof upload, maintenance requests, announcements feed, push notifications
+- **Guard app:** Auth + shift selection, expected visitors queue, QR scanner with instant verification, manual check-in, entry/exit logging, resident directory lookup, package reception, emergency panic button
+- **Admin dashboard:** Auth + setup, financial overview with KPIs, unit-by-unit balance report, payment approval workflow, charge generation, resident/unit management, maintenance ticket dashboard, announcement creator, access log reports, community settings
 
-**Should have (competitive advantage):**
-- Double-Entry Accounting Ledger - most competitors use simple ledger, this provides audit-grade financial accuracy
-- Offline-First with 30-Day Sync - critical differentiator for guards at gates without internet
-- Real-time QR Validation - instant visitor verification vs code-based systems
-- SLA-tracked Maintenance - accountability with response/resolution deadlines vs basic ticketing
-- Smart Notifications - context-aware alerts delivered at right time
-- Complex Amenity Booking Rules - flexible rules engine (advance days, max duration, deposits) beyond simple calendars
-- Recurring Visitor Patterns - convenience for housekeepers, family ("every Tuesday" rules)
-- Vehicle LPR Integration - automated entry via license plate recognition (requires hardware partnerships)
+**Should have (competitive differentiators):**
+- **QR code WhatsApp sharing** — Deep integration with WhatsApp (dominant in Mexico)
+- **Real-time visitor status updates** — Live gate entry notifications via Supabase Realtime
+- **Guard performance analytics** — Patrol completion, response times (no Mexico competitor has this)
+- **Delinquency analytics** — Aging reports, collection rate trends (Mexican HOA admins need this)
+- **Community social wall** — Engagement beyond transactions (inspired by TownSq success pattern)
 
-**Defer to v2+ (not essential for launch):**
-- Financial Reconciliation - bank statement matching (accounting-grade, high complexity)
-- Community Marketplace - buy/sell/services engagement feature
-- AI-Assisted Ticket Categorization - efficiency feature, not core functionality
-- Violation Workflow - rule enforcement with track/warn/penalize cycle
-- API for External Integrations - ecosystem play, wait until core is proven
+**Defer (v2.1 - v3.0):**
+- Amenity reservations (needs admin amenity management first)
+- NFC patrol checkpoints (needs route configuration)
+- Survey/voting with coefficient weighting (needs assembly season trigger)
+- Marketplace (needs active community engagement baseline)
+- Payment gateway integration (Stripe/SPEI compliance)
+- Offline-first sync with PowerSync
 
-### Architecture Approach
+### Architecture Approach (from ARCHITECTURE.md)
 
-The architecture uses **Row-Level Security (RLS) with community_id isolation** combined with **PowerSync offline-first sync**. Every table includes community_id FK, and RLS policies enforce (SELECT (auth.jwt() -> 'app_metadata' ->> 'community_id')::UUID) tenant filtering at PostgreSQL level. This centralizes isolation logic - application code cannot accidentally leak data.
+The architecture uses platform-native patterns rather than shared UI abstraction layers.
 
 **Major components:**
-1. **Mobile App (Expo + SQLite)** - UI components, PowerSync client for offline sync, local SQLite database with write queue, network detection for sync coordination
-2. **Web App (Next.js)** - Admin dashboard, resident portal, uses @supabase/ssr for server-side auth, direct Supabase client queries (online-only)
-3. **Supabase Backend** - PostgreSQL with RLS policies per table, Edge Functions for business logic, Realtime for live updates (Broadcast for ephemeral, Postgres Changes for persistence), PostgREST API with RLS enforcement
-4. **PowerSync Service** - Bucket definitions (per-community data partitions), logical replication from Postgres, sync rules for partial data distribution, checkpoint management for resume-after-disconnect
-5. **Conflict Resolution Layer** - Domain-specific strategies: chronological merge (access logs), restrictive priority (access states), LWW with history (profiles), first-come-first-served (reservations), merge with dedup (emergencies)
+1. **@upoe/shared** — Pure TypeScript: Database types (393KB generated), Supabase client constants, role checks, query key factories, Zod validators, i18n translation files. Zero runtime platform dependencies.
+2. **@upoe/mobile (Expo)** — File-based routing with role-specific route groups ((auth), (resident), (guard), (admin)). Stack.Protected for declarative auth guards. expo-sqlite for auth storage. TanStack Query hooks for data. Platform-specific Supabase client.
+3. **@upoe/admin (Next.js)** — App Router with server/client component split. Server components fetch initial data, client components hydrate with initialData for interactivity. Middleware refreshes JWT on every request. Cookie-based sessions via @supabase/ssr.
 
-**Key architectural decisions:**
-- **JWT claims over subqueries**: RLS policies use community_id from app_metadata (evaluated once) instead of SELECT FROM profiles WHERE user_id = auth.uid() (evaluated per-row)
-- **Soft deletes required**: deleted_at TIMESTAMPTZ on all synced tables - hard deletes cause offline clients to re-sync records as if they still exist
-- **SECURITY DEFINER functions for performance**: Cache results of complex permission checks instead of repeating in RLS policies
-- **PowerSync buckets for data partitioning**: Each user syncs only their community's data, not entire database
-- **Edge Functions for conflict resolution**: Server-side business logic prevents different app versions from resolving conflicts differently
+**Critical patterns:**
+- **Dual auth strategy:** Mobile uses expo-sqlite + AppState listeners for token refresh. Web uses @supabase/ssr middleware with getClaims() (not getSession()) for verified JWT validation.
+- **Role-based navigation:** Expo Router's Stack.Protected renders different tab groups based on app_metadata.role from JWT. Next.js uses route group layouts for role gates.
+- **State separation:** TanStack Query manages ALL server state (residents, payments, visitors). Zustand manages ONLY client state (UI prefs, form drafts).
+- **Realtime with cache invalidation:** Subscribe per-screen, invalidate TanStack Query cache keys on events, clean up with removeChannel() in useEffect return.
 
-### Critical Pitfalls
+### Critical Pitfalls (from PITFALLS.md)
 
-**1. RLS Disabled or Misconfigured** - 83% of Supabase breaches involve RLS issues. Tables created without ENABLE ROW LEVEL SECURITY expose all tenant data. Enabling RLS without policies blocks ALL access. Must create policies immediately with tenant_id checks. January 2025 CVE-2025-48757 exposed 170+ apps. **Prevention:** ALTER TABLE X ENABLE ROW LEVEL SECURITY and restrictive policies in every migration, never skip during prototyping.
+**Top 5 pitfalls that break auth, security, or cause rewrites:**
 
-**2. Using user_metadata for Tenant ID** - Storing community_id in user_metadata (user-editable) instead of app_metadata (server-only) allows privilege escalation. Users can modify their tenant association and access other tenants' data. **Prevention:** Always use auth.jwt()->'app_metadata'->>'community_id' in RLS policies, set via supabaseAdmin.auth.admin.updateUserById() only.
+1. **Using getSession() on server instead of getClaims()/getUser()** — Server code trusts unverified JWT from cookies. Attacker can forge tokens. ALWAYS use getClaims() (fast, locally verified) or getUser() (full server validation) in Next.js Server Components, middleware, and route handlers.
 
-**3. Financial Data Type Errors** - Using float/real/double/money types for currency causes rounding errors that compound over time. Accounts don't balance, legal/compliance issues arise. **Prevention:** Use NUMERIC(15,4) for all financial amounts (GAAP requires 4 decimal places), or store as BIGINT cents.
+2. **Shared Supabase client with wrong platform config** — Mobile and web require fundamentally different auth configurations (detectSessionInUrl: false for mobile, cookie handlers for web). Each platform MUST create its own client. @upoe/shared provides types only.
 
-**4. RLS Performance Degradation** - Complex RLS policies with subqueries/joins execute per-row, causing 1000+ join operations. Queries slow from milliseconds to seconds. Database ignores indexes when RLS evaluates function calls per-row. **Prevention:** Index all tenant_id columns, wrap auth functions in SELECT for caching, use SECURITY DEFINER functions, flip subquery direction (tenant_id IN (SELECT ...) not uid IN (SELECT ...)).
+3. **Missing Next.js middleware for token refresh** — Without middleware calling getClaims() on every request, tokens expire after 1 hour and users are logged out. Server Components cannot write cookies. Middleware MUST refresh tokens.
 
-**5. Offline Sync Conflicts Without Strategy** - Last-write-wins is wrong for business data. Multiple devices modifying same data offline leads to lost payments, overwritten resident data, conflicting guard reports. **Prevention:** Define domain-specific conflict resolution before building: server-wins (payments), last-modified-merge (profiles), append-only (logs), manual-review (documents). Implement in Edge Functions, not just client.
+4. **Realtime subscription memory leaks** — Channels created in useEffect but not cleaned up. React 19 Strict Mode double-invokes effects. MUST use supabase.removeChannel(channel) in cleanup, not just unsubscribe().
 
-**Additional critical pitfalls:**
-- **Views bypassing RLS** - Views run with SECURITY DEFINER (creator's privileges) by default in PostgreSQL, exposing data. Use WITH (security_invoker = true) on all views.
-- **Service role key in client code** - Bypasses all RLS. One leaked key = full database compromise. Only use in Edge Functions/server code, never in frontend environment variables.
-- **Schema drift between environments** - Manual production changes cause migration failures. Always use supabase db diff + supabase db push, never modify via dashboard.
-- **Realtime subscriptions breaking silently** - Auto-disconnect when tab hidden, RLS blocks DELETE events, channel name conflicts cause duplicates. Build self-healing subscriptions with reconnect logic.
-- **Storage RLS policy violations** - Separate storage.objects table has own RLS, requires SELECT+INSERT+UPDATE policies for upsert. File path convention critical: /{tenant_id}/{entity_type}/{entity_id}/{filename}.
+5. **Frontend-only role authorization** — Hiding buttons based on role without enforcing via RLS policies. Attacker with resident JWT can query admin-only data directly. RLS policies MUST check app_metadata.role, not just community_id.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure prioritizes architectural foundations that are expensive to change later, then builds features incrementally with offline-first from start.
+Based on combined research, the frontend milestone should be structured into phases that build auth foundation first, then layer features that depend on it.
 
-### Phase 1: Foundation & Multi-Tenant Security
-**Rationale:** RLS, auth architecture, and data type decisions are irreversible without rewrites. 83% of Supabase breaches stem from Phase 1 mistakes. Financial data types cannot be changed after production data exists.
-
-**Delivers:**
-- PostgreSQL schema with community_id on all tables
-- RLS policies with app_metadata-based tenant isolation
-- JWT auth with community_id in app_metadata
-- NUMERIC(15,4) for all financial fields
-- Migration workflow (supabase CLI + CI/CD)
-- Soft delete pattern (deleted_at) on all tables
-
-**Addresses features:**
-- Multi-tenant Data Isolation (table stakes)
-- Property hierarchy (Community → Building → Unit)
-- Resident Profiles foundation
-- User authentication
-
-**Avoids pitfalls:**
-- Pitfall #1 (RLS misconfiguration)
-- Pitfall #2 (user_metadata for tenant_id)
-- Pitfall #3 (financial data types)
-- Pitfall #7 (service role key exposure)
-- Pitfall #10 (schema drift)
-
-**Research flag:** SKIP RESEARCH - well-documented patterns, official Supabase RLS guides sufficient.
-
-### Phase 2: Offline-First Sync Architecture
-**Rationale:** PowerSync integration requires schema changes (updated_at, deleted_at) and conflict resolution strategies. Must be designed before building features that rely on offline access. Guards need offline capability from day one.
+### Phase 1: Monorepo + Auth Foundation
+**Rationale:** Authentication is the universal dependency. Every feature needs to know who the user is and what role they have. Building auth incorrectly forces a complete rewrite. This phase establishes the platform-specific auth patterns that all features will consume.
 
 **Delivers:**
-- PowerSync bucket definitions for per-community sync
-- Conflict resolution strategies per entity type
-- Local SQLite setup via @powersync/react-native
-- Expo development build configuration (native modules)
-- Background sync with network detection
-- Write queue for offline operations
+- Monorepo workspace configuration (pnpm workspaces with packages/* and apps/*)
+- @upoe/shared package extensions (query keys, Zod validators, type subsets)
+- Mobile: Expo Router file-based routing with role-based route groups, expo-sqlite auth storage, AppState token refresh
+- Web: Next.js App Router with middleware token refresh, @supabase/ssr server/client setup, route group layouts
+- Auth screens: sign-in, sign-up (with OTP verification — more reliable than magic links in Mexico)
 
-**Uses:**
-- PowerSync React Native SDK 1.28.1+
-- op-sqlite adapter with encryption
-- Expo background tasks for sync
+**Addresses:**
+- Pitfall 1 (getClaims vs getSession) — enforced from day one
+- Pitfall 2 (shared client config) — solved by separating client creation per platform
+- Pitfall 3 (missing middleware) — middleware is first file created in Next.js app
+- Pitfall 5 (frontend-only auth) — audit existing RLS for role enforcement, add missing policies
+- Pitfall 8 (SecureStore limit) — use expo-sqlite storage from start
 
-**Implements:**
-- Offline-First with 30-Day Sync (competitive advantage)
-- Domain-specific conflict resolution (access logs: merge, access states: restrictive priority, profiles: LWW with history, reservations: first-come, emergencies: merge with dedup)
+**Research flag:** SKIP — auth patterns well-documented in official Supabase + Expo + Next.js docs
 
-**Avoids pitfalls:**
-- Pitfall #8 (offline sync conflict failures)
-- Pitfall #15 (PowerSync WAL overhead)
+---
 
-**Research flag:** NEEDS RESEARCH - Conflict resolution strategies need domain-specific design per entity type during phase planning. PowerSync bucket configuration requires understanding access patterns.
-
-### Phase 3: Core Property Management
-**Rationale:** Foundation and sync established. Now build table-stakes features that residents/admins expect. These are well-understood CRUD operations with standard patterns.
+### Phase 2: Mobile Core UX (Resident + Guard)
+**Rationale:** Visitor management is the #1 daily-use feature for residents and the primary work screen for guards. These are tightly coupled (resident creates invitation, guard verifies it) so they must be built together. This phase delivers immediate value — replacing WhatsApp-based visitor coordination.
 
 **Delivers:**
-- Unit/Property Registry with hierarchy
-- Resident Profiles with KYC status
-- Ownership/Tenancy tracking (many-to-many via unit_occupancies)
-- Vehicle registry with license plates
-- Pet registry
-- Document storage (Supabase Storage with RLS)
-- Basic announcements
+- Resident screens: Home dashboard, visitor invitation creation with QR generation, active visitor list, payment balance view, maintenance request submission
+- Guard screens: Expected visitors queue, QR scanner with instant validation, manual check-in form, resident/unit directory search, emergency panic button (FAB on all screens)
+- Shared: TanStack Query hooks (useVisitors, useAccessLogs, useResidents, usePayments), Realtime subscription management utility
+- Push notification registration + token storage
 
-**Addresses features:**
-- Unit/Property Registry (must-have)
-- Resident Profiles (must-have)
-- Ownership/Tenancy Tracking (must-have)
-- Document Storage (must-have)
+**Addresses:**
+- Features: Table stakes resident experience + core guard workflow
+- Pitfall 4 (Realtime leaks) — build subscription utility with proper cleanup before any feature uses Realtime
+- Pitfall 9 (file uploads) — build shared upload utility for QR code generation and profile photos
+- Pitfall 10 (deep linking) — configure for push notification deep links
 
-**Avoids pitfalls:**
-- Pitfall #9 (Storage RLS policy violations) - establish file path convention early
-- Pitfall #5 (views bypassing RLS) - if creating any summary views
+**Research flag:** SKIP — Expo camera, QR generation, TanStack Query patterns are well-documented
 
-**Research flag:** SKIP RESEARCH - Standard CRUD patterns, Supabase Storage docs sufficient.
+---
 
-### Phase 4: Financial Management with Double-Entry
-**Rationale:** Financial accuracy is competitive advantage. Double-entry ledger prevents "money from nowhere" bugs and provides audit trail. More complex than simple ledger, but research shows this is industry standard for real financial systems.
+### Phase 3: Admin Dashboard Financial Core
+**Rationale:** Financial oversight is the #1 reason admins use the platform. Residents submit payment proofs in Phase 2; this phase builds the admin approval workflow and KPI dashboards. The database already has KPI summary tables (Phase 8) and double-entry ledger — frontend just needs to visualize them.
 
 **Delivers:**
-- Chart of accounts (hierarchical)
-- Double-entry transaction/journal_entry tables (immutable)
-- Account balances (materialized view)
-- Fee definitions (configurable per community)
-- Monthly charge generation
-- Payment recording
-- Balance inquiry and aging reports
-- Reversing entries for corrections (never update/delete)
+- Financial overview dashboard with KPIs (collection rate, delinquency rate, charts)
+- Unit-by-unit balance report (DataTable with sorting, filtering, export)
+- Payment proof approval queue with bulk operations
+- Charge generation interface (monthly fees with coefficient support)
+- Resident and unit management (CRUD, invite workflow)
+- Community settings and branding configuration
 
-**Uses:**
-- NUMERIC(15,4) data types from Phase 1
-- Immutable transaction pattern (append-only)
+**Addresses:**
+- Features: Admin table stakes — financial + resident management
+- Pitfall 7 (large types file) — create admin-specific type subset with Pick<> for faster TypeScript
+- Architecture: Server component data fetching pattern with initialData hydration to client DataTable
 
-**Addresses features:**
-- Monthly Fee Management (must-have)
-- Payment Recording (must-have)
-- Outstanding Balance View (must-have)
-- Double-Entry Accounting (competitive advantage)
+**Research flag:** SKIP — shadcn/ui DataTable, Recharts for KPI charts, TanStack Table are well-documented
 
-**Avoids pitfalls:**
-- Pitfall #3 (financial data types already addressed in Phase 1)
-- Pitfall #8 (conflict resolution: payments are server-wins, require online)
+---
 
-**Research flag:** NEEDS RESEARCH - Double-entry accounting patterns need deeper study during phase planning. Chart of accounts structure for property management domain requires examples.
-
-### Phase 5: Access Control & Visitor Management
-**Rationale:** Guards are primary mobile users. Offline-first from Phase 2 critical here. Visitor management is core value proposition. QR code generation and real-time validation differentiate from competitors.
+### Phase 4: Admin Dashboard Operations
+**Rationale:** With financials working, admins need operational oversight — maintenance tickets, access logs, announcements. These consume data created by mobile users in Phase 2.
 
 **Delivers:**
-- Visitor pre-registration with QR codes
-- Access code generation
-- Visitor entry/exit logging (immutable)
-- Blacklist with pattern matching
-- Real-time visitor validation
-- Vehicle tracking at entry points
-- Guard mobile app workflows
+- Maintenance ticket dashboard (kanban or table view, assignment, status tracking)
+- Access log viewer with filters (date range, gate, visitor type, export to CSV)
+- Announcement creator with targeting (all residents, specific buildings, delinquent units)
+- Document repository (bylaws, assembly minutes, financial reports)
+- User and role management (invite guards, assign permissions)
 
-**Uses:**
-- PowerSync offline capability from Phase 2
-- Supabase Realtime for instant notifications
-- Conflict resolution: logs are append-only (no conflicts)
+**Addresses:**
+- Features: Admin operational tools
+- Architecture: Server components for list views, client components for filters/interactions
 
-**Addresses features:**
-- Basic Visitor Pre-registration (must-have)
-- Visitor Entry Logging (must-have)
-- Real-time QR Validation (competitive advantage)
-- Recurring Visitor Patterns (competitive advantage)
+**Research flag:** SKIP — standard CRUD patterns
 
-**Avoids pitfalls:**
-- Pitfall #7 (Realtime subscriptions) - build self-healing subscriptions for guard alerts
-- Pitfall #11 (Edge Function cold starts) - keep-warm for critical validation endpoints
+---
 
-**Research flag:** NEEDS RESEARCH - QR code generation/validation patterns, LPR integration points need investigation during phase planning.
-
-### Phase 6: Maintenance & SLA Tracking
-**Rationale:** Maintenance requests are table-stakes, but SLA tracking is competitive advantage. SLA calculation logic lives in Edge Functions (not database triggers per Pitfall #12).
+### Phase 5: Advanced Mobile Features (Resident)
+**Rationale:** With core visitor/payment flows working, add engagement features that increase daily usage.
 
 **Delivers:**
-- Maintenance ticket submission
-- Category hierarchy with default SLAs
-- SLA policy definitions (response time, resolution time)
-- Ticket assignment workflow
-- Status tracking with history
-- SLA breach detection
-- Escalation rules
-- Comment/attachment threading
+- Amenity reservation with calendar UI (after admin amenity management in Phase 4)
+- Community social wall (posts, reactions, comments)
+- Document access (view community documents uploaded by admin)
+- In-app notifications feed (consume push_tokens and notifications tables)
+- Profile management (emergency contacts, vehicle registration)
 
-**Uses:**
-- Edge Functions for SLA calculation (not database triggers)
-- pg_cron for periodic SLA check jobs
+**Addresses:**
+- Features: Resident differentiators (social wall, amenities)
+- Architecture: Realtime for social wall updates
 
-**Addresses features:**
-- Maintenance Requests (must-have)
-- SLA-tracked Maintenance (competitive advantage)
+**Research flag:** MODERATE for social wall — UGC moderation patterns, flagging system, admin review workflow
 
-**Avoids pitfalls:**
-- Pitfall #12 (over-engineering in database) - SLA logic in Edge Functions, testable
+---
 
-**Research flag:** SKIP RESEARCH - Standard ticketing patterns with SLA extensions, well-documented.
-
-### Phase 7: Amenity Reservations
-**Rationale:** Complex booking rules are competitive advantage. PostgreSQL exclusion constraints prevent double-booking at database level (tstzrange overlap checks).
+### Phase 6: Guard Advanced Features
+**Rationale:** Basic gate operations work in Phase 2. This phase adds patrol and incident management for communities with larger perimeters.
 
 **Delivers:**
-- Amenity definitions with capacity
-- Booking rules engine (JSONB for flexibility)
-- Time slot management
-- Reservation workflow with approval
-- Conflict detection via exclusion constraints
-- Waitlist for high-demand amenities
-- Deposit tracking
+- NFC patrol checkpoint scanning (tap-to-log patrol rounds)
+- Incident reporting with photo/video capture
+- Package management (reception, notification, pickup confirmation)
+- Shift handover notes (outgoing guard leaves notes for incoming)
+- Vehicle quick-search by license plate
+- Blacklist alerts (automatic cross-check during check-in)
 
-**Uses:**
-- PostgreSQL tstzrange type for time ranges
-- Exclusion constraints: EXCLUDE USING gist (amenity_id WITH =, tstzrange(start, end) WITH &&)
+**Addresses:**
+- Features: Guard differentiators (no Mexico competitor has robust patrol/incident tools)
+- Pitfall 9 (file uploads) — incident evidence photos
 
-**Addresses features:**
-- Amenity definitions (phase 5)
-- Basic reservations (phase 5)
-- Complex Amenity Booking Rules (competitive advantage)
+**Research flag:** LOW for NFC (Expo has expo-nfc, straightforward), HIGH for incident workflow (evidence chain-of-custody, admin review, resolution tracking)
 
-**Avoids pitfalls:**
-- Pitfall #8 (conflict resolution: reservations are first-come-first-served, server rejects on overlap)
+---
 
-**Research flag:** NEEDS RESEARCH - Booking rule patterns, exclusion constraint performance with RLS, calendar visualization approaches need phase-specific research.
-
-### Phase 8: Communication & Real-time Features
-**Rationale:** Builds on Realtime infrastructure. Broadcast for ephemeral events (panic button), Postgres Changes for persistent data (new announcements).
+### Phase 7: Admin Analytics & Governance
+**Rationale:** Data accumulation from Phases 2-6 enables analytics and governance features. These are assembly-season triggers (typically once or twice per year in Mexican HOAs).
 
 **Delivers:**
-- Announcements with rich media
-- Emergency alerts (panic button)
-- Push notifications (via Edge Functions)
-- Real-time presence (guard duty status)
-- In-app messaging
+- Delinquency analytics (aging reports, collection trends, automated letters)
+- Guard performance dashboard (patrol completion, response times, shift coverage)
+- Amenity utilization reports (booking rates, peak hours, cancellation trends)
+- Survey and voting management (create polls, collect votes, calculate quorum with coefficient weighting per Mexican law)
+- Assembly attendance tracking with proxy delegation
+- Audit trail viewer (admin action log with who/what/when)
 
-**Uses:**
-- Supabase Realtime Broadcast (ephemeral)
-- Supabase Realtime Postgres Changes (persistent)
-- Edge Functions for notification dispatch
-- pg_net for webhook calls
+**Addresses:**
+- Features: Admin differentiators (analytics no competitor offers)
+- Architecture: Use pre-computed KPI tables from Phase 8 database
 
-**Addresses features:**
-- Basic Announcements (must-have)
-- Smart Notifications (competitive advantage)
+**Research flag:** HIGH for governance — Mexican condominium law requirements for voting (weighted by coefficient), quorum calculation, proxy rules, assembly minutes
 
-**Avoids pitfalls:**
-- Pitfall #7 (Realtime subscriptions) - filter by community_id, use Broadcast for high-volume scenarios
+---
 
-**Research flag:** SKIP RESEARCH - Standard real-time patterns, Supabase Realtime docs sufficient.
+### Phase 8: Polish & Platform Features
+**Rationale:** Core functionality complete. This phase adds platform-specific niceties and prepares for scale.
+
+**Delivers:**
+- Biometric authentication (Touch ID / Face ID for mobile)
+- Offline support (TanStack Query persistence plugin, mutation queue)
+- Deep linking full configuration (notification tap -> specific screen)
+- i18n infrastructure (prepare for English expansion, though MVP is Spanish-only)
+- Performance optimization (FlashList for large tables, React Compiler for Next.js)
+- Admin integration configuration UI (webhooks, API keys for third-party tools)
+
+**Addresses:**
+- UX pitfalls: offline indicator, pull-to-refresh
+- Performance traps: virtualized lists, paginated queries
+
+**Research flag:** MODERATE for offline — PowerSync integration patterns, conflict resolution strategies
+
+---
 
 ### Phase Ordering Rationale
 
-**Why this order:**
-1. **Foundation first** - RLS, auth, data types are architectural decisions that require rewrites if wrong. CVE-2025-48757 showed 83% of breaches stem from Phase 1 mistakes.
-2. **Offline before features** - PowerSync requires schema changes (updated_at, deleted_at). Adding later means migrating existing tables and handling data already in production without soft deletes.
-3. **Financial early** - Double-entry is harder to retrofit. Once you have transactions in simple ledger, migrating to double-entry means replaying history or losing audit trail.
-4. **Access control before amenities** - Visitor management and guard workflows inform authentication patterns. Amenities depend on resident identity already being established.
-5. **Communication last** - Realtime features depend on data models being stable. Easier to add notifications after entities exist than to build entities around notifications.
+**Why this sequence:**
+
+1. **Auth first (Phase 1)** — Universal dependency. Wrong auth config forces complete rewrite. Research shows this is the #1 failure point.
+
+2. **Mobile before admin dashboard (Phases 2 before 3-4)** — Residents and guards create the data (visitors, payments, incidents). Admins view and approve it. Building admin first creates empty state UI with no data to test against.
+
+3. **Core features before advanced (Phases 2-4 before 5-7)** — Table stakes must work before differentiators. Cannot test amenity reservations without amenity management UI.
+
+4. **Financial before operational (Phase 3 before 4)** — Admin retention depends on financial visibility. Resident retention depends on visitor management. Financial is higher priority per competitor analysis.
+
+5. **Features before analytics (Phases 2-6 before 7)** — Analytics require data accumulation. Guard performance dashboard needs weeks of shift data to visualize.
+
+6. **Polish last (Phase 8)** — Core functionality must be stable before adding offline support or performance optimization.
 
 **Dependency chains identified:**
-- Auth → Residents → Vehicles/Pets/Documents (identity first)
-- Property Hierarchy → Financial (need units before charging fees)
-- Residents → Visitors (need hosts before guests)
-- Amenities → Reservations (need things before booking them)
-- All features → RLS (security cannot be added later)
-- All mobile features → PowerSync (offline requires sync infrastructure)
-
-**Pitfall avoidance strategy:**
-- Critical pitfalls (#1-5) all addressed in Phase 1-2
-- Moderate pitfalls (#7-12) addressed in phases where relevant features are built
-- Minor pitfalls (#13-15) handled through configuration and monitoring
+- Visitor invitation (resident) + QR verification (guard) = same phase
+- Payment proof upload (resident) + approval (admin) = consecutive phases
+- Amenity creation (admin Phase 4) -> amenity reservation (resident Phase 5)
+- Data entry features (Phases 2-6) -> analytics (Phase 7)
 
 ### Research Flags
 
-**Phases needing deeper research during planning:**
-- **Phase 2 (Offline Sync)** - Conflict resolution strategies need domain-specific design per entity type. PowerSync bucket configuration requires understanding data access patterns and volumes. Research deliverables: conflict resolution decision tree, bucket partition strategy, sync performance estimates.
-- **Phase 4 (Financial)** - Double-entry accounting patterns for property management domain need examples. Chart of accounts structure varies by jurisdiction. Research deliverables: sample chart of accounts, transaction patterns for common scenarios (fee charge, payment, refund, adjustment), reconciliation approaches.
-- **Phase 5 (Access Control)** - QR code generation/validation patterns, LPR hardware integration points, blacklist matching algorithms. Research deliverables: QR format specification, LPR API integration patterns, vehicle pattern matching strategies.
-- **Phase 7 (Amenities)** - Booking rule patterns (advance notice, max duration, cancellation policies), PostgreSQL exclusion constraint performance with RLS at scale, calendar visualization for complex availability. Research deliverables: booking rule schema design, index strategies for time-range queries with RLS, UI patterns for availability display.
+**Phases needing `/gsd:research-phase` during planning:**
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 1 (Foundation)** - RLS patterns well-documented in official Supabase guides, multi-tenant architectures are established patterns
-- **Phase 3 (Core Property)** - Standard CRUD operations, Supabase Storage with RLS is documented
-- **Phase 6 (Maintenance)** - Ticketing systems are well-understood, SLA calculation patterns established
-- **Phase 8 (Communication)** - Realtime notification patterns documented in Supabase guides
+- **Phase 5 (Social Wall):** UGC moderation patterns, flagging system, content policies for gated community context
+- **Phase 6 (Incidents):** Evidence chain-of-custody, legal requirements for incident documentation in Mexico
+- **Phase 7 (Governance):** Mexican condominium law requirements for assemblies, voting, quorum calculation
+- **Phase 8 (Offline):** PowerSync vs TanStack Query persistence trade-offs, conflict resolution strategies
+
+**Phases with standard patterns (skip research):**
+
+- **Phase 1 (Auth):** Extensively documented in Supabase + Expo + Next.js official docs
+- **Phase 2 (Mobile Core):** Standard CRUD with TanStack Query, well-documented camera/QR patterns
+- **Phase 3 (Admin Financial):** Standard dashboard patterns, shadcn/ui DataTable docs are comprehensive
+- **Phase 4 (Admin Ops):** Standard CRUD and reporting, no novel patterns
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Official Supabase docs, PowerSync integration guides, 8-month production review (Hackceleration 2026), verified version numbers |
-| Features | MEDIUM-HIGH | Multiple authoritative sources (Buildium, Vantaca, Wild Apricot, Proptia, EntranceIQ) cross-referenced, feature categorization based on industry standards |
-| Architecture | HIGH | Official Supabase RLS patterns, PowerSync architectural diagrams, multi-tenant patterns validated by AWS/Crunchy Data, conflict resolution strategies from EDB/CRDT research |
-| Pitfalls | HIGH | CVE-2025-48757 documented, official Supabase troubleshooting guides, GitHub discussions with verified solutions, November 2025 outage incident report |
+| Stack | HIGH | All technologies verified via npm registry + official docs. Version compatibility matrix cross-checked. Expo SDK 54 stable, Next.js 16 stable, Supabase SSR 0.8+ stable. |
+| Features | HIGH | Cross-referenced 15+ competitor platforms (ComunidadFeliz, Neivor, Condo Control, TownSq). Mexico market patterns validated. Table stakes vs differentiators clearly identified. |
+| Architecture | HIGH | Expo Router Stack.Protected, Next.js App Router SSR, TanStack Query patterns all verified in official docs. Monorepo patterns confirmed via byCedric expo-monorepo-example. |
+| Pitfalls | HIGH | All 12 critical/moderate pitfalls sourced from official Supabase/Expo/Next.js docs + verified GitHub issues. Recovery strategies tested in community discussions. |
 
 **Overall confidence:** HIGH
 
-Research is comprehensive with primary sources (official documentation, verified production reports, CVE references). Feature landscape validated across multiple platforms. Architecture patterns supported by database vendor documentation. Pitfalls verified through incident reports and official troubleshooting guides.
-
 ### Gaps to Address
 
-**1. LPR Integration Specifics** - Research identified that Vehicle LPR is a competitive advantage requiring hardware partnerships, but specific vendor APIs, camera protocols, and integration patterns need investigation. **How to handle:** Defer LPR research until Phase 5 planning (access control). May warrant separate /gsd:research-phase for hardware integration if pursuing this feature in MVP.
+**During planning:**
 
-**2. Jurisdiction-Specific Chart of Accounts** - Financial research established double-entry as best practice, but chart of accounts structure varies by state/country property management regulations. Sample provided is generic HOA. **How to handle:** During Phase 4 planning, research property management accounting standards for target markets. May need configurable chart of accounts per jurisdiction.
+1. **Mexican legal requirements for governance features (Phase 7)** — Assembly voting, quorum rules, proxy delegation are governed by Mexican condominium law. Research during Phase 7 planning will need to consult legal resources, not just technical docs.
 
-**3. Booking Rule Complexity Limits** - Amenity reservation research shows complex rules are differentiator, but performance implications of JSONB rule evaluation at scale unknown. **How to handle:** During Phase 7 planning, load test booking rule evaluation with 1000+ amenities and 10K+ reservations. May need rule precompilation or caching strategy.
+2. **Offline conflict resolution strategy (Phase 8)** — PowerSync (native Supabase integration) vs TanStack Query persistence (simpler but less robust). Decision point: How much offline capability is actually needed vs nice-to-have? Guards need more offline capability than residents. May warrant splitting into Guard Offline (Phase 6) and Resident Offline (Phase 8).
 
-**4. PowerSync Pricing at Scale** - PowerSync offers Free/Pro tiers but research didn't uncover pricing details for 100+ communities with 1000+ concurrent users. **How to handle:** Contact PowerSync during Phase 2 planning for enterprise pricing. Budget estimates needed before committing to architecture.
+3. **Social wall moderation scope (Phase 5)** — UGC in a gated community has different dynamics than public social media. Research needed: Do admins pre-approve posts? Auto-flag keywords? React to reports only? Mexican cultural norms around community discourse?
 
-**5. Edge Function Regional Latency** - Supabase self-hosts Deno (not Deno Deploy), but regional distribution strategy unclear. Critical for guard alerts requiring sub-200ms response. **How to handle:** During Phase 5 planning, test Edge Function latency from target deployment regions. May need alternative for latency-critical operations.
+4. **Payment gateway integration complexity (deferred to v3.0)** — SPEI direct bank transfers dominate Mexican HOA payments (not credit cards). When building payment gateway, research Mexican fintech APIs (Stripe Mexico, Conekta, OpenPay) and PCI compliance for storing bank account info.
 
-**6. Soft Delete Cleanup Strategy** - All tables use deleted_at for offline sync, but no research found on cleanup/archival patterns. Over time, deleted records accumulate. **How to handle:** During Phase 1, design archival strategy (e.g., partition by deleted_at, archive to cold storage after 90 days, retain for audit period).
+**During implementation:**
 
-**7. Conflict Resolution Testing** - Domain-specific strategies identified, but no research on testing offline sync conflicts systematically. **How to handle:** During Phase 2, build offline sync test harness (simulate multiple devices offline, create conflicts, verify resolution). Critical for confidence in production.
+5. **393KB database types file (Pitfall 7) — Developer experience impact** — While recovery strategy (type subsets with Pick<>) is documented, actual DX impact should be measured in Phase 1. If IDE lag is unacceptable despite subsets, consider generating per-app type files via custom Supabase CLI wrapper.
+
+6. **Guard app offline needs vs resident app offline needs** — Guards working in areas with poor signal need offline more than residents (who are usually on WiFi at home). Consider prioritizing guard offline in Phase 6, deferring resident offline to Phase 8.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [Supabase Official Documentation](https://supabase.com/docs) - RLS guides, Auth patterns, Realtime benchmarks, Storage access control, Edge Functions limits
-- [PowerSync Official Docs](https://docs.powersync.com) - React Native SDK, Supabase integration, custom conflict resolution, bucket definitions
-- [PostgreSQL Official Documentation](https://www.postgresql.org/docs) - NUMERIC type, Row-Level Security, Exclusion constraints, Triggers
-- [Supabase Review 2026 (Hackceleration)](https://hackceleration.com/supabase-review/) - 8-month production testing across 6 projects
-- [CVE-2025-48757](https://vibeappscanner.com/supabase-row-level-security) - 170+ exposed Supabase databases, 83% RLS misconfigurations
-- [Supabase Status History](https://status.supabase.com/history) - November 2025 outage incident report
+
+**Stack:**
+- [Expo SDK 54 Changelog](https://expo.dev/changelog/sdk-54)
+- [Supabase Next.js SSR Setup](https://supabase.com/docs/guides/auth/server-side/nextjs)
+- [TanStack Query React Native Docs](https://tanstack.com/query/v5/docs/framework/react/react-native)
+- npm registry verifications for all packages
+
+**Features:**
+- [ComunidadFeliz Platform](https://www.comunidadfeliz.mx/)
+- [Neivor Mexico Market Analysis](https://blog.neivor.com/9-apps-administracion-de-condominios-en-mexico)
+- [Condo Control Feature Comparison](https://www.condocontrol.com/blog/top-5-hoa-management-software/)
+- [TownSq Community Engagement Platform](https://www.townsq.io)
+
+**Architecture:**
+- [Expo Router Protected Routes](https://docs.expo.dev/router/advanced/protected/)
+- [Expo Monorepo Guide](https://docs.expo.dev/guides/monorepos/)
+- [Next.js App Router Layouts](https://nextjs.org/docs/app/getting-started/layouts-and-pages)
+- [Supabase SSR Client Creation](https://supabase.com/docs/guides/auth/server-side/creating-a-client)
+
+**Pitfalls:**
+- [getClaims vs getUser Discussion](https://github.com/supabase/supabase/issues/40985)
+- [Realtime Memory Leak Issue](https://github.com/supabase/supabase-js/issues/1204)
+- [Token Refresh Race Conditions](https://github.com/supabase/supabase/issues/18981)
+- [Expo SecureStore Size Limit](https://github.com/expo/expo/issues/1765)
 
 ### Secondary (MEDIUM confidence)
-- [Buildium Blog](https://www.buildium.com/blog/best-hoa-management-software-platforms/) - HOA feature expectations
-- [Wild Apricot](https://www.wildapricot.com/blog/hoa-software) - Property management software comparisons
-- [Proptia Visitor Management](https://www.proptia.com/visitor-management/) - Access control features
-- [EntranceIQ](https://www.entranceiq.net/blog/2025/what-is-a-gated-community-visitor-software-how-does-it-work.html) - Gated community software patterns
-- [Square Engineering - Books](https://developer.squareup.com/blog/books-an-immutable-double-entry-accounting-database-service/) - Double-entry accounting patterns
-- [Journalize.io](https://blog.journalize.io/posts/an-elegant-db-schema-for-double-entry-accounting/) - Accounting schema design
-- [Anvil](https://anvil.works/blog/double-entry-accounting-for-engineers) - Engineer's guide to double-entry
-- [AWS Multi-Tenant RLS](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/) - RLS patterns
-- [Crunchy Data](https://www.crunchydata.com/blog/row-level-security-for-tenants-in-postgres) - PostgreSQL multi-tenancy
-- [AntStack Multi-Tenant Guide](https://www.antstack.com/blog/multi-tenant-applications-with-rls-on-supabase-postgress/) - Supabase-specific patterns
-- [Supabase Best Practices (Leanware)](https://www.leanware.co/insights/supabase-best-practices) - Production recommendations
-- [GeeksforGeeks - ER Diagrams for Real Estate](https://www.geeksforgeeks.org/dbms/how-to-design-er-diagrams-for-real-estate-property-management/) - Schema patterns
-- [GitHub - Rental Database Project](https://github.com/ashmitan/Rental-Database-Project) - Example schemas
 
-### Tertiary (LOW confidence, needs validation)
-- [Medium - Soft Deletes with RLS](https://medium.com/@priyaranjanpatraa/soft-deletes-you-can-trust-row-level-archiving-with-spring-boot-jpa-postgresql-2c3544255e26) - Implementation patterns
-- [DEV - PostgreSQL Soft Delete Strategies](https://dev.to/oddcoder/postgresql-soft-delete-strategies-balancing-data-retention-50lo) - Tradeoff discussions
-- [LogVault - Audit Logs Anti-Pattern](https://www.logvault.app/blog/audit-logs-table-anti-pattern) - What not to do
-- [Andy Atkinson - Avoid UUID v4](https://andyatkinson.com/avoid-uuid-version-4-primary-keys) - UUID v7 recommendation
-- [Maciej Walkowiak - PostgreSQL UUID](https://maciejwalkowiak.com/blog/postgres-uuid-primary-key/) - Performance analysis
+- [byCedric expo-monorepo-example](https://github.com/byCedric/expo-monorepo-example) — Monorepo reference architecture
+- [Expo SDK 54 Upgrade Experience](https://medium.com/elobyte-software/what-breaks-after-an-expo-54-reactnative-0-81-15cb83cdb248) — Community upgrade report
+- [pnpm + Expo Workspaces Config](https://dev.to/isaacaddis/working-expo-pnpm-workspaces-configuration-4k2l) — Working configuration example
+
+### Tertiary (LOW confidence — needs validation)
+
+- [Supabase Middleware Performance](https://github.com/supabase/supabase/issues/30241) — Discussion of middleware latency impact (conflicting opinions)
+- [NativeWind + SDK 54 Compatibility](https://medium.com/@matthitachi/nativewind-styling-not-working-with-expo-sdk-54-54488c07c20d) — Anecdotal issue report
 
 ---
-*Research completed: 2026-01-29*
+
+*Research completed: 2026-02-06*
 *Ready for roadmap: yes*
+*Files synthesized: STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md*

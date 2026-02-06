@@ -1,851 +1,1054 @@
-# Domain Pitfalls: Supabase Multi-Tenant Property Management
+# Frontend Pitfalls: Expo + Next.js Consuming Supabase Backend
 
-**Project:** UPOE Property Management SaaS
-**Domain:** Multi-tenant SaaS with offline-first mobile, real-time features, financial calculations
-**Researched:** 2026-01-29
-**Confidence:** HIGH (verified with official Supabase docs and community reports)
+**Project:** UPOE Property Management SaaS -- Frontend Applications
+**Domain:** React Native (Expo 54) mobile app + Next.js 16 admin dashboard consuming existing Supabase backend (116 tables, 399 RLS policies)
+**Researched:** 2026-02-06
+**Confidence:** HIGH (verified against official Supabase docs, Expo docs, Next.js docs, GitHub issues)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause security breaches, data loss, or complete rewrites.
+Mistakes that cause security breaches, broken auth, or architectural rewrites.
 
-### Pitfall 1: RLS Disabled or Misconfigured on Tables
+### Pitfall 1: Using getSession() Instead of getClaims()/getUser() on the Server
 
-**What goes wrong:** Tables are created without RLS enabled, or RLS is enabled without policies, exposing all tenant data to any authenticated user (or worse, anonymous users).
+**What goes wrong:**
+Server-side code in Next.js (Server Components, Server Actions, Route Handlers) uses `supabase.auth.getSession()` to check authentication. The session data comes directly from cookies and is **not verified** against the Supabase Auth server. An attacker can forge or tamper with the JWT in the cookie, and `getSession()` will trust it.
 
 **Why it happens:**
-- RLS is disabled by default when creating tables in Supabase
-- Developers skip RLS during prototyping and forget to enable before launch
-- Enabling RLS without creating policies blocks ALL access (deny by default)
+- Older tutorials and examples use `getSession()` everywhere
+- `getSession()` is faster (no network call) so it feels like an optimization
+- The warning was only recently emphasized in docs with the introduction of `getClaims()`
+- Developers confuse "having a session" with "having a verified session"
 
 **Consequences:**
-- Complete data breach: all tenants can see each other's data
-- In January 2025, 170+ apps built with Lovable were found with exposed databases (CVE-2025-48757)
-- 83% of exposed Supabase databases involve RLS misconfigurations
+- Attackers can spoof authenticated sessions by crafting valid-looking JWTs
+- Authorization checks based on unverified claims (role, community_id) can be bypassed
+- With 6 roles (super_admin through provider), a spoofed JWT could escalate privileges
 
 **Warning signs:**
-- No `ENABLE ROW LEVEL SECURITY` statements in migrations
-- Missing `tenant_id` checks in policies
-- Policies using `WITH CHECK (true)` without proper conditions
-- Users reporting they can see other organizations' data
+- Console warnings: "Using the user object as returned from supabase.auth.getSession() could be insecure"
+- Server code calling `getSession()` and extracting user data from it
+- No `getClaims()` or `getUser()` calls in middleware or server components
 
-**Prevention:**
-```sql
--- ALWAYS in every table migration:
-ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;
+**How to avoid:**
 
--- Create restrictive policies IMMEDIATELY
-CREATE POLICY "Tenant isolation" ON table_name
-  FOR ALL
-  TO authenticated
-  USING (tenant_id = (SELECT current_tenant_id()));
+```typescript
+// WRONG: Trusts unverified cookie data
+export async function ServerComponent() {
+  const supabase = await createServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id; // SPOOFABLE
+}
+
+// RIGHT: Verifies JWT signature against JWKS
+export async function ServerComponent() {
+  const supabase = await createServerClient();
+  const { data: { claims }, error } = await supabase.auth.getClaims();
+  if (error || !claims) redirect('/login');
+  const userId = claims.sub; // Cryptographically verified
+}
+
+// RIGHT: Full server verification (slower but catches banned/logged-out users)
+export async function SensitiveAction() {
+  const supabase = await createServerClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new Error('Unauthorized');
+}
 ```
 
-**Detection:**
-```sql
--- Find tables without RLS
-SELECT schemaname, tablename
-FROM pg_tables
-WHERE schemaname = 'public'
-AND tablename NOT IN (
-  SELECT tablename FROM pg_policies WHERE schemaname = 'public'
-);
-```
+**When to use which:**
+- `getClaims()` -- Default for page protection and reads. Verifies JWT locally via JWKS. Fast.
+- `getUser()` -- For sensitive mutations (financial, role changes). Validates with Auth server. Catches banned/logged-out users.
+- `getSession()` -- Client-side only. Never on server for authorization.
 
-**Which phase should address:** Phase 1 (Foundation) - RLS must be configured from day one. Never skip.
+**Phase to address:** Phase 1 (Auth Architecture). Must be correct from the first authenticated route.
 
 **Sources:**
-- [Supabase RLS Docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
-- [Supabase RLS Complete Guide 2025](https://vibeappscanner.com/supabase-row-level-security)
-- [Multi-Tenant RLS Architecture](https://dev.to/blackie360/-enforcing-row-level-security-in-supabase-a-deep-dive-into-lockins-multi-tenant-architecture-4hd2)
+- [Supabase Server-Side Auth for Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs) -- HIGH confidence
+- [getClaims vs getUser Discussion](https://github.com/supabase/supabase/issues/40985) -- HIGH confidence
+- [SSR Attack Vector Discussion](https://github.com/orgs/supabase/discussions/23224) -- HIGH confidence
 
 ---
 
-### Pitfall 2: Using user_metadata Instead of app_metadata for Tenant ID
+### Pitfall 2: Shared Supabase Client Missing Platform-Specific Auth Configuration
 
-**What goes wrong:** Storing tenant_id in `user_metadata` instead of `app_metadata`, allowing users to modify their own tenant association and access other tenants' data.
+**What goes wrong:**
+The `@upoe/shared` package creates a single Supabase client factory, but mobile and web require fundamentally different auth configurations. Using the same config for both causes auth failures: mobile sessions are not persisted, tokens are not refreshed when the app is backgrounded, or web SSR cookies are not set.
 
 **Why it happens:**
-- Both are in the JWT and look similar
-- `user_metadata` is easier to set during signup
-- Documentation doesn't emphasize the security difference enough
+- DRY principle leads to sharing the client creation across platforms
+- The existing `createSupabaseClient()` in shared uses `detectSessionInUrl: true`, which is correct for web but wrong for React Native
+- Storage adapters differ: web uses cookies (via @supabase/ssr), mobile uses expo-sqlite or SecureStore
+- Auto-refresh behavior differs: browsers handle focus automatically, React Native needs AppState listeners
 
 **Consequences:**
-- Users can escalate privileges by modifying their `user_metadata`
-- Complete multi-tenant isolation failure
-- Potential legal liability for data exposure
+- Mobile: sessions lost after app restart, users forced to re-login constantly
+- Mobile: tokens expire while app is backgrounded, causing 401 errors on resume
+- Web: SSR hydration mismatches when client/server session state diverges
+- Web: middleware fails to refresh tokens, causing random logouts
 
 **Warning signs:**
-- RLS policies using `auth.jwt()->>'user_metadata'`
-- Tenant ID set via client-side signup call
-- No server-side validation of tenant assignment
+- Users report being logged out randomly on mobile
+- Session works in Expo Go but breaks in production builds
+- "Invalid Refresh Token: Already Used" errors
+- Next.js hydration warnings related to auth state
 
-**Prevention:**
+**How to avoid:**
+
+```typescript
+// packages/shared/src/lib/supabase.ts -- Keep shared types and base config only
+export type { Database } from '../types/database.types';
+export const SUPABASE_CONFIG = {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+  },
+} as const;
+
+// apps/mobile/src/lib/supabase.ts -- Mobile-specific client
+import { createClient } from '@supabase/supabase-js';
+import { localStorage } from 'expo-sqlite';
+import { AppState, Platform } from 'react-native';
+import type { Database } from '@upoe/shared';
+
+export const supabase = createClient<Database>(
+  process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      storage: localStorage,           // expo-sqlite storage
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,        // CRITICAL: false for React Native
+    },
+  }
+);
+
+// Register AppState listener for token refresh (once, at app root)
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
+
+// apps/admin/src/lib/supabase/server.ts -- Next.js server client
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import type { Database } from '@upoe/shared';
+
+export async function createServerSupabase() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+```
+
+**Phase to address:** Phase 1 (Monorepo Setup). The shared package boundary must be defined before any auth code.
+
+**Sources:**
+- [Supabase Expo Tutorial](https://supabase.com/docs/guides/getting-started/tutorials/with-expo-react-native) -- HIGH confidence
+- [Supabase Next.js Server-Side Auth](https://supabase.com/docs/guides/auth/server-side/nextjs) -- HIGH confidence
+- [Supabase startAutoRefresh docs](https://supabase.com/docs/reference/javascript/auth-startautorefresh) -- HIGH confidence
+
+---
+
+### Pitfall 3: Missing Next.js Middleware for Token Refresh
+
+**What goes wrong:**
+Without middleware calling `supabase.auth.getClaims()` (or `getUser()`) on every request, expired auth tokens in cookies are never refreshed. Server Components cannot write cookies, so they cannot update the session. Users experience random logouts, especially after periods of inactivity.
+
+**Why it happens:**
+- Developers assume the Supabase client handles refresh automatically
+- The browser client does refresh automatically, creating a false sense of security
+- Server Components are read-only for cookies -- this is a Next.js constraint, not a Supabase one
+- Missing middleware is not immediately obvious during development with short sessions
+
+**Consequences:**
+- Users logged out after JWT expiry (default 1 hour)
+- Race conditions when multiple parallel requests try to refresh the same token
+- "Invalid Refresh Token: Already Used" errors when middleware and Server Components both attempt refresh
+- Admin dashboard becomes unusable for long working sessions
+
+**Warning signs:**
+- Users report being logged out after ~1 hour of use
+- "AuthApiError: Invalid Refresh Token: Already Used" in server logs
+- Auth works perfectly in development but fails in production
+
+**How to avoid:**
+
+```typescript
+// middleware.ts (root of Next.js app)
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          // Pass refreshed tokens to both request and response
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // This refreshes the token and writes updated cookies
+  const { data: { claims } } = await supabase.auth.getClaims();
+
+  // Redirect unauthenticated users
+  if (!claims && !request.nextUrl.pathname.startsWith('/login')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: [
+    // Skip static files and API routes that don't need auth
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+```
+
+**Critical detail:** The middleware must set cookies on BOTH the request (for downstream Server Components) AND the response (for the browser). Missing either one causes subtle bugs.
+
+**Phase to address:** Phase 1 (Auth Architecture). This is the first file to create in the Next.js app.
+
+**Sources:**
+- [Supabase Next.js Server-Side Auth Setup](https://supabase.com/docs/guides/auth/server-side/nextjs) -- HIGH confidence
+- [Token Refresh Race Conditions](https://github.com/supabase/supabase/issues/18981) -- HIGH confidence
+- [Middleware Performance Discussion](https://github.com/supabase/supabase/issues/30241) -- MEDIUM confidence
+
+---
+
+### Pitfall 4: Realtime Subscription Memory Leaks in React Components
+
+**What goes wrong:**
+Supabase Realtime channels are created in `useEffect` but not properly cleaned up. React 19's Strict Mode double-invokes effects in development, creating orphaned WebSocket subscriptions. In production, navigating between screens creates new subscriptions without removing old ones. Memory grows steadily and the app crashes after extended use.
+
+**Why it happens:**
+- `useEffect` cleanup is not called when `subscribe()` is still pending
+- React Strict Mode mounts/unmounts/remounts, and the first subscribe gets a CLOSED signal
+- Developers use `channel.unsubscribe()` (which only unsubscribes) instead of `supabase.removeChannel(channel)` (which also cleans up the WebSocket)
+- On React Native, screen transitions via React Navigation don't unmount screens by default (they stay in the stack)
+
+**Consequences:**
+- Steady memory growth (reported on GitHub issue #1204 for supabase-js)
+- Duplicate event handlers firing, causing UI glitches
+- Hitting Supabase Realtime rate limits (100 channels per client by default)
+- App crashes on low-memory mobile devices after extended use
+
+**Warning signs:**
+- "Channel Already Subscribed" warnings in console
+- Duplicate notifications or events
+- Memory usage climbing in React Native performance monitor
+- Realtime works for ~8 seconds then stops (rate limit)
+
+**How to avoid:**
+
+```typescript
+// WRONG: No cleanup, stale references
+useEffect(() => {
+  const channel = supabase
+    .channel('notifications')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, handler)
+    .subscribe();
+  // Missing cleanup!
+}, []);
+
+// RIGHT: Proper cleanup with removeChannel
+useEffect(() => {
+  const channel = supabase
+    .channel(`notifications-${communityId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications',
+      filter: `community_id=eq.${communityId}`,
+    }, handleNotification)
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel); // Removes AND unsubscribes
+  };
+}, [communityId]);
+
+// For React Navigation screens that stay mounted, use focus/blur
+import { useFocusEffect } from '@react-navigation/native';
+
+function GuardDashboard() {
+  useFocusEffect(
+    useCallback(() => {
+      const channel = supabase
+        .channel('guard-alerts')
+        .on('postgres_changes', { /* ... */ }, handleAlert)
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }, [])
+  );
+}
+```
+
+**Phase to address:** Phase 2 (Realtime Infrastructure). Build a subscription management hook/utility before any feature uses Realtime.
+
+**Sources:**
+- [Supabase removeChannel docs](https://supabase.com/docs/reference/javascript/removechannel) -- HIGH confidence
+- [Memory leak issue #1204](https://github.com/supabase/supabase-js/issues/1204) -- HIGH confidence
+- [React Strict Mode + Realtime issue #169](https://github.com/supabase/realtime-js/issues/169) -- HIGH confidence
+
+---
+
+### Pitfall 5: Monorepo Workspace Configuration Incomplete for Expo + Next.js
+
+**What goes wrong:**
+The current `pnpm-workspace.yaml` only includes `packages/*` but the root `package.json` scripts reference apps at `@upoe/admin` and `@upoe/mobile`. When the `apps/` directory is created, pnpm will not recognize those workspaces. Additionally, pnpm's default isolated dependency installation breaks Metro bundler's module resolution, causing "Unable to resolve module" errors at runtime.
+
+**Why it happens:**
+- Workspace config was created before the apps were planned
+- pnpm defaults to isolated (`node-linker=hoisted` not set) which React Native's Metro bundler historically could not handle
+- Expo SDK 54 added isolated dependency support but only since SDK 54 itself
+- Duplicate React/React Native versions across workspaces cause red screens and build failures
+- EAS Build assumes Yarn-style hoisted `node_modules`, not pnpm's symlink structure
+
+**Consequences:**
+- `pnpm --filter @upoe/mobile start` fails with "package not found"
+- Metro bundler crashes with "Unable to resolve module 'react-native'" at runtime
+- Duplicate React versions cause "Invalid hook call" errors
+- EAS builds fail because pnpm layout is not recognized
+- `@upoe/shared` TypeScript types not resolved by either app
+
+**Warning signs:**
+- `pnpm ls` does not show app packages
+- Metro red screen "Unable to resolve module" on launch
+- TypeScript cannot find `@upoe/shared` module
+- Different React versions in `pnpm why react`
+
+**How to avoid:**
+
+```yaml
+# pnpm-workspace.yaml -- MUST include apps
+packages:
+  - "packages/*"
+  - "apps/*"
+```
+
+```ini
+# .npmrc -- Consider keeping hoisted for now if EAS Build issues arise
+auto-install-peers=true
+strict-peer-dependencies=false
+# Expo SDK 54 supports isolated installs, but if EAS builds fail:
+# node-linker=hoisted
+```
+
+```json
+// Root package.json -- Pin shared React/React Native versions
+{
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-native": "0.81.0"
+    }
+  }
+}
+```
+
+```javascript
+// apps/mobile/metro.config.js -- SDK 54 auto-configures, but verify
+const { getDefaultConfig } = require('expo/metro-config');
+const config = getDefaultConfig(__dirname);
+// SDK 54+ auto-detects monorepo. If issues arise:
+// config.resolver.unstable_enableSymlinks = true;
+module.exports = config;
+```
+
+**Phase to address:** Phase 1 (Monorepo Setup). Must be the VERY FIRST task before any app code.
+
+**Sources:**
+- [Expo Monorepo Guide](https://docs.expo.dev/guides/monorepos/) -- HIGH confidence
+- [pnpm + Expo Working Configuration](https://dev.to/isaacaddis/working-expo-pnpm-workspaces-configuration-4k2l) -- MEDIUM confidence
+- [byCedric expo-monorepo-example](https://github.com/byCedric/expo-monorepo-example) -- MEDIUM confidence
+
+---
+
+### Pitfall 6: Role-Based Authorization Checked Only on Frontend
+
+**What goes wrong:**
+With 6 user roles, developers implement authorization logic purely in React components (hiding buttons, redirecting routes) without enforcing it server-side. An attacker with a valid JWT for a `resident` role can call any API endpoint or Supabase query directly, bypassing all frontend guards.
+
+**Why it happens:**
+- Frontend role checks are visible and testable ("if role !== 'admin', hide button")
+- RLS policies exist for tenant isolation but not for role-based access within a tenant
+- Developers assume hiding the UI is sufficient
+- The 399 existing RLS policies use `community_id` for tenant isolation but may not all check roles
+
+**Consequences:**
+- Residents can access admin-only data by querying Supabase directly
+- Guards can modify financial records
+- Providers can read other providers' data within the same community
+- Violates the principle of defense-in-depth
+
+**Warning signs:**
+- Authorization logic only in React components (no RLS role checks)
+- All authenticated users can SELECT from all tables within their tenant
+- No `app_metadata->>'role'` checks in RLS policies
+- Admin-only pages work when accessed directly via URL
+
+**How to avoid:**
+
+```typescript
+// WRONG: Frontend-only authorization
+function AdminDashboard() {
+  const { role } = useAuth();
+  if (role !== 'community_admin') return <Redirect to="/home" />;
+  // Data is still accessible via direct Supabase query!
+  return <Dashboard />;
+}
+
+// RIGHT: RLS enforces role + frontend hides UI for UX
+// In database migration:
+```
+
 ```sql
--- CORRECT: Use app_metadata (server-controlled only)
-CREATE POLICY "Tenant isolation" ON properties
-  FOR ALL
+-- RLS policy example: Only admins can see financial data
+CREATE POLICY "Admin financial access" ON financial_transactions
+  FOR SELECT
+  TO authenticated
   USING (
-    tenant_id = (auth.jwt()->'app_metadata'->>'tenant_id')::uuid
+    community_id = (SELECT (auth.jwt()->'app_metadata'->>'community_id')::uuid)
+    AND (SELECT auth.jwt()->'app_metadata'->>'role') IN ('super_admin', 'community_admin', 'manager')
+  );
+
+-- Guards can only see their assigned access points
+CREATE POLICY "Guard access point visibility" ON access_logs
+  FOR SELECT
+  TO authenticated
+  USING (
+    community_id = (SELECT (auth.jwt()->'app_metadata'->>'community_id')::uuid)
+    AND (
+      (SELECT auth.jwt()->'app_metadata'->>'role') IN ('super_admin', 'community_admin', 'manager')
+      OR (
+        (SELECT auth.jwt()->'app_metadata'->>'role') = 'guard'
+        AND access_point_id IN (
+          SELECT access_point_id FROM guard_assignments
+          WHERE guard_id = (SELECT (auth.jwt()->'app_metadata'->>'guard_id')::uuid)
+        )
+      )
+    )
   );
 ```
 
 ```typescript
-// Set tenant via server-side Admin API only
-const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-  app_metadata: { tenant_id: tenantId }
-});
+// Frontend: Hide UI for UX (not security)
+function useCanAccess(requiredRoles: SystemRole[]) {
+  const { appMetadata } = useAuth();
+  return requiredRoles.includes(appMetadata.role as SystemRole);
+}
 ```
 
-**Which phase should address:** Phase 1 (Foundation) - Part of auth architecture design.
+**Phase to address:** Phase 1 (Auth Architecture). Audit existing RLS policies for role enforcement before building any UI.
 
 **Sources:**
-- [Supabase Token Security](https://supabase.com/docs/guides/auth/oauth-server/token-security)
-- [Multi-Tenancy Best Practices](https://www.tomaszezula.com/keep-data-safe-in-multi-tenant-systems-a-case-for-supabase-and-row-level-security/)
-
----
-
-### Pitfall 3: Service Role Key Exposed in Client Code
-
-**What goes wrong:** The `service_role` key (which bypasses all RLS) is included in client-side code, giving attackers full database access.
-
-**Why it happens:**
-- Confusion between `anon` key and `service_role` key
-- Copy-paste from server code to client code
-- Environment variable misconfiguration
-
-**Consequences:**
-- Complete database compromise
-- Attacker can read, modify, and delete ALL data
-- No audit trail possible
-
-**Warning signs:**
-- `service_role` key in frontend environment variables
-- Client-side Supabase client initialized with service role
-- RLS policies never being enforced during testing
-
-**Prevention:**
-- Never use `service_role` key anywhere except server-side code
-- Use separate environment variable files for client vs server
-- Audit all environment variables in build output
-- Add pre-commit hooks to detect service role key exposure
-
-**Which phase should address:** Phase 1 (Foundation) - Environment setup and security review.
-
-**Sources:**
-- [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)
-
----
-
-### Pitfall 4: RLS Performance Degradation with Complex Policies
-
-**What goes wrong:** RLS policies with subqueries, joins, or function calls execute on every row, causing queries to slow from milliseconds to seconds.
-
-**Why it happens:**
-- RLS policies evaluated per-row, not once per query
-- Subqueries in policies run repeatedly
-- Missing indexes on columns used in policies
-- Database ignores indexes when RLS is enabled incorrectly
-
-**Consequences:**
-- Dashboard load times of 3-5 seconds instead of <500ms
-- Sequential scans on large tables
-- Timeouts on reports and analytics queries
-- Users complain "app is slow"
-
-**Warning signs:**
-- `Seq Scan` in EXPLAIN output despite indexes existing
-- Queries slow with RLS enabled, fast with RLS disabled
-- Performance degrades as data grows
-- High CPU usage on database
-
-**Prevention:**
-
-```sql
--- BAD: Subquery evaluated per row
-CREATE POLICY "Team access" ON documents
-  USING (
-    auth.uid() IN (
-      SELECT user_id FROM team_members
-      WHERE team_id = documents.team_id
-    )
-  );
-
--- GOOD: Flip the subquery direction
-CREATE POLICY "Team access" ON documents
-  USING (
-    team_id IN (
-      SELECT team_id FROM team_members
-      WHERE user_id = auth.uid()
-    )
-  );
-
--- BETTER: Use security definer function
-CREATE FUNCTION user_team_ids() RETURNS SETOF uuid
-  LANGUAGE sql SECURITY DEFINER STABLE
-AS $$
-  SELECT team_id FROM team_members WHERE user_id = auth.uid()
-$$;
-
-CREATE POLICY "Team access" ON documents
-  USING (tenant_id IN (SELECT user_team_ids()));
-
--- CRITICAL: Index columns used in RLS
-CREATE INDEX idx_documents_tenant_id ON documents(tenant_id);
-CREATE INDEX idx_team_members_user_id ON team_members(user_id);
-```
-
-```sql
--- Wrap functions in SELECT for caching
--- BAD:
-USING (is_admin() OR auth.uid() = user_id)
-
--- GOOD:
-USING ((SELECT is_admin()) OR (SELECT auth.uid()) = user_id)
-```
-
-**Detection:**
-```sql
--- Use EXPLAIN to check for sequential scans
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM properties WHERE tenant_id = 'xxx' LIMIT 10;
-```
-
-**Which phase should address:** Phase 1 (Foundation) - Design policies correctly from start. Phase 3+ - Performance testing and optimization.
-
-**Sources:**
-- [Supabase RLS Performance Troubleshooting](https://supabase.com/docs/guides/troubleshooting/rls-performance-and-best-practices-Z5Jjwv)
-- [Optimizing RLS Performance](https://www.antstack.com/blog/optimizing-rls-performance-with-supabase/)
-- [RLS Performance Discussion](https://github.com/orgs/supabase/discussions/14576)
-
----
-
-### Pitfall 5: Views Bypassing RLS by Default
-
-**What goes wrong:** Views created in Supabase bypass RLS because they run with `security definer` (creator's privileges) by default.
-
-**Why it happens:**
-- PostgreSQL default behavior for views
-- Views created by `postgres` role have full access
-- Developers assume views inherit table RLS
-
-**Consequences:**
-- Data exposed through views despite table RLS
-- Multi-tenant isolation completely broken via views
-- Security audit failures
-
-**Warning signs:**
-- Views returning data that should be filtered
-- Different results between direct table query and view query
-- No `security_invoker` in view definitions
-
-**Prevention:**
-```sql
--- PostgreSQL 15+: Make views respect caller's RLS
-CREATE VIEW property_summary
-WITH (security_invoker = true)
-AS SELECT ...;
-
--- Or avoid views for multi-tenant data entirely
--- Use functions with SECURITY INVOKER instead
-```
-
-**Which phase should address:** Phase 1 (Foundation) - Establish view creation standards.
-
-**Sources:**
-- [Supabase RLS Docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
-
----
-
-### Pitfall 6: Financial Calculations with Wrong Data Types
-
-**What goes wrong:** Using `real`, `float`, `double precision`, or `money` type for financial amounts causes rounding errors that compound over time.
-
-**Why it happens:**
-- Floating point seems "good enough" for currency
-- `money` type sounds appropriate but has issues
-- Two decimal places seems sufficient
-
-**Consequences:**
-- Rounding errors in invoices and payments
-- Accounts don't balance
-- Legal/compliance issues with financial reporting
-- Errors compound: buying 1M widgets at wrong price = significant loss
-
-**Warning signs:**
-- Penny discrepancies in financial reports
-- Totals not matching sum of line items
-- Currency conversion producing unexpected results
-
-**Prevention:**
-```sql
--- CORRECT: Use NUMERIC with sufficient precision
--- GAAP requires minimum 4 decimal places
-CREATE TABLE payments (
-  amount NUMERIC(15, 4) NOT NULL,  -- 4 decimal places for calculations
-  currency VARCHAR(3) NOT NULL DEFAULT 'USD'
-);
-
--- Alternative: Store as integer cents (bigint)
-CREATE TABLE payments (
-  amount_cents BIGINT NOT NULL,  -- $100.00 stored as 10000
-  currency VARCHAR(3) NOT NULL DEFAULT 'USD'
-);
-
--- NEVER use these for money:
--- real, float, double precision, money
-```
-
-**Which phase should address:** Phase 1 (Foundation) - Schema design decisions are hard to change later.
-
-**Sources:**
-- [Working with Money in Postgres](https://www.crunchydata.com/blog/working-with-money-in-postgres)
-- [PostgreSQL and Financial Calculations](https://www.commandprompt.com/blog/postgresql-and-financial-calculations-part-one/)
-- [PostgreSQL Monetary Types Docs](https://www.postgresql.org/docs/current/datatype-money.html)
+- [Supabase RLS Performance Best Practices](https://supabase.com/docs/guides/troubleshooting/rls-performance-and-best-practices-Z5Jjwv) -- HIGH confidence
+- [Understanding API Keys](https://supabase.com/docs/guides/api/api-keys) -- HIGH confidence
 
 ---
 
 ## Moderate Pitfalls
 
-Mistakes that cause significant delays, tech debt, or poor user experience.
+Mistakes that cause significant delays, technical debt, or degraded user experience.
 
-### Pitfall 7: Realtime Subscriptions Breaking Silently
+### Pitfall 7: 393KB database.types.ts Slowing Down TypeScript and Bundling
 
-**What goes wrong:** Realtime subscriptions disconnect, produce duplicates, or stop receiving events without clear errors.
+**What goes wrong:**
+The generated `database.types.ts` file is 12,202 lines / 393KB. TypeScript's language server becomes sluggish when this file is imported across the monorepo. Every file that imports from `@upoe/shared` triggers TS to re-evaluate the massive Database type. IDE autocompletion becomes slow, and CI type-checking takes significantly longer.
 
 **Why it happens:**
-- Subscriptions auto-disconnect when browser tab is hidden
-- Status shows "CLOSED" but connection still open
-- Channel names not unique, causing conflicts
-- RLS policies block realtime events silently
+- 116 tables generate enormous type unions
+- The `Tables<'table_name'>` helper forces TS to evaluate all 116 table types
+- Every `supabase.from('table')` call resolves against the full Database type
+- TypeScript does not tree-shake types at the language server level
 
 **Consequences:**
-- Guard alerts not received in real-time
-- Duplicate notifications
-- Users see stale data
-- Unreliable experience requiring page refresh
+- IDE autocompletion delays of 2-5 seconds
+- `tsc` type-checking taking 30-60+ seconds in CI
+- Developer frustration and productivity loss
+- Temptation to use `any` to avoid slow type resolution
 
 **Warning signs:**
-- "Channel Already Subscribed" errors
-- Events work for ~8 seconds then stop
-- Tab switching breaks subscriptions
-- Works locally but not in production
+- "TypeScript server is busy" warnings in VS Code
+- Slow autocomplete specifically on Supabase query chains
+- CI type-check step becoming a bottleneck
 
-**Prevention:**
+**How to avoid:**
+
 ```typescript
-// Create self-healing subscription
-const subscribeWithRecovery = (table: string, callback: Function) => {
-  let channel: RealtimeChannel;
+// Option 1: Create focused type subsets for each app
+// packages/shared/src/types/mobile.types.ts
+import type { Database } from './database.types';
 
-  const connect = () => {
-    // Ensure unique channel name
-    const channelName = `${table}-${Date.now()}`;
-
-    // Clean up previous channel first
-    if (channel) {
-      supabase.removeChannel(channel);
-    }
-
-    channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table
-      }, callback)
-      .subscribe((status) => {
-        if (status === 'CLOSED') {
-          // Reconnect with exponential backoff
-          setTimeout(connect, 1000);
-        }
-      });
+// Only the tables the mobile app needs
+export type MobileDB = {
+  public: {
+    Tables: Pick<Database['public']['Tables'],
+      | 'residents'
+      | 'units'
+      | 'notifications'
+      | 'access_logs'
+      | 'invitations'
+      | 'push_tokens'
+      | 'payments'
+      | 'reservations'
+    >;
+    Views: Pick<Database['public']['Views'], 'unit_balances'>;
+    Functions: Database['public']['Functions'];
+    Enums: Database['public']['Enums'];
   };
-
-  connect();
-
-  // Handle visibility changes
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      connect();
-    }
-  });
 };
+
+// Option 2: Use explicit return types on data-fetching functions
+// Instead of exposing raw Supabase queries everywhere
+export async function getResidentNotifications(supabase: SupabaseClient, residentId: string) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, title, body, read_at, created_at')
+    .eq('recipient_id', residentId)
+    .order('created_at', { ascending: false });
+
+  return { data, error };
+  // Return type is inferred once, not re-evaluated at every call site
+}
 ```
 
-**RLS + Realtime Fix:**
-```sql
--- Realtime requires SELECT policies
-CREATE POLICY "Allow realtime reads" ON notifications
-  FOR SELECT
-  USING (tenant_id = current_tenant_id());
-```
+**Note:** This is a developer experience issue, not a runtime bundle size issue. TypeScript types are erased at compilation and do not affect the shipped bundle. However, development velocity impact is real.
 
-**Which phase should address:** Phase 2/3 (Real-time features) - Build robust subscription handling from start.
+**Phase to address:** Phase 1 (Shared Package Architecture). Decide on type strategy before apps start consuming types.
 
 **Sources:**
-- [Production-ready Realtime Listener](https://medium.com/@dipiash/supabase-realtime-postgres-changes-in-node-js-2666009230b0)
-- [Supabase Realtime Troubleshooting](https://github.com/orgs/supabase/discussions/5312)
-- [Supabase Realtime RLS Issues](https://www.technetexperts.com/realtime-rls-solved/)
+- [Supabase TypeScript Support](https://supabase.com/docs/reference/javascript/typescript-support) -- HIGH confidence
+- Project observation: 12,202 lines confirmed in `packages/shared/src/types/database.types.ts`
 
 ---
 
-### Pitfall 8: Offline Sync Conflict Resolution Failures
+### Pitfall 8: Expo SecureStore 2048-Byte Limit Breaking Auth Token Storage
 
-**What goes wrong:** Multiple users or devices modify the same data offline, and changes are lost or corrupted when syncing.
+**What goes wrong:**
+Supabase auth sessions (which include JWT access tokens + refresh tokens + user metadata) can exceed 2048 bytes. On some iOS versions, `expo-secure-store` silently fails or throws when storing values larger than ~2048 bytes. The session appears saved but is actually lost, causing users to be logged out on next app launch.
 
 **Why it happens:**
-- "Last write wins" is default but wrong for business data
-- No conflict detection strategy defined
-- Optimistic updates without proper reconciliation
+- iOS Keychain historically had a ~2048-byte limit for individual items
+- Supabase JWTs with `app_metadata` (containing community_id, role, resident_id, guard_id, organization_id) can push the token beyond this limit
+- Expo does not enforce a limit itself, but the underlying native API may reject large values
+- The failure is often silent -- no error thrown, data just not persisted
 
 **Consequences:**
-- Payment records overwritten
-- Resident data lost
-- Guard reports conflicting
-- Data integrity violations
+- Session lost on app restart (user must re-login every time)
+- Intermittent: works on some devices, fails on others (depends on iOS version)
+- Hard to debug because the error is not surfaced to JavaScript
 
 **Warning signs:**
-- Users report "my changes disappeared"
-- Inconsistent data between devices
-- Audit logs show gaps or reversions
+- Users on older iOS versions report being logged out on every app restart
+- Auth works in Expo Go but fails in production builds
+- `getSession()` returns null after app restart despite successful login
 
-**Prevention:**
+**How to avoid:**
+
 ```typescript
-// Define conflict resolution strategy per table
-const conflictStrategies = {
-  // Financial: Server always wins (require online for payments)
-  payments: 'server-wins',
+// RECOMMENDED: Use expo-sqlite localStorage adapter (what Supabase docs now recommend)
+import { localStorage } from 'expo-sqlite';
 
-  // Residents: Last-modified-wins with merge
-  residents: 'last-modified-merge',
-
-  // Guard logs: Append-only (never conflicts)
-  guard_logs: 'append-only',
-
-  // Documents: Manual resolution required
-  documents: 'manual-review'
-};
-
-// PowerSync conflict handling
-const handleConflict = (local: any, remote: any, table: string) => {
-  switch (conflictStrategies[table]) {
-    case 'server-wins':
-      return remote;
-    case 'last-modified-merge':
-      return local.updated_at > remote.updated_at ? local : remote;
-    case 'append-only':
-      return [...local, ...remote];
-    case 'manual-review':
-      return { ...remote, _conflict: local };
-  }
-};
-```
-
-**Which phase should address:** Phase 2 (Offline-first) - Core sync architecture decision.
-
-**Sources:**
-- [PowerSync + Supabase](https://www.powersync.com/blog/offline-first-apps-made-simple-supabase-powersync)
-- [Offline-First Chat App](https://bndkt.com/blog/2023/building-an-offline-first-chat-app-using-powersync-and-supabase)
-
----
-
-### Pitfall 9: Storage RLS Policy Violations
-
-**What goes wrong:** File uploads fail with RLS errors despite seemingly correct policies, or files are exposed to wrong tenants.
-
-**Why it happens:**
-- Storage uses separate `storage.objects` table with its own RLS
-- Bucket permissions AND RLS both apply
-- Service role timing issues with metadata
-- `upsert` requires SELECT + UPDATE policies, not just INSERT
-
-**Consequences:**
-- Photo uploads fail intermittently
-- Document access broken for some users
-- Files visible across tenant boundaries
-- 403 errors with misleading messages
-
-**Warning signs:**
-- Uploads fail at 100% progress
-- Intermittent "RLS violation" errors
-- 400 status but 403 error message in body
-- Works with service role but not user token
-
-**Prevention:**
-```sql
--- Complete storage policy set for multi-tenant
-CREATE POLICY "Tenant upload" ON storage.objects
-  FOR INSERT
-  WITH CHECK (
-    bucket_id = 'tenant-files'
-    AND auth.role() = 'authenticated'
-    AND (storage.foldername(name))[1] = (
-      SELECT (auth.jwt()->'app_metadata'->>'tenant_id')
-    )
-  );
-
-CREATE POLICY "Tenant read" ON storage.objects
-  FOR SELECT
-  USING (
-    bucket_id = 'tenant-files'
-    AND (storage.foldername(name))[1] = (
-      SELECT (auth.jwt()->'app_metadata'->>'tenant_id')
-    )
-  );
-
--- If using upsert, also need UPDATE
-CREATE POLICY "Tenant update" ON storage.objects
-  FOR UPDATE
-  USING (
-    bucket_id = 'tenant-files'
-    AND (storage.foldername(name))[1] = (
-      SELECT (auth.jwt()->'app_metadata'->>'tenant_id')
-    )
-  );
-```
-
-**File path convention:**
-```
-/{tenant_id}/{entity_type}/{entity_id}/{filename}
-/abc123/residents/456/profile.jpg
-/abc123/documents/789/contract.pdf
-```
-
-**Which phase should address:** Phase 2/3 (File features) - Establish storage conventions early.
-
-**Sources:**
-- [Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control)
-- [Storage RLS Policy Discussions](https://github.com/orgs/supabase/discussions/35737)
-- [Storage RLS Admin Upload Fix](https://www.technetexperts.com/supabase-storage-rls-admin-upload-fix/)
-
----
-
-### Pitfall 10: Schema Drift Between Environments
-
-**What goes wrong:** Production database diverges from migration files due to manual changes, causing deployment failures and data issues.
-
-**Why it happens:**
-- "Quick fixes" made directly in production dashboard
-- Multiple developers making local changes
-- Migrations not tested before deployment
-- No staging environment mirroring production
-
-**Consequences:**
-- Deployments fail with "already exists" or "doesn't exist" errors
-- Cannot recreate production locally
-- Migrations become unreliable
-- Team loses confidence in deployment process
-
-**Warning signs:**
-- Migration history mismatch errors
-- `supabase db diff` shows unexpected changes
-- "Works on my machine" but fails in production
-- Fear of running migrations
-
-**Prevention:**
-```bash
-# Golden rule: NEVER modify production directly via UI
-
-# Always use migration workflow
-supabase db diff --use-migra -f new_feature
-supabase db push --dry-run  # Preview first!
-supabase db push
-
-# Sync local from production when needed
-supabase db pull
-
-# CI/CD pipeline for migrations
-# .github/workflows/migrate.yml
-```
-
-```yaml
-# Use CI/CD, not manual deployment
-name: Deploy Migrations
-on:
-  push:
-    branches: [main]
-jobs:
-  migrate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-      - run: supabase db push --db-url ${{ secrets.SUPABASE_DB_URL }}
-```
-
-**Which phase should address:** Phase 1 (Foundation) - Set up migration workflow before any schema changes.
-
-**Sources:**
-- [Database Migrations Docs](https://supabase.com/docs/guides/deployment/database-migrations)
-- [Managing Migrations Across Environments](https://dev.to/parth24072001/supabase-managing-database-migrations-across-multiple-environments-local-staging-production-4emg)
-
----
-
-### Pitfall 11: Edge Function Cold Starts and Timeouts
-
-**What goes wrong:** Edge Functions have unpredictable latency (400ms+ cold starts) and timeout on long operations.
-
-**Why it happens:**
-- Cold starts when function hasn't been called recently
-- 2-second CPU limit (not wall clock)
-- External API calls eat into timeout budget
-- Supabase self-hosts Deno (not Deno Deploy)
-
-**Consequences:**
-- Slow guard notifications (missing 400ms+ on first alert)
-- Payment webhooks timing out
-- Inconsistent user experience
-- Functions failing mid-operation
-
-**Warning signs:**
-- First request after idle period is slow
-- "wall clock time limit reached" errors
-- Functions work locally but fail in production
-- Timeouts on complex calculations
-
-**Prevention:**
-```typescript
-// Keep functions warm with scheduled ping
-// supabase/functions/keep-warm/index.ts
-Deno.serve(async () => {
-  // Called every 5 minutes by cron
-  return new Response('warm');
+const supabase = createClient<Database>(url, key, {
+  auth: {
+    storage: localStorage,  // No size limit, encrypted at rest on iOS
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
 });
 
-// In database or external scheduler:
-// SELECT cron.schedule('keep-warm', '*/5 * * * *',
-//   $$SELECT net.http_get('https://xxx.supabase.co/functions/v1/keep-warm')$$);
+// ALTERNATIVE: If you need SecureStore's hardware-backed encryption,
+// use an unlimited wrapper that chunks large values
+// npm: @neverdull-agency/expo-unlimited-secure-store
 ```
 
-```typescript
-// Break long operations into chunks
-export async function processPayments(req: Request) {
-  const { batch } = await req.json();
-
-  // Process in chunks, return early
-  const chunk = batch.slice(0, 10);
-  const remaining = batch.slice(10);
-
-  // Process chunk synchronously
-  for (const payment of chunk) {
-    await processPayment(payment);
-  }
-
-  // Queue remaining for next invocation
-  if (remaining.length > 0) {
-    await queueNextBatch(remaining);
-  }
-
-  return new Response(JSON.stringify({ processed: chunk.length }));
-}
-```
-
-**Which phase should address:** Phase 2+ (When building Edge Functions) - Design for latency constraints.
+**Phase to address:** Phase 1 (Mobile Auth Setup). Storage adapter must be chosen at client initialization.
 
 **Sources:**
-- [Edge Function Limits](https://supabase.com/docs/guides/functions/limits)
-- [Edge Function Troubleshooting](https://supabase.com/docs/guides/functions/troubleshooting)
-- [Edge Function Performance Discussion](https://github.com/orgs/supabase/discussions/29301)
+- [Expo SecureStore docs](https://docs.expo.dev/versions/latest/sdk/securestore/) -- HIGH confidence
+- [Supabase Expo Tutorial (recommends expo-sqlite)](https://supabase.com/docs/guides/getting-started/tutorials/with-expo-react-native) -- HIGH confidence
+- [SecureStore size limit issue #1765](https://github.com/expo/expo/issues/1765) -- HIGH confidence
 
 ---
 
-### Pitfall 12: Over-Engineering Business Logic in Database
+### Pitfall 9: File Uploads from React Native Failing Due to Blob/File Type Mismatch
 
-**What goes wrong:** Complex business rules implemented as triggers and functions become unmaintainable and untestable.
+**What goes wrong:**
+`expo-image-picker` returns a file URI string, but `supabase.storage.from('bucket').upload()` expects a `File` or `ArrayBuffer`. Attempting to convert URI to Blob and pass it directly results in TypeScript errors (Blob missing `lastModified` and `name` properties) or 0-byte uploads (promise not awaited).
 
 **Why it happens:**
-- "Keep logic close to data" sounds good
-- SQL seems elegant for some operations
-- Avoiding round-trips to application layer
-- Difficulty testing database code
+- Web APIs (`File`, `Blob`) work differently in React Native
+- React Native does not have a native `File` constructor compatible with web
+- Developers try web patterns that do not translate to mobile
+- The conversion from URI to uploadable format requires multiple async steps
 
 **Consequences:**
-- Hard to debug business logic
-- Vendor lock-in to PostgreSQL
-- Cannot unit test without database
-- Complex migrations when logic changes
+- File uploads silently produce 0-byte files in storage
+- Upload appears to succeed (200 response) but file is empty
+- TypeScript compile errors when trying to pass Blob as File
+- User profile photos, document uploads, and evidence attachments all broken
 
 **Warning signs:**
-- Triggers calling triggers
-- 100+ line PL/pgSQL functions
-- Business rules duplicated in app and database
-- "Nobody understands how that trigger works"
+- Uploaded files are 0 bytes in Supabase Storage dashboard
+- TypeScript error: "Argument of type 'Blob' is not assignable to parameter of type 'File'"
+- Upload function works in Next.js admin but fails in mobile app
 
-**Prevention:**
-```
-Layer appropriately:
-
-DATABASE LAYER (triggers/functions):
-- Audit logging (created_at, updated_at, created_by)
-- Referential integrity beyond FK constraints
-- Data normalization/denormalization
-- Simple computed fields
-
-APPLICATION LAYER (Edge Functions/API):
-- Business validation (can user perform action?)
-- Workflow logic (what happens after X?)
-- External integrations
-- Complex calculations
-- Anything that needs unit testing
-```
+**How to avoid:**
 
 ```typescript
-// Example: Keep payment logic in Edge Function
-async function processPayment(payment: Payment) {
-  // Validation - testable!
-  if (!canUserMakePayment(payment.user_id, payment.amount)) {
-    throw new PaymentError('Insufficient permissions');
-  }
+import * as ImagePicker from 'expo-image-picker';
 
-  // Business logic - testable!
-  const fee = calculateProcessingFee(payment.amount);
-  const total = payment.amount + fee;
-
-  // Only simple insert in database
-  await supabase.from('payments').insert({
-    ...payment,
-    fee,
-    total,
-    status: 'pending'
+async function uploadProfilePhoto(userId: string) {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
   });
+
+  if (result.canceled || !result.assets[0]) return;
+
+  const asset = result.assets[0];
+  const ext = asset.uri.split('.').pop() ?? 'jpg';
+  const fileName = `${userId}/profile.${ext}`;
+
+  // CORRECT: Read file as ArrayBuffer
+  const response = await fetch(asset.uri);
+  const arrayBuffer = await response.arrayBuffer();
+
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .upload(fileName, arrayBuffer, {
+      contentType: asset.mimeType ?? `image/${ext}`,
+      upsert: true,
+    });
+
+  if (error) throw error;
+  return data.path;
 }
 ```
 
-**Which phase should address:** Phase 1 (Foundation) - Establish where logic lives before building features.
+```typescript
+// WRONG: Common mistakes
+// 1. Passing URI string directly (not a valid upload format)
+await supabase.storage.from('avatars').upload(name, asset.uri); // FAILS
 
-**Sources:**
-- [Supabase Common Mistakes](https://hrekov.com/blog/supabase-common-mistakes)
-- [3 Biggest Mistakes Using Supabase](https://medium.com/@lior_amsalem/3-biggest-mistakes-using-supabase-854fe45712e3)
+// 2. Converting to Blob but not awaiting
+const blob = fetch(asset.uri).then(r => r.blob()); // Promise, not Blob!
+await supabase.storage.from('avatars').upload(name, blob); // 0 bytes
 
----
-
-## Minor Pitfalls
-
-Mistakes that cause annoyance but are easily fixable.
-
-### Pitfall 13: JWT Expiration Session Issues
-
-**What goes wrong:** Users get logged out unexpectedly, or stale sessions cause unauthorized access.
-
-**Why it happens:**
-- JWT valid until expiry even after signout
-- Token refresh fails silently
-- Session not properly shared between server/client in SSR
-
-**Prevention:**
-- Set shorter JWT expiry (1 hour max for sensitive apps)
-- Use `getUser()` to validate sessions, not just `getClaims()`
-- Implement proper session refresh handling
-
-**Which phase should address:** Phase 1 (Auth setup)
-
-**Sources:**
-- [Supabase Sessions Docs](https://supabase.com/docs/guides/auth/sessions)
-
----
-
-### Pitfall 14: Anon Role Still Checking RLS
-
-**What goes wrong:** Anonymous requests still trigger RLS evaluation, wasting database resources.
-
-**Why it happens:**
-- Policies using `auth.uid() = X` run for anon users (returning null)
-- Database evaluates policy even when result is always false
-
-**Prevention:**
-```sql
--- GOOD: Exclude anon early
-CREATE POLICY "Authenticated only" ON properties
-  FOR ALL
-  TO authenticated  -- Not 'public'!
-  USING (tenant_id = current_tenant_id());
+// 3. Using FormData (not supported by Supabase storage upload)
+const formData = new FormData();
+formData.append('file', { uri: asset.uri, name, type: 'image/jpeg' });
 ```
 
-**Which phase should address:** Phase 1 (RLS design)
+**Phase to address:** Phase 2 (Mobile Core Features). Build a shared upload utility before any feature needs file uploads.
 
 **Sources:**
-- [RLS Performance Best Practices](https://supabase.com/docs/guides/troubleshooting/rls-performance-and-best-practices-Z5Jjwv)
+- [Supabase React Native Storage Blog](https://supabase.com/blog/react-native-storage) -- HIGH confidence
+- [Image Picker Discussion #1268](https://github.com/orgs/supabase/discussions/1268) -- MEDIUM confidence
 
 ---
 
-### Pitfall 15: PowerSync WAL Replication Overhead
+### Pitfall 10: Deep Linking Not Configured for Auth Flows
 
-**What goes wrong:** PowerSync causes memory spikes and replication delays by reading all WAL changes.
+**What goes wrong:**
+Supabase Auth features that redirect users (email verification, OAuth callbacks, magic links, password reset) open in the system browser but cannot navigate back to the Expo app. Users complete auth in the browser and are stranded -- the app never receives the auth tokens.
 
 **Why it happens:**
-- Publication set to `FOR ALL TABLES`
-- Large tables with frequent updates flood WAL
-- Sync Rules don't filter at WAL level
+- Deep linking requires platform-specific configuration (app.json scheme, iOS Associated Domains, Android intent filters)
+- Expo Go supports a limited set of URL schemes that differ from production builds
+- The redirect URL must be registered in Supabase Auth settings AND in the app
+- Email clients may strip or modify deep links
 
-**Prevention:**
-```sql
--- Specify only tables that need sync
-CREATE PUBLICATION powersync_pub
-FOR TABLE properties, residents, payments, guard_logs;
+**Consequences:**
+- Email verification flow broken: users click link, browser opens, but app never gets the session
+- OAuth (Google, Apple) login completes in browser but app stays on login screen
+- Password reset flow leaves users stranded in browser
+- "It works in development but not in production" because Expo Go has different URL handling
+
+**Warning signs:**
+- Auth redirects open in browser and stay there
+- `Linking.getInitialURL()` returns null after auth redirect
+- Different behavior between Expo Go and standalone build
+- OAuth works on web but not on mobile
+
+**How to avoid:**
+
+```json
+// app.json -- Configure URL scheme
+{
+  "expo": {
+    "scheme": "upoe",
+    "ios": {
+      "associatedDomains": ["applinks:yourapp.com"]
+    },
+    "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "upoe" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    }
+  }
+}
 ```
 
-**Which phase should address:** Phase 2 (Offline sync setup)
+```typescript
+// In Supabase Dashboard > Authentication > URL Configuration:
+// Add redirect URL: upoe://auth/callback
+
+// In mobile app: Handle the redirect
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
+
+const redirectTo = makeRedirectUri();
+
+// For email/password signup with verification
+await supabase.auth.signUp({
+  email,
+  password,
+  options: { emailRedirectTo: redirectTo },
+});
+
+// Listen for the redirect
+Linking.addEventListener('url', async ({ url }) => {
+  if (url.includes('access_token')) {
+    const params = new URLSearchParams(url.split('#')[1]);
+    await supabase.auth.setSession({
+      access_token: params.get('access_token')!,
+      refresh_token: params.get('refresh_token')!,
+    });
+  }
+});
+
+// ALTERNATIVE: Use OTP verification instead of email links (simpler, more reliable)
+await supabase.auth.signInWithOtp({ email });
+// User enters 6-digit code from email -- no deep linking needed
+await supabase.auth.verifyOtp({ email, token: userInput, type: 'email' });
+```
+
+**Recommendation:** For the Mexican market where users may use email clients that mangle deep links, prefer OTP code verification over magic link flows. It is more reliable and does not require deep linking for basic email auth.
+
+**Phase to address:** Phase 1 (Auth Architecture). Must be decided before implementing any auth flow.
 
 **Sources:**
-- [PowerSync + Supabase Docs](https://docs.powersync.com/integration-guides/supabase-+-powersync)
+- [Supabase Native Mobile Deep Linking](https://supabase.com/docs/guides/auth/native-mobile-deep-linking) -- HIGH confidence
+- [Expo Auth Session + Supabase Social Auth](https://supabase.com/docs/guides/auth/quickstarts/with-expo-react-native-social-auth) -- HIGH confidence
 
 ---
 
-## Phase-Specific Warnings
+### Pitfall 11: Expo SDK 54 / React Native 0.81 Upgrade Regressions
 
-| Phase/Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Foundation (Schema) | Financial data types wrong | Use NUMERIC(15,4), never float |
-| Foundation (RLS) | Policies too complex, no indexes | Design simple policies, index all tenant_id columns |
-| Foundation (Auth) | user_metadata for tenant_id | Always use app_metadata |
-| Offline Sync | No conflict strategy | Define per-table resolution before building |
-| Real-time | Silent subscription failures | Build self-healing subscriptions from start |
-| File Storage | RLS on storage.objects missed | Test file access per-tenant early |
-| Migrations | Schema drift | Use CI/CD, never manual changes |
-| Scaling | RLS performance degradation | Load test with realistic data volume |
-| Edge Functions | Cold start latency | Keep warm for critical paths |
+**What goes wrong:**
+Expo SDK 54 with React Native 0.81 introduces breaking changes including UI regressions (text clipping, broken tabs, safe-area overlap), Metro import path changes, and a new stable `expo-file-system` API that moves the import path. Building on SDK 54 from day one avoids migration pain, but developers must be aware of known issues.
 
----
+**Why it happens:**
+- React Native 0.81 includes layout engine changes that affect component rendering
+- Metro 0.83 changes internal import paths (`metro/src/..` becomes `metro/private/..`)
+- `expo-file-system/next` becomes the default `expo-file-system`, old API moves to `expo-file-system/legacy`
+- Stricter peer dependency checks mean libraries must be explicitly installed even if internally bundled
+- iOS release builds with precompiled XCFrameworks had submission issues (fixed in 0.81.1)
 
-## Real-World Incident: November 2025 Supabase Outage
+**Consequences:**
+- UI elements unexpectedly clipped or overlapping
+- Third-party libraries importing from old Metro paths fail at build time
+- File system code using old imports breaks after upgrade
+- EAS builds fail with opaque peer dependency errors
+- TestFlight/App Store submission blocked
 
-**What happened:** On November 24, 2025, Supabase experienced a 30-minute outage affecting 90% of requests due to a missing feature flag in their API Gateway deployment.
+**Warning signs:**
+- Visual regression in layouts after starting fresh with SDK 54
+- Build errors mentioning `metro/src/` paths
+- `expo-file-system` import errors
+- EAS build fails with "peer dependency not met" for react-native-worklets
 
-**Lessons for UPOE:**
-1. **Test undefined states:** The bug was a missing feature flag that wasn't caught because staging had it defined
-2. **Gradual rollouts:** All services now follow staged rollout
-3. **Have fallback plans:** Direct database connections and Supavisor were NOT impacted - Edge Functions and API were
+**How to avoid:**
+- Start on Expo SDK 54.0.x latest patch (not .0) to get bugfixes
+- Use `expo-file-system` (not `expo-file-system/next`) as the import path
+- Explicitly install `react-native-worklets` even though Expo bundles it internally
+- Test on physical devices early -- simulators may not surface layout regressions
+- Set `ios.buildReactNativeFromSource: false` in `expo-build-properties` if needed for TestFlight
 
-**Implication:** For critical operations (guard alerts), consider having a fallback path that doesn't rely on Supabase API layer.
+**Phase to address:** Phase 1 (Project Initialization). Choose SDK version and verify all dependencies before writing feature code.
 
 **Sources:**
-- [Supabase Status History](https://status.supabase.com/history)
+- [Expo SDK 54 Breaking Changes](https://expo.dev/changelog/sdk-54-beta) -- HIGH confidence
+- [RN 0.81 Upgrade Experience](https://medium.com/elobyte-software/what-breaks-after-an-expo-54-reactnative-0-81-15cb83cdb248) -- MEDIUM confidence
+- [Web Build createContext Error](https://github.com/expo/expo/issues/40769) -- MEDIUM confidence
 
 ---
 
-## Confidence Assessment
+### Pitfall 12: startAutoRefresh() While Offline Clears Session
 
-| Area | Confidence | Reasoning |
-|------|------------|-----------|
-| RLS Security Issues | HIGH | Multiple verified sources, official docs, CVE reference |
-| RLS Performance | HIGH | Official troubleshooting docs, community validation |
-| Realtime Issues | HIGH | Multiple GitHub discussions, production reports |
-| Storage Issues | MEDIUM | GitHub issues, less official documentation |
-| Offline Sync | MEDIUM | PowerSync docs, fewer production reports |
-| Edge Functions | HIGH | Official docs, performance discussions |
-| Migrations | HIGH | Official docs, common community complaint |
-| Financial Types | HIGH | PostgreSQL official docs, industry standards |
+**What goes wrong:**
+The AppState listener pattern for Supabase auth refresh calls `supabase.auth.startAutoRefresh()` when the app comes to the foreground. If the device is offline at that moment, the refresh attempt fails and Supabase may clear the local session entirely. The user is logged out even though they had a valid (not yet expired) token.
+
+**Why it happens:**
+- `startAutoRefresh()` immediately attempts to refresh the token
+- When offline, the refresh request fails
+- The error handling in some versions treats refresh failure as "session invalid"
+- Mobile apps frequently transition between online/offline states
+
+**Consequences:**
+- Users in areas with poor connectivity (common in gated communities in Mexico) are frequently logged out
+- Guards on patrol lose their session when entering signal dead zones
+- The app becomes unusable without constant internet connection
+
+**Warning signs:**
+- Users report being logged out when returning from areas with poor signal
+- Auth works perfectly on WiFi but fails on cellular
+- Session disappears despite token not being expired
+
+**How to avoid:**
+
+```typescript
+import NetInfo from '@react-native-community/netinfo';
+import { AppState } from 'react-native';
+
+// Only refresh when online AND app is active
+AppState.addEventListener('change', async (state) => {
+  if (state === 'active') {
+    const networkState = await NetInfo.fetch();
+    if (networkState.isConnected) {
+      supabase.auth.startAutoRefresh();
+    }
+    // If offline, do nothing -- existing token is still valid until expiry
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});
+```
+
+**Phase to address:** Phase 1 (Mobile Auth Setup). Must be part of the initial auth configuration.
+
+**Sources:**
+- [Session Lost When Starting Offline Discussion](https://github.com/orgs/supabase/discussions/36906) -- MEDIUM confidence
+- [Supabase startAutoRefresh docs](https://supabase.com/docs/reference/javascript/auth-startautorefresh) -- HIGH confidence
 
 ---
 
-## Summary: Top 5 Things to Get Right from Day 1
+## Technical Debt Patterns
 
-1. **Enable RLS on every table immediately** with tenant_id policies and proper indexes
-2. **Use app_metadata (not user_metadata)** for tenant_id in JWT claims
-3. **Use NUMERIC(15,4) for all financial amounts** - never float/real/money
-4. **Define conflict resolution strategy** before building offline sync
-5. **Set up migration CI/CD** before making any schema changes
+Shortcuts that seem reasonable but create long-term problems.
 
-Get these wrong and you'll be doing a rewrite. Get these right and you'll scale smoothly.
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Skipping expo-sqlite for auth storage, using AsyncStorage | Simpler setup, one less dependency | Unencrypted tokens on disk, security audit failure | Never for production |
+| Importing full `Database` type everywhere | Quick autocompletion | 2-5s IDE lag, slow CI, developer frustration | Only in shared package internals |
+| Using `supabase.from()` directly in components | Fast to prototype | No data layer abstraction, impossible to add caching/offline later | Early prototyping only, refactor in Phase 2 |
+| Skipping middleware token refresh | Fewer moving parts | Users logged out after 1 hour, broken admin dashboard | Never |
+| Using `getSession()` for server auth | Faster (no network call) | Security vulnerability -- JWT not verified | Never on server |
+| Single Supabase client for web + mobile | DRY code | Wrong storage adapter, wrong session detection, broken auth on one platform | Never |
+| Hardcoding Spanish strings in components | Ship faster | Impossible to add English or other languages later | MVP only if no i18n plans |
+| Using FlatList instead of FlashList | No extra dependency | Poor performance with large lists (payments, access logs, notifications) | Lists under 50 items |
+
+---
+
+## Integration Gotchas
+
+Common mistakes when connecting frontend apps to the existing Supabase backend.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Supabase Auth (Mobile) | `detectSessionInUrl: true` | Set `detectSessionInUrl: false` for React Native. URL detection is for web OAuth redirects only. |
+| Supabase Auth (Next.js) | Using `@supabase/auth-helpers` package | Use `@supabase/ssr` -- auth-helpers is deprecated, all fixes go to ssr package. |
+| Supabase Realtime | Creating channel without RLS-compatible filter | Always filter by `community_id` in subscription. RLS blocks events silently if user cannot SELECT the row. |
+| Supabase Storage (Mobile) | Passing image URI string to `upload()` | Convert to ArrayBuffer via `fetch(uri).then(r => r.arrayBuffer())` before upload. |
+| Expo Push Notifications | Storing only Expo push tokens | Store BOTH Expo tokens and native FCM/APNs tokens. Expo tokens cannot be used with third-party services (marketing tools, Customer.io). |
+| Expo Environment Variables | Using `process.env.SUPABASE_URL` | Must prefix with `EXPO_PUBLIC_` for client-side access: `process.env.EXPO_PUBLIC_SUPABASE_URL`. |
+| Next.js Server Components | Creating Supabase client at module level | Create client per-request inside the function. Module-level clients share state across requests. |
+| pnpm Monorepo | Importing `@upoe/shared` without workspace protocol | Use `"@upoe/shared": "workspace:*"` in package.json dependencies. |
+
+---
+
+## Performance Traps
+
+Patterns that work at small scale but fail as the community grows.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Fetching all notifications without pagination | Slow load, high memory | Use `.range(0, 19)` with infinite scroll via FlashList `onEndReached` | >100 notifications per user |
+| Not adding client-side `.eq()` filters alongside RLS | Full table scans despite RLS | Always add explicit `.eq('community_id', id)` even though RLS filters | >10K rows in table |
+| Subscribing to all postgres_changes without filter | Server pushes every change to every client | Add `filter: 'community_id=eq.${id}'` to subscription | >50 concurrent users |
+| Loading full Database type on every import | IDE lag, slow compilation | Create per-app type subsets with `Pick<>` | >80 tables (already at 116) |
+| Rendering large access log tables without virtualization | Scroll jank, memory spikes | Use FlashList (mobile) or virtualized table (web) | >500 rows visible |
+| Fetching related data with multiple sequential queries | Waterfall requests, slow screens | Use Supabase joins: `.select('*, residents(*)')` or RPC functions | >3 related queries per screen |
+| Re-creating Supabase client on every render | Auth state lost, token refresh storms | Singleton client per platform (createBrowserClient once) | Any usage |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues for a multi-tenant property management app.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Exposing `service_role` key in Next.js client component | Full database bypass, all tenant data exposed | Only use in Server Actions / Route Handlers. Never prefix with `NEXT_PUBLIC_`. |
+| Using `NEXT_PUBLIC_` prefix for service role key | Key bundled into client JavaScript, extractable | Service role key: `SUPABASE_SERVICE_ROLE_KEY` (no NEXT_PUBLIC_ prefix) |
+| Trusting `appMetadata.role` from client without RLS | Residents can impersonate admins via API | RLS must enforce role checks. Frontend role checks are UX only. |
+| Storing push notification tokens without user association | Notifications sent to wrong users after account switch | Associate push tokens with user_id AND device_id. Clean up on logout. |
+| Not validating file upload MIME types | Executable files uploaded as "images" | Validate Content-Type server-side. Use Supabase storage MIME type restrictions. |
+| Logging full JWT tokens in error handlers | Token theft from log aggregation services | Never log authorization headers. Redact tokens in error reporting. |
+| Using community_id from URL params for data fetching | Users can change URL to access other communities | Always extract community_id from verified JWT claims, never from URL/request params. |
+
+---
+
+## UX Pitfalls
+
+Common user experience mistakes specific to this domain.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| No offline indicator | Users submit forms that silently fail | Show connection status banner. Queue mutations when offline. |
+| Blocking UI during Supabase queries | App feels frozen, especially on slow mobile connections | Use optimistic updates with rollback on error. Show skeleton loaders. |
+| Loading all data on app launch | 5+ second splash screen while fetching everything | Lazy-load per screen. Pre-fetch only auth state and critical data. |
+| Not handling Supabase rate limits gracefully | Cryptic error messages ("Too Many Requests") | Implement exponential backoff with user-friendly "Please wait" message. |
+| Spanish-only error messages from Supabase | English error messages leak through to Spanish UI | Wrap all Supabase errors in a translation layer. Map error codes to Spanish messages. |
+| Push notification permission requested on first launch | Users deny permission reflexively | Request after showing value (e.g., after first visitor invitation). |
+| No pull-to-refresh on list screens | Users don't know how to get fresh data | Add RefreshControl to all FlatList/FlashList screens. |
+| Admin dashboard with no loading states | White screen while Server Components render | Use `loading.tsx` files and Suspense boundaries in Next.js App Router. |
+
+---
+
+## "Looks Done But Isn't" Checklist
+
+Things that appear complete but are missing critical pieces.
+
+- [ ] **Auth:** Login works -- but does the session persist after app kill and restart on mobile?
+- [ ] **Auth:** Login works -- but does the middleware refresh tokens in Next.js after 1 hour of inactivity?
+- [ ] **Auth:** OAuth works -- but does the deep link redirect back to the mobile app (not just the browser)?
+- [ ] **Realtime:** Subscriptions work -- but do they clean up when navigating away from the screen?
+- [ ] **Realtime:** Events arrive -- but do they still arrive after the app was backgrounded for 10 minutes?
+- [ ] **Storage:** Upload works -- but are the files actually non-zero bytes in Supabase Storage?
+- [ ] **Storage:** Upload works -- but does the file respect tenant isolation (correct folder path with community_id)?
+- [ ] **Push Notifications:** Token registered -- but does it update when the OS rotates the token?
+- [ ] **Push Notifications:** Notification received -- but does tapping it navigate to the correct screen?
+- [ ] **Roles:** Admin pages hidden from residents -- but can a resident access admin data via direct Supabase query?
+- [ ] **Monorepo:** Shared types import -- but does the mobile app resolve them after EAS build (not just local dev)?
+- [ ] **Offline:** App works offline -- but what happens to pending mutations when the user logs out?
+- [ ] **Performance:** List loads fast with 10 items -- but does it still scroll smoothly with 1,000 items?
+- [ ] **i18n:** UI is in Spanish -- but are Supabase error messages also translated?
+
+---
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention, how to recover.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| getSession() used server-side | LOW | Search-and-replace with getClaims(). No data migration needed. |
+| Wrong auth storage adapter | LOW | Change adapter, users will need to re-login once. |
+| Realtime memory leaks | MEDIUM | Add useEffect cleanup. Existing users need app update. |
+| Missing middleware | LOW | Add middleware.ts file. Immediate fix, no data impact. |
+| Frontend-only role checks | HIGH | Must add RLS policies for role enforcement. Requires database migration and thorough testing. |
+| Monorepo workspace misconfigured | LOW | Update pnpm-workspace.yaml and reinstall. But if builds were shipped with wrong resolution, app update needed. |
+| Service role key exposed | CRITICAL | Rotate key immediately in Supabase dashboard. Audit all data for unauthorized access. Redeploy all apps. |
+| Deep linking not configured | MEDIUM | Requires new app binary build (cannot fix via OTA update). |
+| Large types file slowing dev | LOW | Refactor to type subsets. No runtime impact. |
+| File upload 0-byte bug | LOW | Fix upload utility, re-upload affected files. |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+How roadmap phases should address these pitfalls.
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| P1: getSession() on server | Phase 1: Auth Architecture | Grep codebase for `getSession()` in server files. Should find zero occurrences. |
+| P2: Shared client wrong config | Phase 1: Monorepo Setup | Mobile app persists session across app restart. Next.js refreshes via middleware. |
+| P3: Missing middleware | Phase 1: Auth Architecture | Auth token refreshes after 1+ hour of dashboard use without re-login. |
+| P4: Realtime memory leaks | Phase 2: Realtime Infrastructure | Memory usage stable after 30 minutes of screen navigation. |
+| P5: Workspace misconfigured | Phase 1: Monorepo Setup | `pnpm -r ls` shows all packages. EAS build succeeds. |
+| P6: Frontend-only role checks | Phase 1: Auth Architecture + RLS Audit | Direct Supabase query as resident cannot access admin-only tables. |
+| P7: Large types file | Phase 1: Shared Package | IDE autocomplete responds in <1 second on Supabase queries. |
+| P8: SecureStore limit | Phase 1: Mobile Auth | Session persists across app restart on iOS 15+ with metadata-heavy JWT. |
+| P9: File upload mismatch | Phase 2: Mobile Features | Uploaded files have correct byte count in Supabase Storage. |
+| P10: Deep linking | Phase 1: Auth Architecture | Email verification link opens mobile app directly. |
+| P11: SDK 54 regressions | Phase 1: Project Init | UI renders correctly on physical iOS and Android devices. |
+| P12: Offline auto-refresh | Phase 1: Mobile Auth | App retains session after airplane mode toggle. |
+
+---
+
+## Sources
+
+### Official Documentation (HIGH confidence)
+- [Supabase Server-Side Auth for Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs)
+- [Supabase Expo React Native Tutorial](https://supabase.com/docs/guides/getting-started/tutorials/with-expo-react-native)
+- [Supabase RLS Performance Best Practices](https://supabase.com/docs/guides/troubleshooting/rls-performance-and-best-practices-Z5Jjwv)
+- [Supabase removeChannel API](https://supabase.com/docs/reference/javascript/removechannel)
+- [Supabase startAutoRefresh API](https://supabase.com/docs/reference/javascript/auth-startautorefresh)
+- [Supabase Native Mobile Deep Linking](https://supabase.com/docs/guides/auth/native-mobile-deep-linking)
+- [Supabase Understanding API Keys](https://supabase.com/docs/guides/api/api-keys)
+- [Supabase React Native Storage](https://supabase.com/blog/react-native-storage)
+- [Expo Monorepo Guide](https://docs.expo.dev/guides/monorepos/)
+- [Expo SecureStore Docs](https://docs.expo.dev/versions/latest/sdk/securestore/)
+- [Expo SDK 54 Changelog](https://expo.dev/changelog/sdk-54-beta)
+- [Expo Push Notifications Setup](https://docs.expo.dev/push-notifications/push-notifications-setup/)
+
+### GitHub Issues and Discussions (HIGH-MEDIUM confidence)
+- [getClaims vs getUser Clarification #40985](https://github.com/supabase/supabase/issues/40985)
+- [Realtime Memory Leak #1204](https://github.com/supabase/supabase-js/issues/1204)
+- [Strict Mode + Realtime #169](https://github.com/supabase/realtime-js/issues/169)
+- [Token Refresh Race Condition #18981](https://github.com/supabase/supabase/issues/18981)
+- [SSR Attack Vector Discussion #23224](https://github.com/orgs/supabase/discussions/23224)
+- [SecureStore Size Limit #1765](https://github.com/expo/expo/issues/1765)
+- [Session Lost Offline #36906](https://github.com/orgs/supabase/discussions/36906)
+- [Middleware Token Refresh Concerns #30241](https://github.com/supabase/supabase/issues/30241)
+
+### Community Sources (MEDIUM confidence)
+- [Expo SDK 54 Upgrade Experience](https://medium.com/elobyte-software/what-breaks-after-an-expo-54-reactnative-0-81-15cb83cdb248)
+- [pnpm + Expo Workspaces Configuration](https://dev.to/isaacaddis/working-expo-pnpm-workspaces-configuration-4k2l)
+- [byCedric Expo Monorepo Example](https://github.com/byCedric/expo-monorepo-example)
+- [Next.js + Supabase Production Lessons](https://catjam.fi/articles/next-supabase-what-do-differently)
+
+---
+*Frontend pitfalls research for: UPOE Expo + Next.js applications*
+*Researched: 2026-02-06*

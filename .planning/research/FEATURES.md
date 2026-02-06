@@ -1,832 +1,551 @@
-# Feature Landscape: Property Management Database Schemas
+# Feature Research: Frontend Applications for Property Management
 
-**Domain:** Unified Property Operations Ecosystem (Gated Communities/HOA/Condo Management)
-**Researched:** 2026-01-29
-**Confidence:** MEDIUM-HIGH (Multiple authoritative sources cross-referenced)
-
----
-
-## 1. Core Entities and Relationships
-
-### Primary Entity Clusters
-
-Based on research across property management systems, HOA software, and rental management databases, the following entity structure emerges:
-
-#### Property Hierarchy
-```
-Organization (Tenant)
-  └── Community/Property
-        └── Building/Block
-              └── Unit (House, Apartment, Commercial Space)
-                    └── Unit Features/Amenities
-```
-
-**Key Tables:**
-| Entity | Core Fields | Relationships |
-|--------|-------------|---------------|
-| `organizations` | id (UUID), name, settings (JSONB), created_at | Top-level multi-tenant container |
-| `communities` | id, org_id, name, address, type (gated/hoa/condo) | FK to organizations |
-| `buildings` | id, community_id, name, address, floors | FK to communities |
-| `units` | id, building_id, unit_number, type, bedrooms, bathrooms, sqft, pets_allowed, status | FK to buildings |
-
-#### People & Relationships
-```
-Resident
-  ├── Unit Occupancy (ownership/rental)
-  ├── Vehicles
-  ├── Pets
-  ├── Family Members/Dependents
-  └── KYC Documents
-```
-
-**Key Tables:**
-| Entity | Core Fields | Relationships |
-|--------|-------------|---------------|
-| `residents` | id, name, email, phone, kyc_status, profile (JSONB) | Core person entity |
-| `unit_occupancies` | id, unit_id, resident_id, type (owner/tenant), start_date, end_date, is_primary | Many-to-many junction |
-| `vehicles` | id, resident_id, make, model, color, license_plate, rfid_tag | FK to residents |
-| `pets` | id, resident_id, type, name, breed, registration_number | FK to residents |
-| `documents` | id, resident_id, type (id_proof/lease/etc), file_url, verified_at | FK to residents |
-
-**Source:** [GeeksforGeeks - ER Diagrams for Real Estate](https://www.geeksforgeeks.org/dbms/how-to-design-er-diagrams-for-real-estate-property-management/), [GitHub - Rental Database Project](https://github.com/ashmitan/Rental-Database-Project)
+**Domain:** Gated Community Management Mobile App + Admin Dashboard (Mexico)
+**Researched:** 2026-02-06
+**Confidence:** MEDIUM-HIGH (Cross-referenced from 15+ competitor platforms, industry reports, and Mexico-market apps)
 
 ---
 
-## 2. Financial Ledger Patterns
+## Context
 
-### Recommendation: Double-Entry Accounting
+This research maps the **frontend feature landscape** for UPOE's v2.0 milestone. The backend (116 tables, 24 domains) is fully built. The question is: which features need frontend screens for MVP, what UX patterns work, and what can be deferred?
 
-**Why Double-Entry over Simple Ledger:**
-- Enforces that every transaction balances (debits = credits)
-- Provides audit trail by design
-- Prevents "money from nowhere" bugs
-- Industry standard for any system handling real money
+Three distinct applications are being built:
+1. **React Native (Expo) mobile app** -- serving residents, guards, and mobile-admin roles
+2. **Next.js admin dashboard** -- serving community administrators and super admins
 
-**Source:** [Square Engineering - Books](https://developer.squareup.com/blog/books-an-immutable-double-entry-accounting-database-service/)
-
-### Recommended Schema
-
-```sql
--- Chart of Accounts (hierarchical)
-CREATE TABLE accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id),
-    parent_id UUID REFERENCES accounts(id),
-    code VARCHAR(20) NOT NULL,           -- e.g., "1100" for Cash
-    name VARCHAR(100) NOT NULL,          -- e.g., "Cash", "Accounts Receivable"
-    type VARCHAR(20) NOT NULL,           -- ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
-    normal_balance VARCHAR(10) NOT NULL, -- DEBIT or CREDIT
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Transactions (immutable header)
-CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id),
-    transaction_date DATE NOT NULL,
-    description TEXT,
-    reference_type VARCHAR(50),          -- 'fee', 'payment', 'penalty', etc.
-    reference_id UUID,                   -- Links to source (fee_id, payment_id, etc.)
-    is_posted BOOLEAN DEFAULT false,     -- Can't modify after posting
-    created_at TIMESTAMPTZ DEFAULT now(),
-    created_by UUID NOT NULL
-);
-
--- Journal Entries (immutable line items)
-CREATE TABLE journal_entries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    transaction_id UUID NOT NULL REFERENCES transactions(id),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    amount NUMERIC(15,2) NOT NULL,       -- Always positive
-    direction SMALLINT NOT NULL,         -- 1 = DEBIT, -1 = CREDIT
-    created_at TIMESTAMPTZ DEFAULT now(),
-
-    -- Enforce balance: sum(amount * direction) must = 0 per transaction
-    CONSTRAINT valid_direction CHECK (direction IN (-1, 1))
-);
-
--- Account Balances (materialized for performance)
-CREATE TABLE account_balances (
-    account_id UUID PRIMARY KEY REFERENCES accounts(id),
-    balance NUMERIC(15,2) NOT NULL DEFAULT 0,
-    last_updated TIMESTAMPTZ DEFAULT now()
-);
-```
-
-**Key Principle:** Journal entries are immutable. Corrections are made via reversing entries, not updates.
-
-**Source:** [Journalize.io - Elegant DB Schema](https://blog.journalize.io/posts/an-elegant-db-schema-for-double-entry-accounting/), [Anvil - Engineer's Guide to Double-Entry](https://anvil.works/blog/double-entry-accounting-for-engineers)
-
-### Property Management Specific Accounts
-
-Typical chart of accounts for HOA/property management:
-
-| Code | Account | Type | Purpose |
-|------|---------|------|---------|
-| 1100 | Cash | Asset | Bank accounts |
-| 1200 | Accounts Receivable | Asset | Unpaid resident fees |
-| 2100 | Accounts Payable | Liability | Vendor bills |
-| 2200 | Resident Deposits | Liability | Security deposits held |
-| 3100 | Reserve Fund | Equity | Capital reserves |
-| 4100 | Maintenance Fees | Revenue | Monthly HOA fees |
-| 4200 | Penalty Income | Revenue | Late fees, violations |
-| 5100 | Maintenance Expense | Expense | Repairs, upkeep |
-| 5200 | Utilities | Expense | Common area utilities |
+Each user role has fundamentally different needs, screen layouts, and interaction patterns.
 
 ---
 
-## 3. Access Control Data Models
+## Part 1: Mobile App -- Resident Experience
 
-### Visitor Management Schema
+### Table Stakes (Residents Will Not Adopt Without These)
 
-Based on research from gated community software (GateHouse, Proptia, EntranceIQ):
-
-```sql
--- Visitor types
-CREATE TYPE visitor_type AS ENUM ('guest', 'service_provider', 'delivery', 'contractor', 'recurring');
-CREATE TYPE access_status AS ENUM ('pending', 'approved', 'checked_in', 'checked_out', 'denied', 'expired');
-
--- Pre-registered visitors
-CREATE TABLE visitor_invitations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-    host_resident_id UUID NOT NULL REFERENCES residents(id),
-    host_unit_id UUID NOT NULL REFERENCES units(id),
-
-    -- Visitor details
-    visitor_name VARCHAR(100) NOT NULL,
-    visitor_phone VARCHAR(20),
-    visitor_email VARCHAR(100),
-    visitor_type visitor_type NOT NULL,
-
-    -- Access window
-    valid_from TIMESTAMPTZ NOT NULL,
-    valid_until TIMESTAMPTZ NOT NULL,
-    is_recurring BOOLEAN DEFAULT false,
-    recurrence_pattern JSONB,            -- For recurring visitors (housekeeping, etc.)
-
-    -- Access credentials
-    qr_code_token VARCHAR(100) UNIQUE,
-    access_code VARCHAR(10),
-
-    -- Status
-    status access_status DEFAULT 'pending',
-    approved_at TIMESTAMPTZ,
-    approved_by UUID,
-
-    -- Audit
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    deleted_at TIMESTAMPTZ               -- Soft delete
-);
-
--- Actual visit records (immutable log)
-CREATE TABLE visitor_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-    invitation_id UUID REFERENCES visitor_invitations(id),
-
-    -- Visitor snapshot (in case invitation changes)
-    visitor_name VARCHAR(100) NOT NULL,
-    visitor_phone VARCHAR(20),
-    visitor_type visitor_type NOT NULL,
-
-    -- Vehicle info (if applicable)
-    vehicle_plate VARCHAR(20),
-    vehicle_make VARCHAR(50),
-    vehicle_model VARCHAR(50),
-    vehicle_color VARCHAR(30),
-
-    -- Entry/exit
-    entry_time TIMESTAMPTZ NOT NULL,
-    exit_time TIMESTAMPTZ,
-    entry_gate VARCHAR(50),
-    exit_gate VARCHAR(50),
-
-    -- Security
-    guard_id UUID,
-    notes TEXT,
-    photo_url VARCHAR(500),
-
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Blacklist
-CREATE TABLE access_blacklist (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-
-    -- Match criteria
-    person_name VARCHAR(100),
-    phone_pattern VARCHAR(20),
-    vehicle_plate_pattern VARCHAR(20),
-    id_number VARCHAR(50),
-
-    -- Reason
-    reason TEXT NOT NULL,
-    reported_by UUID REFERENCES residents(id),
-
-    -- Duration
-    effective_from TIMESTAMPTZ DEFAULT now(),
-    effective_until TIMESTAMPTZ,         -- NULL = permanent
-
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-**Key Features:**
-- Pre-registration with QR codes and access codes
-- Recurring visitor patterns (housekeepers, family)
-- Vehicle tracking with LPR integration points
-- Immutable visit logs for audit
-- Blacklist with pattern matching
-
-**Source:** [Proptia - Visitor Management](https://www.proptia.com/visitor-management/), [EntranceIQ - Visitor Software](https://www.entranceiq.net/blog/2025/what-is-a-gated-community-visitor-software-how-does-it-work.html)
-
----
-
-## 4. Reservation/Booking Patterns
-
-### Amenity Reservation Schema
-
-```sql
--- Amenity definitions
-CREATE TABLE amenities (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-    name VARCHAR(100) NOT NULL,          -- "Pool", "Gym", "Party Room"
-    type VARCHAR(50) NOT NULL,           -- "bookable", "open_access", "restricted"
-    capacity INTEGER,
-
-    -- Location
-    building_id UUID REFERENCES buildings(id),
-    location_description TEXT,
-
-    -- Booking rules (JSONB for flexibility)
-    booking_rules JSONB NOT NULL DEFAULT '{}',
-    /*
-    {
-      "advance_booking_days": 30,
-      "max_duration_hours": 4,
-      "min_duration_hours": 1,
-      "cancellation_hours": 24,
-      "max_bookings_per_month": 2,
-      "requires_deposit": true,
-      "deposit_amount": 100.00,
-      "hourly_rate": 25.00,
-      "allowed_hours": {"start": "08:00", "end": "22:00"},
-      "blocked_days": ["Sunday"],
-      "requires_approval": false
-    }
-    */
-
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    deleted_at TIMESTAMPTZ
-);
-
--- Time slots (for slot-based booking)
-CREATE TABLE amenity_time_slots (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    amenity_id UUID NOT NULL REFERENCES amenities(id),
-    day_of_week SMALLINT,                -- 0-6 (NULL = specific date)
-    specific_date DATE,                  -- For one-off slots
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    capacity INTEGER,                    -- Override amenity capacity
-    price_override NUMERIC(10,2),
-    is_active BOOLEAN DEFAULT true,
-
-    CONSTRAINT slot_type CHECK (
-        (day_of_week IS NOT NULL AND specific_date IS NULL) OR
-        (day_of_week IS NULL AND specific_date IS NOT NULL)
-    )
-);
-
--- Reservations
-CREATE TYPE reservation_status AS ENUM (
-    'pending', 'approved', 'confirmed', 'checked_in',
-    'completed', 'cancelled', 'no_show'
-);
-
-CREATE TABLE reservations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    amenity_id UUID NOT NULL REFERENCES amenities(id),
-    resident_id UUID NOT NULL REFERENCES residents(id),
-    unit_id UUID NOT NULL REFERENCES units(id),
-
-    -- Timing
-    start_time TIMESTAMPTZ NOT NULL,
-    end_time TIMESTAMPTZ NOT NULL,
-
-    -- Capacity
-    guest_count INTEGER DEFAULT 1,
-
-    -- Financial
-    total_amount NUMERIC(10,2),
-    deposit_amount NUMERIC(10,2),
-    deposit_paid BOOLEAN DEFAULT false,
-
-    -- Status
-    status reservation_status DEFAULT 'pending',
-    approved_by UUID,
-    approved_at TIMESTAMPTZ,
-    cancelled_at TIMESTAMPTZ,
-    cancellation_reason TEXT,
-
-    -- Notes
-    special_requests TEXT,
-    admin_notes TEXT,
-
-    -- Audit
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    deleted_at TIMESTAMPTZ,
-
-    -- Prevent double booking
-    CONSTRAINT no_overlap EXCLUDE USING gist (
-        amenity_id WITH =,
-        tstzrange(start_time, end_time) WITH &&
-    ) WHERE (status NOT IN ('cancelled', 'no_show'))
-);
-
--- Reservation waitlist
-CREATE TABLE reservation_waitlist (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    amenity_id UUID NOT NULL REFERENCES amenities(id),
-    resident_id UUID NOT NULL REFERENCES residents(id),
-    desired_date DATE NOT NULL,
-    desired_start_time TIME,
-    desired_end_time TIME,
-    notified_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-**Key Features:**
-- Flexible booking rules via JSONB
-- PostgreSQL exclusion constraint prevents double-booking
-- Slot-based and free-form booking support
-- Waitlist for high-demand amenities
-- Deposit tracking
-
-**Source:** [GeeksforGeeks - Booking Database Design](https://www.geeksforgeeks.org/dbms/how-to-design-a-database-for-booking-and-reservation-systems/), [Redgate - Hotel Room Booking](https://www.red-gate.com/blog/designing-a-data-model-for-a-hotel-room-booking-system)
-
----
-
-## 5. Maintenance Ticketing with SLA
-
-### Schema Design
-
-```sql
--- SLA definitions
-CREATE TABLE sla_policies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-    name VARCHAR(100) NOT NULL,
-    priority VARCHAR(20) NOT NULL,       -- 'critical', 'high', 'medium', 'low'
-
-    -- Response SLA
-    response_time_hours INTEGER NOT NULL,
-
-    -- Resolution SLA
-    resolution_time_hours INTEGER NOT NULL,
-
-    -- Business hours consideration
-    business_hours_only BOOLEAN DEFAULT true,
-
-    -- Escalation
-    escalation_hours INTEGER,
-    escalation_to UUID,                  -- User/role to escalate to
-
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Ticket categories
-CREATE TABLE ticket_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    community_id UUID NOT NULL REFERENCES communities(id),
-    name VARCHAR(100) NOT NULL,          -- 'Plumbing', 'Electrical', 'HVAC'
-    default_sla_id UUID REFERENCES sla_policies(id),
-    default_assignee_id UUID,
-    parent_id UUID REFERENCES ticket_categories(id),
-    is_active BOOLEAN DEFAULT true
-);
-
--- Maintenance tickets
-CREATE TYPE ticket_status AS ENUM (
-    'open', 'acknowledged', 'in_progress', 'pending_parts',
-    'pending_vendor', 'resolved', 'closed', 'cancelled'
-);
-
-CREATE TABLE maintenance_tickets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_number VARCHAR(20) NOT NULL UNIQUE, -- Human-readable: MT-2025-0001
-    community_id UUID NOT NULL REFERENCES communities(id),
-
-    -- Reporter
-    reported_by UUID NOT NULL REFERENCES residents(id),
-    unit_id UUID REFERENCES units(id),
-
-    -- Classification
-    category_id UUID REFERENCES ticket_categories(id),
-    priority VARCHAR(20) DEFAULT 'medium',
-
-    -- Details
-    title VARCHAR(200) NOT NULL,
-    description TEXT NOT NULL,
-    location_details TEXT,
-
-    -- Assignment
-    assigned_to UUID,
-    assigned_at TIMESTAMPTZ,
-
-    -- SLA tracking
-    sla_id UUID REFERENCES sla_policies(id),
-    response_due_at TIMESTAMPTZ,
-    resolution_due_at TIMESTAMPTZ,
-    first_response_at TIMESTAMPTZ,
-    resolved_at TIMESTAMPTZ,
-
-    -- SLA status
-    response_sla_breached BOOLEAN DEFAULT false,
-    resolution_sla_breached BOOLEAN DEFAULT false,
-
-    -- Status
-    status ticket_status DEFAULT 'open',
-
-    -- Resolution
-    resolution_notes TEXT,
-
-    -- Audit
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    closed_at TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ
-);
-
--- Ticket comments/updates (immutable log)
-CREATE TABLE ticket_comments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_id UUID NOT NULL REFERENCES maintenance_tickets(id),
-    author_id UUID NOT NULL,
-    author_type VARCHAR(20) NOT NULL,    -- 'resident', 'staff', 'vendor', 'system'
-
-    content TEXT NOT NULL,
-    is_internal BOOLEAN DEFAULT false,   -- Hidden from residents
-
-    -- Attachments
-    attachments JSONB DEFAULT '[]',      -- [{url, filename, type}]
-
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Ticket status history (for SLA auditing)
-CREATE TABLE ticket_status_history (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_id UUID NOT NULL REFERENCES maintenance_tickets(id),
-    old_status ticket_status,
-    new_status ticket_status NOT NULL,
-    changed_by UUID NOT NULL,
-    reason TEXT,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-**SLA Calculation Pattern:**
-
-```sql
--- Trigger to calculate SLA deadlines on ticket creation
-CREATE OR REPLACE FUNCTION calculate_sla_deadlines()
-RETURNS TRIGGER AS $$
-BEGIN
-    SELECT
-        now() + (response_time_hours || ' hours')::interval,
-        now() + (resolution_time_hours || ' hours')::interval
-    INTO NEW.response_due_at, NEW.resolution_due_at
-    FROM sla_policies
-    WHERE id = NEW.sla_id;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-**Source:** [Freshworks - SLA Metrics](https://www.freshworks.com/itsm/sla/metrics/), [ManageEngine - SLA Management](https://www.manageengine.com/products/service-desk/automation/sla-management.html)
-
----
-
-## 6. Table Stakes vs. Differentiators
-
-### Table Stakes (Must-Have for MVP)
-
-Features users expect. Missing any = product feels incomplete.
+Features every competing app (ComunidadFeliz, Neivor, CondoVive, TownSq, Condo Control) already ships. Missing any of these means the app feels broken.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Unit/Property Registry** | Core data model | Low | Foundation for everything |
-| **Resident Profiles** | Users need accounts | Low | Include KYC status |
-| **Ownership/Tenancy Tracking** | Who lives where | Medium | Support both owner & tenant |
-| **Monthly Fee Management** | Primary revenue | Medium | Charge generation, tracking |
-| **Payment Recording** | Money in | Medium | Basic receipt functionality |
-| **Outstanding Balance View** | Know who owes | Low | Aging reports |
-| **Basic Visitor Pre-registration** | Security baseline | Medium | Name, date, QR code |
-| **Visitor Entry Logging** | Audit trail | Low | Who came when |
-| **Maintenance Requests** | Common resident need | Medium | Submit, track, resolve |
-| **Basic Announcements** | Community communication | Low | Broadcast messages |
-| **Document Storage** | Bylaws, minutes | Low | File upload/download |
-| **User Authentication** | Security | Low | Login, password reset |
-| **Multi-tenant Data Isolation** | SaaS baseline | Medium | Row-level security |
-| **Soft Deletes** | Data recovery | Low | deleted_at pattern |
+| **Auth + Onboarding** | Cannot use app without it | MEDIUM | Email invite flow, sign up, profile setup. Must handle the invited-resident flow (admin creates record, user links via email). Show community branding on first launch. |
+| **Home Dashboard** | Entry point, orientation | MEDIUM | Summary cards: balance due, upcoming visitors, next reservation, unread announcements. This is the "at a glance" screen. Every competitor has it. |
+| **Account Balance & Payment History** | Primary financial concern for residents | MEDIUM | Show current balance, charges breakdown, payment history. Residents in Mexico check this obsessively. ComunidadFeliz, Neivor, and CondoVive all lead with this. |
+| **Payment Submission (Proof Upload)** | How residents pay HOA fees | MEDIUM | Upload bank transfer receipt (comprobante), SPEI reference, or mark as paid. Mexico is heavily bank-transfer based, not credit-card. Payment proof workflow (pending -> approved/rejected) is critical. |
+| **Visitor Pre-Registration** | Core security feature | MEDIUM | Create invitation with name, date, time window. Generate QR code. Share via WhatsApp (critical in Mexico). Single-use and recurring types. This is the #1 daily-use feature for residents. |
+| **Active Visitors List** | Know who is coming/has arrived | LOW | View pending, checked-in, and completed visits. Real-time status updates when guard processes entry. |
+| **Maintenance Request Submission** | Universal resident need | MEDIUM | Category selection, description, photo upload, location. Track status updates. Every competitor has this. |
+| **Maintenance Ticket Status** | Follow up on requests | LOW | Timeline view of ticket progress. Notification when status changes. Residents want to know "is it being worked on?" |
+| **Announcements / Notices Feed** | Community communication baseline | LOW | Read-only feed of admin announcements. Mark as read. Priority flagging. Every HOA app has this. |
+| **Push Notifications** | Real-time awareness | MEDIUM | Visitor arrived, payment received, maintenance update, new announcement. Without push, the app feels dead. |
+| **Profile Management** | Basic account control | LOW | Edit phone, emergency contacts, profile photo. View unit assignment. |
 
-**Source:** [Buildium - HOA Management Software](https://www.buildium.com/blog/best-hoa-management-software-platforms/), [Wild Apricot - HOA Software](https://www.wildapricot.com/blog/hoa-software)
+### Differentiators (Competitive Advantage for Residents)
 
-### Differentiators (Competitive Advantage)
-
-Features that set product apart. Not expected, but valued highly.
+Features that most Mexico-market competitors do NOT have or do poorly. These create "wow" moments.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Double-Entry Ledger** | Financial accuracy, audit-ready | High | Most use simple ledger |
-| **Offline-First with Sync** | Works without internet | High | Critical for guards at gates |
-| **Real-time QR Validation** | Instant visitor verification | Medium | Better than codes |
-| **Vehicle LPR Integration** | Automated entry | High | Requires hardware partnerships |
-| **SLA-tracked Maintenance** | Accountability | Medium | Most just have tickets |
-| **Smart Notifications** | Right message, right time | Medium | Context-aware alerts |
-| **Amenity Complex Rules** | Flexible booking | Medium | Beyond simple calendars |
-| **Violation Workflow** | Rule enforcement | Medium | Track, warn, penalize |
-| **Recurring Visitor Patterns** | Convenience | Low | "Every Tuesday" type rules |
-| **Financial Reconciliation** | Bank statement matching | High | Accounting-grade |
-| **API for Integrations** | Ecosystem play | Medium | Connect to other systems |
-| **Mobile-First Guard App** | Field usability | Medium | Dedicated security workflow |
-| **AI-Assisted Categorization** | Efficiency | Medium | Auto-route tickets |
-| **Community Marketplace** | Engagement | Medium | Buy/sell/services |
+| **QR Code Sharing via WhatsApp** | Frictionless visitor invitation | LOW | Deep integration with WhatsApp share sheet. Mexico runs on WhatsApp. Most competitors just show QR on screen; sharing it directly to the visitor via WhatsApp is a UX differentiator. |
+| **Amenity Reservation with Calendar** | Self-service booking | MEDIUM | Visual calendar showing available slots, tap-to-book. Most Mexican apps have rudimentary booking. A clean calendar UI with instant confirmation sets UPOE apart. |
+| **Real-time Visitor Status** | Peace of mind | MEDIUM | Live updates: "Your visitor Juan arrived at Gate A at 3:42 PM." Supabase Realtime makes this achievable. Most competitors show status after refresh. |
+| **Community Social Wall** | Engagement beyond transactions | MEDIUM | Posts, reactions, comments. Neighborhood news. Lost-and-found. This creates daily engagement beyond "pay and forget." TownSq succeeds specifically because of this. |
+| **In-App Chat with Admin** | Direct communication | HIGH | 1:1 messaging with admin/manager. Avoids WhatsApp groups chaos. Most competitors rely on email or external WhatsApp. |
+| **Marketplace Listings** | Community commerce | MEDIUM | Buy/sell/offer services within community. Trust infrastructure (same community = trusted). Unique differentiator in Mexico market. |
+| **Document Access** | Transparency | LOW | View community bylaws, assembly minutes, financial reports. Most Mexican HOA admins keep these hidden. Making them accessible builds trust. |
+| **Survey & Voting Participation** | Governance engagement | MEDIUM | Vote on community decisions from phone. Weighted by coefficient (Mexican law). Few competitors offer this. |
+| **Package Notification** | Convenience | LOW | "You have a package at the guardhouse." Pickup confirmation with code. Reduces guard-resident friction. |
 
-### Anti-Features (Explicitly Avoid)
+### Anti-Features for Resident App (Do NOT Build Yet)
 
-Features to NOT build. Common mistakes in this domain.
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| **Simple audit_logs table** | Performance killer, not tamper-proof | Use pgAudit + event sourcing for sensitive ops |
-| **UUID v4 primary keys** | Index fragmentation at scale | Use UUID v7 (time-ordered) |
-| **Storing deleted_at as boolean** | Can't restore, no timestamp | Use TIMESTAMPTZ deleted_at |
-| **Single monolithic permissions** | Inflexible | Role-based + resource-level permissions |
-| **Hardcoded fee types** | Every community differs | Configurable fee structures |
-| **Email as username** | People change emails | Separate email from login ID |
-| **Tenant ID in every query** | Error-prone, easy to forget | Row-level security policies |
-| **Mutable financial records** | Audit nightmare | Immutable transactions + reversals |
-| **Generic "notes" field** | Unstructured, unsearchable | Typed metadata in JSONB |
-
-**Source:** [LogVault - Audit Logs Anti-Pattern](https://www.logvault.app/blog/audit-logs-table-anti-pattern), [Andy Atkinson - Avoid UUID v4](https://andyatkinson.com/avoid-uuid-version-4-primary-keys)
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| **Full Financial Ledger View** | "I want to see all transactions" | Double-entry ledger is admin complexity; residents just need balance + charges + payments | Show simplified "My Account" with balance, charges list, payments list. No journal entries. |
+| **In-App Payment Gateway** | "Pay with credit card in the app" | Stripe/payment integration is a separate milestone. Mexico uses SPEI bank transfers predominantly. Gateway adds compliance burden (PCI). | Payment proof upload (comprobante) covers 90% of Mexican HOA payments. Gateway is v3.0. |
+| **Offline-First Sync** | "Works without internet" | PowerSync/offline sync is massive complexity for first release. Guards need it more than residents. | Online-first with graceful degradation (cached last state, queue actions). Offline is a future milestone per PROJECT.md. |
+| **AI Chatbot** | "Ask questions to an AI" | Premature. Need real usage data first. AI without good data gives bad answers. | Search function over announcements + FAQ section. |
+| **Biometric Access Control** | "Unlock gate with fingerprint" | Requires hardware integration, IoT partnerships. Out of scope per PROJECT.md. | QR code-based access is the proven pattern. |
+| **Multi-Community Switching** | "I own units in 2 communities" | Edge case for v1. Adds navigation complexity. | Support single community per login. Multi-community is v3.0. |
+| **Complex Report Generation** | "Show me graphs of my payments" | Residents don't need analytics. Admins do. | Simple payment history list with totals. |
 
 ---
 
-## 7. Multi-Tenant & Security Patterns
+## Part 2: Mobile App -- Guard Experience
 
-### Row-Level Security Implementation
+### Table Stakes (Guards Cannot Work Without These)
 
-```sql
--- Enable RLS on tenant-scoped tables
-ALTER TABLE units ENABLE ROW LEVEL SECURITY;
-ALTER TABLE residents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE maintenance_tickets ENABLE ROW LEVEL SECURITY;
+The guard app is a **work tool**, not a consumer app. It must be fast, operable with one hand while standing at a gate, and work under pressure. UX must prioritize speed and clarity over aesthetics.
 
--- Create policy using session variable
-CREATE POLICY tenant_isolation ON units
-    FOR ALL
-    USING (community_id IN (
-        SELECT community_id
-        FROM user_community_access
-        WHERE user_id = current_setting('app.current_user_id')::uuid
-    ));
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Auth + Shift Start** | Guard must clock in | LOW | Login, select active access point (gate). Start shift. Simple and fast -- guards change shifts every 8-12 hours. |
+| **Expected Visitors Queue** | Primary work screen | MEDIUM | List of visitors expected TODAY at THIS gate, sorted by time. Show visitor name, host resident, unit, vehicle info, time window. One-tap to start check-in. This is the guard's "inbox." |
+| **QR Code Scanner** | Primary verification method | MEDIUM | Camera-based QR scan. Validates against invitation. Shows green (approved) or red (denied) with visitor details. Must work in < 2 seconds. Guard scans, gate opens. This is the #1 interaction. |
+| **Manual Visitor Check-In** | Walk-in visitors without QR | MEDIUM | Quick form: name, who visiting (unit search), vehicle plate, photo. Call resident for authorization. Log entry. About 30-40% of visits are walk-ins. |
+| **Entry/Exit Logging** | Security audit trail | LOW | Record entry and exit with timestamp, gate, method (QR, manual, vehicle). Immutable log. Guards need this for liability. |
+| **Resident Directory Lookup** | "Who lives in unit 42?" | LOW | Search by unit number, resident name, or phone. Show basic contact info. Guards need this dozens of times per shift. |
+| **Vehicle Quick Search** | Identify vehicles by plate | LOW | Search by license plate. Show registered owner/unit. Flag if blacklisted. |
+| **Package Reception** | Deliveries are constant | MEDIUM | Log incoming package: carrier, recipient unit, photo of label. Notify resident. Track storage location. Generate pickup code. |
+| **Emergency Panic Button** | Safety critical | LOW | One-tap emergency alert. Types: panic, fire, medical. Notifies admin, other guards, and generates incident. Must be accessible from ANY screen. |
 
--- Set context at connection time
-SET LOCAL app.current_user_id = 'user-uuid-here';
-SET LOCAL app.current_community_id = 'community-uuid-here';
-```
+### Differentiators (Competitive Advantage for Guards)
 
-**Key Points:**
-- RLS centralizes isolation logic at database level
-- Application sets session context, not individual query filters
-- Prevents accidental data leakage from missed WHERE clauses
-- PostgreSQL 12+ recommended for best performance
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Blacklist Alert on Check-In** | Prevent prohibited entry | MEDIUM | Automatic cross-check during visitor check-in. Loud visual/audio alert if match. Shows reason and protocol. Most competitor guard apps lack real-time blacklist checks. |
+| **NFC Patrol Checkpoint Scanning** | Prove patrol completion | MEDIUM | Guard taps NFC tag at checkpoints during patrol rounds. Logs time, location, sequence. Supervisors see completion status. QR-Patrol and similar apps show this is expected in professional security. |
+| **Incident Reporting with Media** | Document events in real-time | MEDIUM | Quick incident creation: type, severity, photo/video, location, description. Timeline auto-generated. Much better than paper logbooks. |
+| **Shift Handover Notes** | Continuity between shifts | LOW | Outgoing guard leaves notes for incoming guard. "Vehicle in lot 3 has flat tire." "Expecting large delivery at unit 12." |
+| **Visitor Photo Capture** | Visual verification record | LOW | Camera capture during check-in. Stored in access log. Valuable for security disputes. |
+| **Provider/Contractor Verification** | Validate service providers | MEDIUM | Scan provider ID, check against authorized provider schedule (days/hours). Verify insurance/certification status. |
+| **Guard-to-Guard Chat** | Inter-gate coordination | MEDIUM | Simple messaging between guards on duty. "Sending a resident's visitor to Gate B." Lightweight, not full chat. |
 
-**Source:** [AWS - Multi-tenant Data Isolation with RLS](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/), [Crunchy Data - RLS for Tenants](https://www.crunchydata.com/blog/row-level-security-for-tenants-in-postgres)
+### Anti-Features for Guard App (Do NOT Build Yet)
 
-### Audit Trail Pattern
-
-```sql
--- Audit log for sensitive operations (append-only)
-CREATE TABLE audit_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_time TIMESTAMPTZ DEFAULT now(),
-
-    -- Actor
-    user_id UUID,
-    user_type VARCHAR(20),               -- 'resident', 'staff', 'system', 'api'
-    ip_address INET,
-    user_agent TEXT,
-
-    -- Action
-    action VARCHAR(50) NOT NULL,         -- 'payment.created', 'visitor.approved'
-    resource_type VARCHAR(50) NOT NULL,  -- 'payment', 'visitor_invitation'
-    resource_id UUID,
-
-    -- Context
-    community_id UUID,
-
-    -- Changes
-    old_values JSONB,
-    new_values JSONB,
-
-    -- Metadata
-    metadata JSONB DEFAULT '{}'
-);
-
--- Partition by month for performance
-CREATE TABLE audit_events_2025_01 PARTITION OF audit_events
-    FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
-```
-
-**Source:** [Severalnines - PostgreSQL Audit Logging](https://severalnines.com/blog/postgresql-audit-logging-best-practices/), [pgAudit Extension](https://github.com/pgaudit/pgaudit)
-
-### Soft Delete Pattern
-
-```sql
--- Add to all sync-able tables
-ALTER TABLE residents ADD COLUMN deleted_at TIMESTAMPTZ;
-
--- Partial unique index (only enforced for non-deleted)
-CREATE UNIQUE INDEX residents_email_unique
-    ON residents(community_id, email)
-    WHERE deleted_at IS NULL;
-
--- RLS policy to hide deleted by default
-CREATE POLICY hide_deleted ON residents
-    FOR SELECT
-    USING (deleted_at IS NULL OR current_setting('app.show_deleted', true)::boolean);
-
--- View for active records
-CREATE VIEW active_residents AS
-    SELECT * FROM residents WHERE deleted_at IS NULL;
-```
-
-**Source:** [Medium - Soft Deletes with RLS](https://medium.com/@priyaranjanpatraa/soft-deletes-you-can-trust-row-level-archiving-with-spring-boot-jpa-postgresql-2c3544255e26), [DEV - PostgreSQL Soft Delete Strategies](https://dev.to/oddcoder/postgresql-soft-delete-strategies-balancing-data-retention-50lo)
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| **LPR Camera Integration** | "Auto-read license plates" | Requires hardware (cameras), computer vision pipeline, IoT integration. Out of scope per PROJECT.md. | Manual plate entry with quick-search. LPR is v3.0+. |
+| **Facial Recognition** | "Identify visitors by face" | Privacy concerns, ML infrastructure, hardware requirements. Disproportionate complexity. | Photo capture + manual verification. |
+| **Full Admin Functions** | "Guard should manage everything" | Guards need a focused tool, not a Swiss army knife. Admin functions distract from primary duty. | Guard sees their domain only: visitors, patrols, incidents, packages. |
+| **Complex Reporting** | "Guards generate reports" | Guards report incidents; admins generate reports FROM incidents. Different workflows. | Simple incident creation. Reports are admin-web territory. |
+| **Offline-First Full Sync** | "What if internet is down?" | Full offline sync is a future milestone. | Cache last-loaded expected visitors list. Queue check-ins for upload. Graceful degradation, not full offline. |
 
 ---
 
-## 8. UUID Strategy
+## Part 3: Mobile App -- Admin (Mobile Subset)
 
-### Recommendation: UUID v7
+### Table Stakes (Admin Needs on Mobile)
 
-**Why UUID v7 over v4:**
-- Time-ordered: new records append to index end
-- 50-100x better insert performance at scale
-- No index fragmentation
-- Still globally unique
-- PostgreSQL 18 native support (Fall 2025)
+Admins use mobile for quick checks and approvals, not full management. The web dashboard is the primary admin tool.
 
-**Implementation for PostgreSQL < 18:**
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Dashboard Overview** | Quick health check | LOW | Financial summary (collected vs owed), today's visitors count, open maintenance tickets, recent incidents. Glanceable. |
+| **Payment Proof Approval** | Time-sensitive workflow | MEDIUM | View pending payment proofs, approve/reject with one tap. This is the admin's most frequent mobile action. Residents get frustrated waiting for approval. |
+| **Announcement Publishing** | Quick communication | LOW | Create and send announcement to all residents or specific segments. |
+| **Maintenance Ticket Management** | Assign and track | MEDIUM | View tickets, assign to staff/provider, update status. Comment. |
+| **Push Notification Management** | See what was sent | LOW | View sent notifications log. |
 
-```sql
--- Use pg_uuidv7 extension or application-generated
-CREATE EXTENSION IF NOT EXISTS pg_uuidv7;
+### Differentiators for Mobile Admin
 
--- Or generate in application layer (recommended)
--- Most languages have uuid v7 libraries now
-```
-
-**Source:** [Maciej Walkowiak - PostgreSQL UUID](https://maciejwalkowiak.com/blog/postgres-uuid-primary-key/), [DZone - ULID and UUID Performance](https://dzone.com/articles/performance-of-ulid-and-uuid-in-postgres-database)
-
----
-
-## 9. Feature Dependencies
-
-```
-Authentication
-    └── User Management
-          ├── Resident Profiles
-          │     ├── Unit Occupancy
-          │     ├── Vehicles
-          │     ├── Pets
-          │     └── KYC Documents
-          │
-          └── Staff/Admin Profiles
-                └── Permissions/Roles
-
-Property Hierarchy (Community → Building → Unit)
-    │
-    ├── Financial Module
-    │     ├── Chart of Accounts
-    │     ├── Fee Definitions
-    │     ├── Charge Generation
-    │     ├── Payments
-    │     └── Reconciliation
-    │
-    ├── Access Control
-    │     ├── Visitor Invitations
-    │     ├── Visitor Logs
-    │     ├── Blacklist
-    │     └── Vehicle Registry
-    │
-    ├── Amenities
-    │     ├── Amenity Definitions
-    │     ├── Booking Rules
-    │     └── Reservations
-    │
-    ├── Maintenance
-    │     ├── Categories
-    │     ├── SLA Policies
-    │     ├── Tickets
-    │     └── Work Orders
-    │
-    └── Communication
-          ├── Announcements
-          ├── Forums/Discussions
-          └── Notifications
-```
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Visitor Activity Feed** | Real-time security awareness | LOW | Live feed of all gate entries/exits. Admin knows what is happening at the gates. |
+| **Quick Resident Lookup** | Answer questions fast | LOW | Search residents, see their balance, unit, vehicles. Admin gets calls constantly asking about resident info. |
+| **Incident Acknowledgment** | Responsive management | LOW | View incidents reported by guards, acknowledge, add notes. |
 
 ---
 
-## 10. MVP Recommendation
+## Part 4: Web Admin Dashboard
 
-### Phase 1: Core Foundation
-1. Organizations, Communities, Buildings, Units
-2. Residents with basic profiles
-3. Unit occupancy (owner/tenant)
-4. User authentication
-5. Row-level security infrastructure
+### Table Stakes (Admin Dashboard Must-Haves)
 
-### Phase 2: Financial Basics
-1. Chart of accounts
-2. Fee definitions
-3. Monthly charge generation
-4. Payment recording
-5. Balance inquiries
+These are features every property management admin platform provides. Without them, the admin will use spreadsheets instead.
 
-### Phase 3: Access Control
-1. Visitor pre-registration
-2. QR code generation
-3. Entry/exit logging
-4. Basic blacklist
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Financial Overview Dashboard** | #1 admin concern | HIGH | Total collected, total owed, delinquency rate, collection rate, month-over-month trends. Charts: bar (collected vs charged by month), pie (delinquency distribution), table (unit-by-unit balances). This is the home screen. |
+| **Unit-by-Unit Balance Report** | Who owes what | MEDIUM | Table of all units with: current balance, months delinquent, last payment date, contact info. Sortable, filterable, exportable to Excel. Mexican admins live in this report. |
+| **Payment Management** | Process payments | MEDIUM | View incoming payment proofs, approve/reject, match to charges. Bulk operations. Filter by status. |
+| **Charge Generation** | Bill residents | HIGH | Generate monthly fees for all units. Support coefficient-based, fixed, and hybrid formulas. Preview before applying. Schedule auto-generation. |
+| **Resident Management** | CRUD residents | MEDIUM | Add/edit/deactivate residents. Link to units. Manage occupancy types (owner/tenant). Invite via email. View per-resident history. |
+| **Unit Management** | Property registry | LOW | List all units with type, area, coefficient, current occupant(s). Edit unit details. |
+| **Maintenance Ticket Dashboard** | Operational oversight | MEDIUM | All tickets by status (kanban or table view). Assign, prioritize, track SLA. Response time metrics. |
+| **Announcements Manager** | Community communication | LOW | Create, schedule, target (all residents, specific buildings, delinquent units). View read receipts. |
+| **Visitor/Access Log Report** | Security oversight | MEDIUM | Filterable log of all entries/exits. Date range, gate, visitor type. Export capability. |
+| **Document Repository** | Legal compliance | LOW | Upload/organize community documents (bylaws, minutes, financial reports). Set visibility (public to residents or admin-only). |
+| **User & Role Management** | Access control | MEDIUM | Manage admin users, guards, managers. Assign roles and permissions. Invite new users. |
+| **Community Settings** | Configuration | MEDIUM | Community name, address, branding (logo, colors). Business hours. Feature flags. Rules configuration. |
 
-### Phase 4: Maintenance
-1. Ticket submission
-2. Assignment workflow
-3. Status tracking
-4. Basic SLA (response time)
+### Differentiators for Admin Dashboard
 
-### Phase 5: Communication & Amenities
-1. Announcements
-2. Amenity definitions
-3. Basic reservations
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Delinquency Analytics** | Collection strategy | HIGH | Aging analysis (30/60/90/120+ days). Delinquency trends over time. Per-building breakdown. Automated collection letter generation. Mexican HOAs fight delinquency constantly -- good analytics is a competitive weapon. |
+| **Financial Reports Suite** | Accounting transparency | HIGH | Income vs expense report, balance sheet, cash flow, budget vs actual. Mexican law requires annual financial reports for assemblies. Exportable to PDF/Excel. |
+| **Guard Performance Dashboard** | Security management | MEDIUM | Patrol completion rates, average visitor processing time, incident response time, shift coverage. Most competitors have zero guard analytics. |
+| **Amenity Utilization Reports** | Justify investments | MEDIUM | Booking rates by amenity, peak hours, cancellation rates. Helps justify amenity maintenance budgets. |
+| **Bulk Operations** | Admin efficiency | MEDIUM | Bulk charge generation, bulk payment import (bank statement reconciliation), bulk notification sending. Admins managing 200+ units need bulk tools. |
+| **Audit Trail Viewer** | Compliance and disputes | MEDIUM | Searchable log of all administrative actions. Who changed what, when. Useful for board disputes. |
+| **Election/Assembly Management** | Governance | HIGH | Create elections, define options, open voting, track quorum (by coefficient per Mexican law), declare results. Assembly attendance tracking with proxy delegation. |
+| **Integration Configuration** | Extensibility | MEDIUM | Configure webhook endpoints, manage API keys, view integration status. Future-proofs the platform. |
 
-**Defer to Post-MVP:**
-- Advanced SLA with escalations
-- Vehicle LPR integration
-- Financial reconciliation
-- Marketplace
-- AI features
-- Complex booking rules
+### Anti-Features for Admin Dashboard (Do NOT Build Yet)
+
+| Anti-Feature | Why Requested | Why Problematic | Alternative |
+|--------------|---------------|-----------------|-------------|
+| **Full Accounting System** | "Replace our accountant software" | UPOE is property management, not QuickBooks. Building a full general ledger UI with trial balance, journal entry creation, etc. is a multi-month effort. | Show financial summaries and reports. Export to Excel for accountants. Integrate with accounting software later. |
+| **CRM for Prospective Buyers/Renters** | "Manage unit sales" | Sales/rental CRM is a different product. Scope creep. | Resident registry covers current occupants. Sales CRM is not property management. |
+| **White-Label Theme Editor** | "Each community wants custom branding" | Visual theme editor is complex. Per PROJECT.md, basic branding only for v2.0. | Logo + primary color per community. Full theming is v3.0+. |
+| **Real-Time Video Monitoring** | "Show camera feeds in dashboard" | Requires video infrastructure, RTSP streaming, massive bandwidth. | Link out to camera vendor's own dashboard. UPOE manages data, not video streams. |
+| **IoT Device Management** | "Manage smart locks, sensors" | Hardware integration is out of scope per PROJECT.md. | Database schema supports it. UI for IoT is a future milestone. |
+| **AI-Powered Insights** | "Predict delinquency, suggest actions" | Needs historical data that does not exist yet for a new platform. | Start with rule-based alerts (e.g., "unit delinquent > 60 days"). ML comes after data accumulation. |
+| **Multi-Language i18n** | "English version too" | Per PROJECT.md, Spanish first. i18n infrastructure adds overhead to every screen. | Ship in Spanish. Add i18n infrastructure in v3.0 when expanding beyond Mexico. |
+
+---
+
+## Part 5: UX Patterns and Screen Architecture
+
+### Mobile App Navigation (Resident)
+
+**Recommended: 5-tab bottom navigation.** Research shows 3-5 tabs with odd numbers produce the best UX. Studies show a 65% increase in daily active users when switching from hamburger menu to bottom tabs.
+
+```
+Bottom Tab Bar (Resident):
+[Home]  [Visitors]  [Payments]  [Community]  [More]
+
+Home:        Dashboard with summary cards
+Visitors:    Create invitation, active visitors, history
+Payments:    Balance, payment history, upload proof
+Community:   Announcements, social wall, amenities, marketplace
+More:        Maintenance, documents, surveys, profile, settings
+```
+
+**Rationale:** The first three tabs (Home, Visitors, Payments) are daily-use features. Community covers engagement. "More" groups less-frequent features to avoid tab overflow.
+
+### Mobile App Navigation (Guard)
+
+**Recommended: 4-tab bottom navigation.** Guards need fewer, more focused screens. Speed is everything.
+
+```
+Bottom Tab Bar (Guard):
+[Gate]  [Packages]  [Patrol]  [Alerts]
+
+Gate:        Expected visitors queue, QR scanner button (FAB), manual check-in
+Packages:    Receive package, pending pickups, confirm pickup
+Patrol:      Active route, NFC scan, checkpoint status
+Alerts:      Emergency button, incidents, shift notes
+```
+
+**Rationale:** "Gate" is the primary screen -- guards spend 80% of their time here. Packages are the second most frequent activity. Patrol is periodic. Alerts is always accessible. The QR scanner should be a floating action button on the Gate screen, always one tap away.
+
+### Guard UX Critical Patterns
+
+Based on research from QR-Patrol, GuardWatch, GateHouse Solutions, and Belfry:
+
+| Pattern | Implementation | Why |
+|---------|---------------|-----|
+| **Large tap targets** | Minimum 48dp buttons, prefer 56dp+ | Guards wear gloves, use in rain/sun, operate one-handed |
+| **High contrast mode** | Dark text on light background, or vice versa | Outdoor use in bright sunlight or at night |
+| **Minimal text input** | Dropdowns, quick-select, photo over typing | Speed. Guards process a visitor every 2-3 minutes at peak |
+| **Persistent emergency button** | FAB or header button on every screen | Safety-critical. Must be reachable in < 1 second |
+| **Audio/haptic feedback** | Sound + vibration on QR scan success/failure | Guard may not be looking at screen during scan |
+| **Auto-advance workflow** | After QR scan success, auto-show entry confirmation | Reduce taps. Scan -> Confirm -> Done in 2 taps max |
+
+### Admin Dashboard UX Patterns
+
+Based on research from Condo Control (40+ modules), CINC Systems, Buildium, and property management dashboard templates:
+
+| Pattern | Implementation | Why |
+|---------|---------------|-----|
+| **Sidebar navigation** | Collapsible sidebar with module groupings | Admin dashboard has 15+ sections. Bottom tabs do not scale. Sidebar with groups (Financial, Security, Community, Operations, Settings) is standard. |
+| **KPI cards on home** | 4-6 summary cards at top of dashboard | Occupancy rate, collection rate, delinquency rate, open tickets, today's visitors, pending approvals |
+| **Data tables with filters** | Sortable, filterable tables for all list views | Admins managing 100+ units need table views with search, sort, date filters, status filters, and export |
+| **Kanban for tickets** | Drag-drop columns: Open -> In Progress -> Resolved | Maintenance workflow visualization. Alternative: table view toggle. |
+| **Chart dashboard** | Bar charts (monthly collection), line charts (delinquency trend), pie charts (expense breakdown) | Financial overview needs visual representation. Mexican admins present these at assemblies. |
+| **Bulk action toolbars** | Select multiple rows, apply action | Charge generation, payment approval, notification sending |
+
+---
+
+## Part 6: Feature Dependencies
+
+```
+Authentication & Onboarding
+    |
+    +-- Resident App
+    |     +-- Home Dashboard
+    |     |     requires: Balance data, Visitors data, Announcements data
+    |     |
+    |     +-- Visitor Management
+    |     |     requires: Auth (host identity), Unit assignment
+    |     |     enhances: Push notifications (visitor arrived)
+    |     |     enhances: Guard QR Scanner (verification target)
+    |     |
+    |     +-- Payment Management
+    |     |     requires: Auth, Unit assignment, Charge data
+    |     |     enhances: Admin payment approval workflow
+    |     |
+    |     +-- Maintenance Requests
+    |     |     requires: Auth, Unit assignment
+    |     |     enhances: Admin ticket dashboard, Push notifications
+    |     |
+    |     +-- Announcements (read-only)
+    |     |     requires: Auth
+    |     |
+    |     +-- Amenity Reservations
+    |     |     requires: Auth, Amenity catalog (admin-created)
+    |     |
+    |     +-- Community Wall
+    |     |     requires: Auth
+    |     |
+    |     +-- Marketplace
+    |           requires: Auth, Community Wall patterns (shared components)
+    |
+    +-- Guard App
+    |     +-- Gate Operations (expected visitors + QR scan + manual check-in)
+    |     |     requires: Auth, Visitor invitations data, Access points config
+    |     |     THIS IS THE CORE -- build first
+    |     |
+    |     +-- Package Management
+    |     |     requires: Auth, Unit directory
+    |     |
+    |     +-- Patrol System
+    |     |     requires: Auth, NFC hardware access, Patrol routes (admin-created)
+    |     |
+    |     +-- Incident Reporting
+    |           requires: Auth, Camera access
+    |
+    +-- Admin Dashboard
+          +-- Financial Module (charges, payments, reports)
+          |     requires: Auth, Unit data, Resident data
+          |     THIS IS THE CORE -- build first
+          |
+          +-- Resident Management
+          |     requires: Auth
+          |     enables: Everything else (residents must exist)
+          |
+          +-- Visitor/Access Reports
+          |     requires: Guard app generating data
+          |
+          +-- Maintenance Dashboard
+          |     requires: Residents submitting tickets
+          |
+          +-- Community Tools (announcements, surveys, elections)
+          |     requires: Resident data
+          |
+          +-- Configuration (settings, roles, features)
+                requires: Auth
+                enables: Everything else
+```
+
+### Dependency Notes
+
+- **Auth + Onboarding is the universal prerequisite:** Nothing works without it. Build first, for all three roles.
+- **Visitor Management (resident) and Gate Operations (guard) are tightly coupled:** The resident creates the invitation; the guard verifies it. Both must be built in the same phase.
+- **Payment proof upload (resident) and Payment approval (admin) are tightly coupled:** Same phase.
+- **Maintenance submission (resident) and Maintenance dashboard (admin) are tightly coupled:** Same phase.
+- **Amenity reservations require admin to have created amenities first.** Admin amenity management before resident booking.
+- **Guard patrol requires admin to have created routes/checkpoints first.** Admin patrol configuration before guard patrol screen.
+- **Analytics/reports require data to exist.** Build data-entry features before reporting features.
+
+---
+
+## Part 7: MVP Definition
+
+### Launch With (v2.0 MVP)
+
+The minimum frontend to deliver a **usable product** that replaces WhatsApp groups + spreadsheets.
+
+**Resident Mobile App:**
+- [ ] Auth + onboarding (invited resident flow) -- gate to everything
+- [ ] Home dashboard (balance, visitors, announcements summary) -- orientation
+- [ ] Visitor pre-registration with QR + WhatsApp sharing -- #1 daily use feature
+- [ ] Account balance + charge history view -- #1 financial concern
+- [ ] Payment proof upload -- how they pay
+- [ ] Maintenance request submission + status tracking -- basic operational need
+- [ ] Announcements feed -- communication baseline
+- [ ] Push notifications (visitor arrived, payment status, announcements) -- app feels alive
+- [ ] Profile management -- basic self-service
+
+**Guard Mobile App:**
+- [ ] Auth + shift selection -- start of every shift
+- [ ] Expected visitors queue -- the primary work screen
+- [ ] QR code scanner with instant verification -- core access control
+- [ ] Manual visitor check-in -- walk-in visitors
+- [ ] Entry/exit logging -- audit trail
+- [ ] Resident/unit directory search -- "who lives in unit X?"
+- [ ] Package reception + notification -- constant daily activity
+- [ ] Emergency panic button -- safety critical, must be on every screen
+
+**Admin Web Dashboard:**
+- [ ] Auth + community setup -- gate to everything
+- [ ] Financial overview dashboard (collection rate, delinquency, charts) -- admin's home screen
+- [ ] Unit-by-unit balance report -- the most-used report
+- [ ] Payment proof approval/rejection -- time-sensitive workflow
+- [ ] Charge generation (monthly fees) -- billing engine
+- [ ] Resident management (CRUD, invite, deactivate) -- data foundation
+- [ ] Unit management -- property registry
+- [ ] Maintenance ticket dashboard (list + assign + status) -- operational oversight
+- [ ] Announcement creator -- communication tool
+- [ ] Access log report -- security oversight
+- [ ] Community settings + branding -- configuration
+
+### Add After MVP Validation (v2.1 - v2.3)
+
+Features to add once the core works and real users provide feedback.
+
+- [ ] **Amenity reservations** (resident) + **amenity management** (admin) -- trigger: admin requests it
+- [ ] **Community social wall** (resident) -- trigger: admins want to replace WhatsApp groups
+- [ ] **Guard patrol with NFC** -- trigger: communities with large perimeters request it
+- [ ] **Incident reporting with media** (guard) -- trigger: guards are actively using the app
+- [ ] **Document repository** (resident read, admin manage) -- trigger: assembly season
+- [ ] **Delinquency analytics** (admin) -- trigger: admin sees basic financials working
+- [ ] **Vehicle quick-search** (guard) -- trigger: communities with vehicle-heavy access
+- [ ] **Blacklist alerts** (guard) -- trigger: communities with security concerns
+- [ ] **Survey/voting** (resident) + **election management** (admin) -- trigger: assembly season
+- [ ] **Shift handover notes** (guard) -- trigger: multi-guard communities
+- [ ] **Bulk charge import / bank reconciliation** (admin) -- trigger: admin volume needs it
+
+### Future Consideration (v3.0+)
+
+Features to defer until product-market fit is established.
+
+- [ ] **Marketplace** -- needs active community engagement first
+- [ ] **In-app chat** (resident-to-admin, guard-to-guard) -- high complexity, needs Supabase Realtime patterns
+- [ ] **Financial reports suite** (income statement, balance sheet) -- accounting-grade complexity
+- [ ] **Guard performance analytics** -- needs data accumulation
+- [ ] **Provider/contractor management** -- operational complexity
+- [ ] **Parking management** -- community-specific need
+- [ ] **Violation tracking workflow** -- needs guard/admin experience first
+- [ ] **Integration configuration** (webhooks, API keys) -- platform maturity feature
+- [ ] **Payment gateway integration** (Stripe/SPEI) -- compliance and partnership
+- [ ] **Offline-first sync** -- PowerSync integration, major infrastructure
+- [ ] **Multi-language i18n** -- expansion beyond Mexico
+- [ ] **White-label theming** -- enterprise feature
+
+---
+
+## Part 8: Feature Prioritization Matrix
+
+### Resident App Features
+
+| Feature | User Value | Implementation Cost | Priority | Phase |
+|---------|------------|---------------------|----------|-------|
+| Auth + Onboarding | HIGH | MEDIUM | P1 | MVP |
+| Home Dashboard | HIGH | MEDIUM | P1 | MVP |
+| Visitor Pre-Registration + QR | HIGH | MEDIUM | P1 | MVP |
+| Account Balance + History | HIGH | LOW | P1 | MVP |
+| Payment Proof Upload | HIGH | MEDIUM | P1 | MVP |
+| Maintenance Request | HIGH | MEDIUM | P1 | MVP |
+| Announcements Feed | HIGH | LOW | P1 | MVP |
+| Push Notifications | HIGH | MEDIUM | P1 | MVP |
+| Profile Management | MEDIUM | LOW | P1 | MVP |
+| Amenity Reservations | MEDIUM | MEDIUM | P2 | v2.1 |
+| Community Social Wall | MEDIUM | MEDIUM | P2 | v2.2 |
+| Document Access | MEDIUM | LOW | P2 | v2.2 |
+| Survey/Voting | MEDIUM | MEDIUM | P2 | v2.3 |
+| Package Notifications | LOW | LOW | P2 | v2.1 |
+| Marketplace | LOW | MEDIUM | P3 | v3.0 |
+| In-App Chat | MEDIUM | HIGH | P3 | v3.0 |
+
+### Guard App Features
+
+| Feature | User Value | Implementation Cost | Priority | Phase |
+|---------|------------|---------------------|----------|-------|
+| Auth + Shift Selection | HIGH | LOW | P1 | MVP |
+| Expected Visitors Queue | HIGH | MEDIUM | P1 | MVP |
+| QR Code Scanner | HIGH | MEDIUM | P1 | MVP |
+| Manual Check-In | HIGH | MEDIUM | P1 | MVP |
+| Entry/Exit Logging | HIGH | LOW | P1 | MVP |
+| Resident Directory Search | HIGH | LOW | P1 | MVP |
+| Package Reception | HIGH | MEDIUM | P1 | MVP |
+| Emergency Panic Button | HIGH | LOW | P1 | MVP |
+| Vehicle Quick-Search | MEDIUM | LOW | P2 | v2.1 |
+| Blacklist Alerts | MEDIUM | MEDIUM | P2 | v2.1 |
+| NFC Patrol Checkpoints | MEDIUM | MEDIUM | P2 | v2.2 |
+| Incident Reporting | MEDIUM | MEDIUM | P2 | v2.2 |
+| Shift Handover Notes | LOW | LOW | P2 | v2.2 |
+| Provider Verification | LOW | MEDIUM | P3 | v3.0 |
+| Guard-to-Guard Chat | LOW | HIGH | P3 | v3.0 |
+
+### Admin Dashboard Features
+
+| Feature | User Value | Implementation Cost | Priority | Phase |
+|---------|------------|---------------------|----------|-------|
+| Auth + Setup | HIGH | MEDIUM | P1 | MVP |
+| Financial Overview Dashboard | HIGH | HIGH | P1 | MVP |
+| Unit Balance Report | HIGH | MEDIUM | P1 | MVP |
+| Payment Approval | HIGH | MEDIUM | P1 | MVP |
+| Charge Generation | HIGH | HIGH | P1 | MVP |
+| Resident Management | HIGH | MEDIUM | P1 | MVP |
+| Unit Management | HIGH | LOW | P1 | MVP |
+| Maintenance Dashboard | HIGH | MEDIUM | P1 | MVP |
+| Announcement Creator | MEDIUM | LOW | P1 | MVP |
+| Access Log Report | MEDIUM | MEDIUM | P1 | MVP |
+| Community Settings | MEDIUM | MEDIUM | P1 | MVP |
+| Amenity Management | MEDIUM | MEDIUM | P2 | v2.1 |
+| Delinquency Analytics | MEDIUM | HIGH | P2 | v2.2 |
+| Document Management | MEDIUM | LOW | P2 | v2.2 |
+| Bulk Operations | MEDIUM | MEDIUM | P2 | v2.2 |
+| Survey/Election Management | MEDIUM | HIGH | P2 | v2.3 |
+| Audit Trail Viewer | LOW | MEDIUM | P2 | v2.3 |
+| Guard Performance Dashboard | LOW | MEDIUM | P3 | v3.0 |
+| Financial Reports Suite | MEDIUM | HIGH | P3 | v3.0 |
+| Integration Configuration | LOW | MEDIUM | P3 | v3.0 |
+
+**Priority key:**
+- P1: Must have for launch -- app is broken without it
+- P2: Should have, add based on user feedback triggers
+- P3: Nice to have, future milestones
+
+---
+
+## Part 9: Competitor Feature Analysis
+
+### Mexico Market Competitors
+
+| Feature | ComunidadFeliz | Neivor | CondoVive | TownSq | UPOE (Plan) |
+|---------|---------------|--------|-----------|--------|-------------|
+| Resident Mobile App | Yes (basic) | Yes | Yes | Yes (strong) | Yes -- aim for best-in-class |
+| Guard Mobile App | Minimal | Basic access control | No | No | Yes -- major differentiator |
+| Admin Web Dashboard | Yes | Yes | Yes | Yes | Yes |
+| Visitor QR Codes | Basic | Yes | Yes | No | Yes + WhatsApp sharing |
+| Payment Proof Upload | Yes | Yes | Yes | No | Yes |
+| Online Payment Gateway | Yes (WebPay) | Yes | Partial | No | Deferred to v3.0 |
+| Maintenance Tickets | Yes | Yes | Basic | Basic | Yes + SLA tracking |
+| Social Wall | No | Basic | No | Yes (core feature) | Yes |
+| Marketplace | No | No | No | No | Yes (differentiator) |
+| Amenity Booking | Basic | Yes | Basic | No | Yes + calendar UI |
+| Financial Reports | Basic | Yes | Basic | No | Strong (differentiator) |
+| Guard Patrol System | No | No | No | No | Yes (major differentiator) |
+| Incident Management | No | Minimal | No | No | Yes (differentiator) |
+| Elections/Voting | No | No | No | No | Yes (differentiator) |
+| Package Management | No | No | No | No | Yes (differentiator) |
+| Double-Entry Ledger | No (simple) | No (simple) | No (simple) | N/A | Yes (accuracy differentiator) |
+| Multi-tenant SaaS | Yes | Yes | Partial | Yes | Yes |
+
+### Key Competitive Insights
+
+1. **Guard app is the biggest gap in the market.** No major Mexico competitor offers a dedicated, feature-rich guard mobile app. ComunidadFeliz and Neivor have basic access logging, but nothing approaching a real guard workstation app.
+
+2. **TownSq wins on community engagement** (social wall, events). UPOE should match this with social wall + marketplace for stickiness.
+
+3. **ComunidadFeliz leads on financial features** in Mexico. UPOE's double-entry ledger is technically superior but must translate into clear, simple financial reports that admins can present at assemblies.
+
+4. **No competitor offers package management, patrol systems, or incident management** in the Mexico market. These are clear differentiators.
+
+5. **WhatsApp integration is critical.** Mexican residents share everything via WhatsApp. QR codes for visitors MUST be shareable via WhatsApp. Notifications should deep-link back to the app.
 
 ---
 
 ## Sources
 
-**Database Schema Design:**
-- [GeeksforGeeks - ER Diagrams for Real Estate](https://www.geeksforgeeks.org/dbms/how-to-design-er-diagrams-for-real-estate-property-management/)
-- [GitHub - Rental Database Project](https://github.com/ashmitan/Rental-Database-Project)
-- [Redgate - Hotel Room Booking](https://www.red-gate.com/blog/designing-a-data-model-for-a-hotel-room-booking-system)
+**Competitor Platforms Analyzed:**
+- [ComunidadFeliz](https://www.comunidadfeliz.mx/) - Mexico's leading HOA management platform
+- [Neivor](https://blog.neivor.com/9-apps-administracion-de-condominios-en-mexico) - Mexico market overview and competitor analysis
+- [Condo Control](https://www.condocontrol.com/blog/top-5-hoa-management-software/) - 40+ module feature comparison
+- [TownSq](https://www.townsq.io) - Community engagement-focused platform
+- [Buildium](https://www.buildium.com/blog/best-hoa-management-software-platforms/) - HOA management software review
 
-**Financial/Accounting:**
-- [Square - Books Accounting Service](https://developer.squareup.com/blog/books-an-immutable-double-entry-accounting-database-service/)
-- [Journalize.io - Elegant DB Schema](https://blog.journalize.io/posts/an-elegant-db-schema-for-double-entry-accounting/)
-- [Anvil - Engineer's Guide to Double-Entry](https://anvil.works/blog/double-entry-accounting-for-engineers)
+**Guard/Security App Patterns:**
+- [EntranceIQ - Guard Gate Apps](https://www.entranceiq.net/blog/2025/the-complete-guide-to-guard-gate-apps-security-system.html)
+- [QR-Patrol](https://www.qrpatrol.com/mobile-app) - Guard patrol app with QR/NFC
+- [Belfry Software - Guard Patrol](https://www.belfrysoftware.com/blog/guard-patrol-app) - Guard app selection guide
+- [GateHouse Solutions](https://www.gatehousesolutions.com/) - Visitor management software
+- [Proptia](https://www.proptia.com/visitor-management/) - Gated community visitor management
 
-**Access Control:**
-- [Proptia - Visitor Management](https://www.proptia.com/visitor-management/)
-- [EntranceIQ - Gated Community Software](https://www.entranceiq.net/blog/2025/what-is-a-gated-community-visitor-software-how-does-it-work.html)
-- [GateHouse Solutions](https://www.gatehousesolutions.com/)
+**Property Management KPIs and Dashboards:**
+- [Revela - 12 Property Management KPIs for 2026](https://www.revela.co/resources/property-management-kpis)
+- [Second Nature - Property Management Dashboards 2025](https://www.secondnature.com/blog/property-management-dashboard)
+- [DataBrain - PM Dashboard Template](https://www.usedatabrain.com/blog/property-management-dashboard)
 
-**Multi-Tenant/Security:**
-- [AWS - Multi-tenant Data Isolation with RLS](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/)
-- [Crunchy Data - RLS for Tenants](https://www.crunchydata.com/blog/row-level-security-for-tenants-in-postgres)
-- [Simplyblock - Multi-Tenancy with RLS](https://www.simplyblock.io/blog/underated-postgres-multi-tenancy-with-row-level-security/)
+**UX Patterns:**
+- [AppMySite - Bottom Navigation Bar Guide 2025](https://blog.appmysite.com/bottom-navigation-bar-in-mobile-apps-heres-all-you-need-to-know/)
+- [React Navigation - Bottom Tabs](https://reactnavigation.org/docs/bottom-tab-navigator/)
 
-**Audit/Soft Delete:**
-- [pgAudit Extension](https://github.com/pgaudit/pgaudit)
-- [Severalnines - PostgreSQL Audit Logging](https://severalnines.com/blog/postgresql-audit-logging-best-practices/)
-- [LogVault - Audit Logs Anti-Pattern](https://www.logvault.app/blog/audit-logs-table-anti-pattern)
+**Industry Reports:**
+- [Capterra - Best HOA Software 2026](https://www.capterra.com/hoa-software/)
+- [DoorLoop - Best Property Management Apps 2026](https://www.doorloop.com/blog/best-property-management-apps)
+- [Guesty - Must-Have PM Software Features 2026](https://www.guesty.com/blog/must-have-property-management-software-features/)
 
-**UUID Performance:**
-- [Maciej Walkowiak - PostgreSQL UUID](https://maciejwalkowiak.com/blog/postgres-uuid-primary-key/)
-- [Andy Atkinson - Avoid UUID v4](https://andyatkinson.com/avoid-uuid-version-4-primary-keys)
-
-**HOA/Property Management Software:**
-- [Buildium - HOA Management Software](https://www.buildium.com/blog/best-hoa-management-software-platforms/)
-- [Wild Apricot - HOA Software](https://www.wildapricot.com/blog/hoa-software)
-- [Vantaca - Community Association Software](https://www.vantaca.com/product)
+---
+*Feature research for: UPOE Frontend Applications (Gated Community Management)*
+*Researched: 2026-02-06*
