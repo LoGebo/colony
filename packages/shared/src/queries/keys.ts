@@ -129,6 +129,74 @@ export const elections = createQueryKeys('elections', {
   results: (id: string) => [{ id }],
 });
 
+export const patrols = createQueryKeys('patrols', {
+  all: null,
+  routes: (communityId: string) => [{ communityId }],
+  routeDetail: (id: string) => [id],
+  activeLogs: (guardId: string) => [{ guardId }],
+  logDetail: (id: string) => [id],
+  checkpoints: (communityId: string) => [{ communityId }],
+});
+
+export const incidents = createQueryKeys('incidents', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  types: (communityId: string) => [{ communityId }],
+  media: (incidentId: string) => [{ incidentId }],
+});
+
+export const emergencies = createQueryKeys('emergencies', {
+  all: null,
+  active: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+});
+
+export const handovers = createQueryKeys('handovers', {
+  all: null,
+  recent: (communityId: string) => [{ communityId }],
+  unacknowledged: (communityId: string) => [{ communityId }],
+});
+
+export const providers = createQueryKeys('providers', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  documents: (providerId: string) => [{ providerId }],
+  personnel: (providerId: string) => [{ providerId }],
+  schedules: (providerId: string) => [{ providerId }],
+  expiringDocs: (communityId: string) => [{ communityId }],
+});
+
+export const workOrders = createQueryKeys('work-orders', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  byProvider: (providerId: string) => [{ providerId }],
+});
+
+export const parking = createQueryKeys('parking', {
+  all: null,
+  spots: (communityId: string) => [{ communityId }],
+  assignments: (communityId: string) => [{ communityId }],
+  reservations: (communityId: string) => [{ communityId }],
+  violations: (communityId: string) => [{ communityId }],
+});
+
+export const moves = createQueryKeys('moves', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  validations: (moveId: string) => [{ moveId }],
+  deposits: (communityId: string) => [{ communityId }],
+});
+
+export const moderation = createQueryKeys('moderation', {
+  all: null,
+  queue: (communityId: string) => [{ communityId }],
+  stats: (communityId: string) => [{ communityId }],
+});
+
 export const queryKeys = mergeQueryKeys(
   residents,
   visitors,
@@ -150,4 +218,13 @@ export const queryKeys = mergeQueryKeys(
   marketplace,
   vehicles,
   elections,
+  patrols,
+  incidents,
+  emergencies,
+  handovers,
+  providers,
+  workOrders,
+  parking,
+  moves,
+  moderation,
 );
