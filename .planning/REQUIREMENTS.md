@@ -22,27 +22,27 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 2. Resident — Home & Dashboard
 
-- [ ] **RHOME-01**: Resident sees home dashboard with summary cards (balance, visitors, announcements, maintenance)
-- [ ] **RHOME-02**: Dashboard cards link to their respective detail screens
-- [ ] **RHOME-03**: Resident sees community branding (logo, name) on dashboard
+- [x] **RHOME-01**: Resident sees home dashboard with summary cards (balance, visitors, announcements, maintenance)
+- [x] **RHOME-02**: Dashboard cards link to their respective detail screens
+- [x] **RHOME-03**: Resident sees community branding (logo, name) on dashboard
 
 ### 3. Resident — Visitor Management
 
-- [ ] **RVIS-01**: Resident can create single-use visitor invitation with name, date, time window
-- [ ] **RVIS-02**: Resident can create recurring visitor invitation (e.g., housekeeper every Tuesday)
-- [ ] **RVIS-03**: System generates QR code for each invitation
-- [ ] **RVIS-04**: Resident can share QR invitation via WhatsApp
-- [ ] **RVIS-05**: Resident sees list of active/pending visitors with real-time status updates
+- [x] **RVIS-01**: Resident can create single-use visitor invitation with name, date, time window
+- [x] **RVIS-02**: Resident can create recurring visitor invitation (e.g., housekeeper every Tuesday)
+- [x] **RVIS-03**: System generates QR code for each invitation
+- [x] **RVIS-04**: Resident can share QR invitation via WhatsApp
+- [x] **RVIS-05**: Resident sees list of active/pending visitors with real-time status updates
 - [ ] **RVIS-06**: Resident receives push notification when visitor arrives at gate
-- [ ] **RVIS-07**: Resident can cancel a pending invitation
-- [ ] **RVIS-08**: Resident can view visitor history
+- [x] **RVIS-07**: Resident can cancel a pending invitation
+- [x] **RVIS-08**: Resident can view visitor history
 
 ### 4. Resident — Payments & Finance
 
-- [ ] **RPAY-01**: Resident can view current account balance and charges breakdown
-- [ ] **RPAY-02**: Resident can view payment history with dates and amounts
-- [ ] **RPAY-03**: Resident can upload payment proof (photo of bank transfer receipt)
-- [ ] **RPAY-04**: Resident can see payment proof status (pending, approved, rejected)
+- [x] **RPAY-01**: Resident can view current account balance and charges breakdown
+- [x] **RPAY-02**: Resident can view payment history with dates and amounts
+- [x] **RPAY-03**: Resident can upload payment proof (photo of bank transfer receipt)
+- [x] **RPAY-04**: Resident can see payment proof status (pending, approved, rejected)
 - [ ] **RPAY-05**: Resident receives push notification when payment is approved or rejected
 
 ### 5. Resident — Maintenance
@@ -80,22 +80,22 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 9. Guard — Gate Operations
 
-- [ ] **GGATE-01**: Guard can start shift and select active access point (gate)
-- [ ] **GGATE-02**: Guard sees expected visitors queue for today at their gate, sorted by time
-- [ ] **GGATE-03**: Guard can scan QR code and see instant verification result (approved/denied with details)
-- [ ] **GGATE-04**: Guard can manually check in walk-in visitors (name, unit, vehicle, call resident)
-- [ ] **GGATE-05**: Guard can log entry and exit with timestamp and method
-- [ ] **GGATE-06**: Guard can search resident directory by unit number or name
-- [ ] **GGATE-07**: Guard can search vehicles by license plate
-- [ ] **GGATE-08**: Guard sees blacklist alert during visitor check-in if name/plate matches
-- [ ] **GGATE-09**: Guard can capture visitor photo during check-in
+- [x] **GGATE-01**: Guard can start shift and select active access point (gate)
+- [x] **GGATE-02**: Guard sees expected visitors queue for today at their gate, sorted by time
+- [x] **GGATE-03**: Guard can scan QR code and see instant verification result (approved/denied with details)
+- [x] **GGATE-04**: Guard can manually check in walk-in visitors (name, unit, vehicle, call resident)
+- [x] **GGATE-05**: Guard can log entry and exit with timestamp and method
+- [x] **GGATE-06**: Guard can search resident directory by unit number or name
+- [x] **GGATE-07**: Guard can search vehicles by license plate
+- [x] **GGATE-08**: Guard sees blacklist alert during visitor check-in if name/plate matches
+- [x] **GGATE-09**: Guard can capture visitor photo during check-in
 
 ### 10. Guard — Packages
 
-- [ ] **GPKG-01**: Guard can log incoming package (carrier, recipient unit, photo of label)
+- [x] **GPKG-01**: Guard can log incoming package (carrier, recipient unit, photo of label)
 - [ ] **GPKG-02**: System sends push notification to resident when package is received
-- [ ] **GPKG-03**: Guard can verify pickup code and confirm package delivery
-- [ ] **GPKG-04**: Guard can view pending packages list sorted by unit
+- [x] **GPKG-03**: Guard can verify pickup code and confirm package delivery
+- [x] **GPKG-04**: Guard can view pending packages list sorted by unit
 
 ### 11. Guard — Patrol & Incidents
 
@@ -289,35 +289,35 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | INFRA-04 | Phase 9 | Complete |
 | INFRA-05 | Phase 9 | Complete |
 | INFRA-06 | Phase 9 | Complete |
-| RHOME-01 | Phase 10 | Pending |
-| RHOME-02 | Phase 10 | Pending |
-| RHOME-03 | Phase 10 | Pending |
-| RVIS-01 | Phase 10 | Pending |
-| RVIS-02 | Phase 10 | Pending |
-| RVIS-03 | Phase 10 | Pending |
-| RVIS-04 | Phase 10 | Pending |
-| RVIS-05 | Phase 10 | Pending |
-| RVIS-06 | Phase 10 | Pending |
-| RVIS-07 | Phase 10 | Pending |
-| RVIS-08 | Phase 10 | Pending |
-| RPAY-01 | Phase 10 | Pending |
-| RPAY-02 | Phase 10 | Pending |
-| RPAY-03 | Phase 10 | Pending |
-| RPAY-04 | Phase 10 | Pending |
-| RPAY-05 | Phase 10 | Pending |
-| GGATE-01 | Phase 10 | Pending |
-| GGATE-02 | Phase 10 | Pending |
-| GGATE-03 | Phase 10 | Pending |
-| GGATE-04 | Phase 10 | Pending |
-| GGATE-05 | Phase 10 | Pending |
-| GGATE-06 | Phase 10 | Pending |
-| GGATE-07 | Phase 10 | Pending |
-| GGATE-08 | Phase 10 | Pending |
-| GGATE-09 | Phase 10 | Pending |
-| GPKG-01 | Phase 10 | Pending |
-| GPKG-02 | Phase 10 | Pending |
-| GPKG-03 | Phase 10 | Pending |
-| GPKG-04 | Phase 10 | Pending |
+| RHOME-01 | Phase 10 | Complete |
+| RHOME-02 | Phase 10 | Complete |
+| RHOME-03 | Phase 10 | Complete |
+| RVIS-01 | Phase 10 | Complete |
+| RVIS-02 | Phase 10 | Complete |
+| RVIS-03 | Phase 10 | Complete |
+| RVIS-04 | Phase 10 | Complete |
+| RVIS-05 | Phase 10 | Complete |
+| RVIS-06 | Phase 16 | Pending |
+| RVIS-07 | Phase 10 | Complete |
+| RVIS-08 | Phase 10 | Complete |
+| RPAY-01 | Phase 10 | Complete |
+| RPAY-02 | Phase 10 | Complete |
+| RPAY-03 | Phase 10 | Complete |
+| RPAY-04 | Phase 10 | Complete |
+| RPAY-05 | Phase 16 | Pending |
+| GGATE-01 | Phase 10 | Complete |
+| GGATE-02 | Phase 10 | Complete |
+| GGATE-03 | Phase 10 | Complete |
+| GGATE-04 | Phase 10 | Complete |
+| GGATE-05 | Phase 10 | Complete |
+| GGATE-06 | Phase 10 | Complete |
+| GGATE-07 | Phase 10 | Complete |
+| GGATE-08 | Phase 10 | Complete |
+| GGATE-09 | Phase 10 | Complete |
+| GPKG-01 | Phase 10 | Complete |
+| GPKG-02 | Phase 16 | Pending |
+| GPKG-03 | Phase 10 | Complete |
+| GPKG-04 | Phase 10 | Complete |
 | AFIN-01 | Phase 11 | Pending |
 | AFIN-02 | Phase 11 | Pending |
 | AFIN-03 | Phase 11 | Pending |
@@ -426,4 +426,4 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-08 -- Phase 9 complete (16 requirements: AUTH-01 to AUTH-10, INFRA-01 to INFRA-06)*
+*Last updated: 2026-02-08 -- Phase 10 complete (25 requirements: RHOME-01 to RHOME-03, RVIS-01 to RVIS-05/07/08, RPAY-01 to RPAY-04, GGATE-01 to GGATE-09, GPKG-01/03/04; 3 push notifications deferred to Phase 16)*

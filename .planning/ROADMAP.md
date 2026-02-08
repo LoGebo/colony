@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Milestone Goal:** Build React Native (Expo) mobile app and Next.js admin dashboard consuming the complete Supabase backend, delivering working applications for residents, guards, and administrators.
 
 - [x] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
-- [ ] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
+- [x] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
 - [ ] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
 - [ ] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
 - [ ] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
@@ -76,11 +76,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 10-01-PLAN.md - Resident home dashboard with summary cards and community branding
-- [ ] 10-02-PLAN.md - Resident visitor management: invitations, QR generation, WhatsApp sharing, visitor list and history
-- [ ] 10-03-PLAN.md - Resident payments: balance view, payment history, proof upload with status tracking
-- [ ] 10-04-PLAN.md - Guard gate operations: shift start, expected visitors, QR scanner, manual check-in, entry/exit logging
-- [ ] 10-05-PLAN.md - Guard directory and packages: resident search, vehicle search, blacklist alerts, package reception and pickup
+- [x] 10-01-PLAN.md - Resident home dashboard with summary cards and community branding
+- [x] 10-02-PLAN.md - Resident visitor management: invitations, QR generation, WhatsApp sharing, visitor list and history
+- [x] 10-03-PLAN.md - Resident payments: balance view, payment history, proof upload with status tracking
+- [x] 10-04-PLAN.md - Guard gate operations: shift start, expected visitors, QR scanner, manual check-in, entry/exit logging
+- [x] 10-05-PLAN.md - Guard directory and packages: resident search, vehicle search, blacklist alerts, package reception and pickup
 
 ### Phase 11: Admin Dashboard Financial Core
 **Goal**: Administrators can oversee community finances with KPI dashboards, approve payments, generate charges, and manage residents and units
@@ -205,7 +205,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 7. Operations & Compliance | v1.0 | 5/5 | Complete | 2026-01-30 |
 | 8. Governance & Analytics | v1.0 | 9/9 | Complete | 2026-01-30 |
 | 9. Auth & Shared Infrastructure | v2.0 | 5/5 | Complete | 2026-02-08 |
-| 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 0/5 | Not started | - |
+| 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 11. Admin Dashboard Financial Core | v2.0 | 0/4 | Not started | - |
 | 12. Admin Dashboard Operations | v2.0 | 0/4 | Not started | - |
 | 13. Advanced Resident Features | v2.0 | 0/4 | Not started | - |
@@ -214,7 +214,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 5/34 plans
+**v2.0 Total:** 10/34 plans
 
 ---
 *Roadmap created: 2026-01-29*
