@@ -21,13 +21,23 @@ const navItems: NavItem[] = [
     children: [
       { href: '/finances/approvals', label: 'Aprobaciones' },
       { href: '/finances/charges', label: 'Cargos' },
+      { href: '/finances/delinquency', label: 'Morosidad' },
       { href: '/finances/reports', label: 'Reportes' },
     ],
   },
   { href: '/residents', label: 'Residentes', icon: 'people' },
+  { href: '/units', label: 'Unidades', icon: 'building' },
   { href: '/operations', label: 'Operaciones', icon: 'wrench' },
   { href: '/reports', label: 'Reportes', icon: 'chart' },
-  { href: '/settings', label: 'Configuracion', icon: 'gear' },
+  {
+    href: '/settings',
+    label: 'Configuracion',
+    icon: 'gear',
+    children: [
+      { href: '/settings/features', label: 'Funcionalidades' },
+      { href: '/settings/roles', label: 'Usuarios' },
+    ],
+  },
 ];
 
 function NavIcon({ icon }: { icon: string }) {
@@ -60,6 +70,12 @@ function NavIcon({ icon }: { icon: string }) {
       return (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+        </svg>
+      );
+    case 'building':
+      return (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
         </svg>
       );
     case 'gear':
