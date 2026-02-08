@@ -11,10 +11,10 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 
 Phase: 10 of 16 (Mobile Core — Resident Visitors/Payments + Guard Gate)
 Plan: 5 of 5 in current phase
-Status: In progress
-Last activity: 2026-02-08 -- Completed 10-05-PLAN.md (Guard Directory & Packages)
+Status: Phase complete
+Last activity: 2026-02-08 -- Completed 10-04-PLAN.md (Guard Gate Operations)
 
-Progress: [██░░░░░░░░] 26% (9/34 v2.0 plans)
+Progress: [███░░░░░░░] 29% (10/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [██░░░░░░░░] 26% (9/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 6.0 min
-- Total execution time: 54.3 min
+- Total execution time: 60.3 min
 
 ## Accumulated Context
 
@@ -62,6 +62,7 @@ New v2.0 decisions:
 - expo-file-system v19 File/Paths API (not legacy cacheDirectory/writeAsStringAsync)
 - Client-side fallback QR payload with 'unsigned' signature until HMAC secret configured
 - PostgREST FK hints required for ambiguous occupancies->residents joins (authorized_by vs resident_id)
+- useGuardAccessPoint hook resolves required access_point_id for access_logs inserts
 
 ### Pending Todos
 
@@ -74,5 +75,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 10-05-PLAN.md
+Stopped at: Completed 10-04-PLAN.md
 Resume file: None
