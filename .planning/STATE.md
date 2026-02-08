@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 9 of 16 (Auth & Shared Infrastructure)
-Plan: 3 of 5 in current phase
+Plan: 3 of 5 in current phase (Wave 1 complete: 01, 02, 03)
 Status: In progress
-Last activity: 2026-02-08 -- Completed 09-03-PLAN.md (Admin Dashboard Auth)
+Last activity: 2026-02-08 -- Completed 09-01-PLAN.md (Shared Package Foundation)
 
-Progress: [█░░░░░░░░░] 6% (2/34 v2.0 plans)
+Progress: [█░░░░░░░░░] 9% (3/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█░░░░░░░░░] 6% (2/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 2
-- Average duration: 7 min
-- Total execution time: 14 min
+- Total plans completed: 3
+- Average duration: 8 min
+- Total execution time: 24 min
 
 ## Accumulated Context
 
@@ -53,6 +53,8 @@ New v2.0 decisions:
 - 4-file Supabase client structure for admin: client.ts, server.ts, proxy.ts, admin.ts
 - Inline SVG Heroicons in sidebar (no icon library dependency)
 - Next.js middleware.ts kept despite deprecation warning (proxy.ts rename deferred)
+- Disabled declaration generation in @upoe/shared tsconfig (raw TS source consumption, avoids pnpm TS2742)
+- @tanstack/react-query + query-core as devDependencies in shared (typecheck only, runtime from consumers)
 
 ### Pending Todos
 
@@ -65,5 +67,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 09-03-PLAN.md (Admin Dashboard Auth)
+Stopped at: Completed 09-01-PLAN.md (Shared Package Foundation)
 Resume file: None
