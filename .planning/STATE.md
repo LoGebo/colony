@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 12 of 16 (Admin Dashboard Operations)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-08 -- Completed 12-01-PLAN.md (Ticket Dashboard & Shared Infrastructure)
+Last activity: 2026-02-08 -- Completed 12-02-PLAN.md (Mobile Maintenance Screens)
 
-Progress: [████░░░░░░] 44% (15/34 v2.0 plans)
+Progress: [████░░░░░░] 47% (16/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████░░░░░░] 44% (15/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 15
-- Average duration: 6.4 min
-- Total execution time: ~96 min
+- Total plans completed: 16
+- Average duration: 6.2 min
+- Total execution time: ~100 min
 
 ## Accumulated Context
 
@@ -70,6 +70,8 @@ New v2.0 decisions:
 - Badge component has no size prop -- all badges use text-xs by default
 - Use 'as never' cast for dynamic status/priority filter values in Supabase queries
 - Non-null assertion on user!.id for mutations (admin must be authenticated)
+- Photo attachments on tickets stored as ticket_comments with photo_urls array (not ticket fields)
+- Internal comments (is_internal=true) filtered out in resident-facing ticket detail view
 
 ### Pending Todos
 
@@ -82,5 +84,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 12-01-PLAN.md. Ready for 12-02.
+Stopped at: Completed 12-02-PLAN.md. Ready for 12-03.
 Resume file: None
