@@ -131,10 +131,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 13-01-PLAN.md - Social wall: feed, posts, reactions, comments, surveys and voting
-- [ ] 13-02-PLAN.md - Amenity reservations: catalog browsing, availability calendar, booking, cancellation, push confirmations
-- [ ] 13-03-PLAN.md - Documents and profile: document viewer, regulation signing, profile editor, unit details, vehicle management, package notifications
-- [ ] 13-04-PLAN.md - Marketplace: listing creation, browsing/search, listing details, contact seller, mark sold
+- [ ] 13-01-PLAN.md -- RLS identity fix migration, query key factories, community tab layout, social wall feed with posts/reactions/comments/polls
+- [ ] 13-02-PLAN.md -- Amenity reservations: catalog grid, availability calendar (react-native-calendars), booking via create_reservation RPC, my reservations, cancellation
+- [ ] 13-03-PLAN.md -- More tab layout, documents (get_accessible_documents RPC, regulation signing via capture_signature), profile editor, vehicles CRUD, packages with pickup codes
+- [ ] 13-04-PLAN.md -- Marketplace: listing creation with photo upload, category browse, listing detail, WhatsApp seller contact, mark as sold
 
 ### Phase 14: Guard Advanced + Admin Providers/Parking/Moves
 **Goal**: Guards can conduct patrols, report incidents, and perform shift handovers, while admins can manage providers, parking, moves, and marketplace moderation
