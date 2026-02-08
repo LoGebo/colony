@@ -60,6 +60,23 @@ export const guards = createQueryKeys('guards', {
   detail: (id: string) => [id],
 });
 
+export const packages = createQueryKeys('packages', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  pending: (communityId: string) => [{ communityId }],
+});
+
+export const occupancies = createQueryKeys('occupancies', {
+  all: null,
+  byResident: (residentId: string) => [{ residentId }],
+});
+
+export const shifts = createQueryKeys('shifts', {
+  all: null,
+  current: (guardId: string) => [{ guardId }],
+});
+
 export const queryKeys = mergeQueryKeys(
   residents,
   visitors,
@@ -71,4 +88,7 @@ export const queryKeys = mergeQueryKeys(
   communities,
   units,
   guards,
+  packages,
+  occupancies,
+  shifts,
 );

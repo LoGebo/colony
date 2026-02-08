@@ -30,7 +30,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      ["expo-camera", { "cameraPermission": "La app necesita acceso a la camara para escanear codigos QR" }]
     ]
   }
 }
