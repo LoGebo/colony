@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 11 of 16 (Admin Dashboard Financial Core)
-Plan: 0 of 4 in current phase
-Status: Not started
-Last activity: 2026-02-08 -- Completed Phase 10: Mobile Core (5/5 plans, verified PASSED)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-08 -- Completed 11-01-PLAN.md (financial dashboard foundation)
 
-Progress: [███░░░░░░░] 29% (10/34 v2.0 plans)
+Progress: [████░░░░░░] 32% (11/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [███░░░░░░░] 29% (10/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 10
-- Average duration: 5.8 min
-- Total execution time: ~58 min
+- Total plans completed: 11
+- Average duration: 6.2 min
+- Total execution time: ~68 min
 
 ## Accumulated Context
 
@@ -63,6 +63,9 @@ New v2.0 decisions:
 - Client-side fallback QR payload with 'unsigned' signature until HMAC secret configured
 - PostgREST FK hints required for ambiguous occupancies->residents joins (authorized_by vs resident_id)
 - useGuardAccessPoint hook resolves required access_point_id for access_logs inserts
+- Lazy Supabase client in queryFn (not hook body) to prevent SSR prerender crashes in financial hooks
+- Inclusive RLS role update: community_admin added alongside admin (not replacing) for backwards compat
+- Recharts v3 Tooltip formatter uses untyped value param with Number() cast
 
 ### Pending Todos
 
@@ -70,10 +73,10 @@ None.
 
 ### Blockers/Concerns
 
-None.
+- Database migrations 20260208123300 and 20260208123301 need to be applied to live Supabase instance before admin dashboard features work
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed Phase 10 verification (PASSED). Ready for Phase 11.
+Stopped at: Completed 11-01-PLAN.md. Ready for 11-02.
 Resume file: None
