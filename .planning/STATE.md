@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 13 of 16 (Advanced Resident Features)
-Plan: 0 of 4 in current phase
-Status: Not started
-Last activity: 2026-02-08 -- Completed Phase 12 (Admin Dashboard Operations) -- all 4 plans
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-08 -- Completed 13-01-PLAN.md (Community Social Wall + RLS Fix)
 
-Progress: [█████▒░░░░] 53% (18/34 v2.0 plans)
+Progress: [██████▒░░░] 56% (19/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████▒░░░░] 53% (18/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 18
-- Average duration: 6.3 min
-- Total execution time: ~113 min
+- Total plans completed: 19
+- Average duration: 6.2 min
+- Total execution time: ~118 min
 
 ## Accumulated Context
 
@@ -78,6 +78,10 @@ New v2.0 decisions:
 - Document schema uses name/is_public/category-enum (not title/visibility/free-text-category as planned)
 - amenity_rules requires community_id on insert (not just amenity_id)
 - Card grid layout (not DataTable) for amenity list pages (fewer items, richer display)
+- RLS identity mismatch fix: 20 policies across 12 tables use resident subquery instead of auth.uid()
+- Client-side poll voting via posts.poll_results jsonb (formal governance uses elections/cast_vote RPC)
+- Post media stored in community-assets bucket with posts/ category prefix
+- Max 3 levels of comment thread indent (72px) on mobile
 
 ### Pending Todos
 
@@ -85,10 +89,10 @@ None.
 
 ### Blockers/Concerns
 
-- Database migrations 20260208123300 and 20260208123301 need to be applied to live Supabase instance before admin dashboard features work
+- Database migrations 20260208123300, 20260208123301, and 20260208210500 need to be applied to live Supabase instance before resident/admin features work
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed Phase 12 (all 4 plans). Ready for Phase 13.
+Stopped at: Completed 13-01-PLAN.md (Community Social Wall + RLS Fix). Ready for 13-02.
 Resume file: None
