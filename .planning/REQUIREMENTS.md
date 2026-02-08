@@ -1,308 +1,285 @@
-# Requirements: UPOE Database Architecture
+# Requirements: UPOE v2.0 Frontend Applications
 
-**Defined:** 2026-01-29
+**Defined:** 2026-02-06
 **Core Value:** Symbiosis operativa total — security, administration, community, and commerce unified in one ecosystem
 
 ## v1 Requirements
 
-Requirements for the complete Supabase database schema. Each maps to roadmap phases.
+Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each maps to roadmap phases.
 
-### 1. Foundation & Multi-Tenant Security
+### 1. Auth & Onboarding
 
-- [ ] **FOUND-01**: Organizations table (platform-level SaaS owner)
-- [ ] **FOUND-02**: Communities table with settings, timezone, locale, branding
-- [ ] **FOUND-03**: RLS policies on ALL tables using `community_id` from JWT app_metadata
-- [ ] **FOUND-04**: Audit columns on all tables (created_at, updated_at, deleted_at, created_by)
-- [ ] **FOUND-05**: UUID v7 primary keys for offline-sync compatibility
-- [ ] **FOUND-06**: Soft delete pattern with deleted_at timestamps
-- [ ] **FOUND-07**: Base types and enums for status fields
+- [ ] **AUTH-01**: Invited resident can sign up via email link and create account
+- [ ] **AUTH-02**: Invited guard can sign up via email link and create account
+- [ ] **AUTH-03**: New admin can sign up, create organization and community via complete_admin_onboarding
+- [ ] **AUTH-04**: User can log in with email and password on mobile and web
+- [ ] **AUTH-05**: User session persists across app restart (mobile) and browser refresh (web)
+- [ ] **AUTH-06**: JWT token auto-refreshes before expiry on both platforms
+- [ ] **AUTH-07**: User sees role-appropriate navigation after login (resident tabs, guard tabs, admin sidebar)
+- [ ] **AUTH-08**: User can log out from any screen
+- [ ] **AUTH-09**: User can reset password via email link
+- [ ] **AUTH-10**: Admin can invite residents and guards via email from dashboard
 
-### 2. Identity & CRM
+### 2. Resident — Home & Dashboard
 
-- [ ] **CRM-01**: Units table (casa, departamento, local, bodega) with area and coefficient
-- [ ] **CRM-02**: Residents table with full profiles, photos, KYC verification status
-- [ ] **CRM-03**: Unit-Resident occupancy junction (owner/tenant/authorized with dates)
-- [ ] **CRM-04**: Vehicles table with plates, photos, make/model/color, sticker, LPR data
-- [ ] **CRM-05**: Pets table with species, breed, vaccination records, incident history
-- [ ] **CRM-06**: Onboarding workflow states (invited, registered, verified, active)
-- [ ] **CRM-07**: Resident documents (INE, contracts, etc.)
+- [ ] **RHOME-01**: Resident sees home dashboard with summary cards (balance, visitors, announcements, maintenance)
+- [ ] **RHOME-02**: Dashboard cards link to their respective detail screens
+- [ ] **RHOME-03**: Resident sees community branding (logo, name) on dashboard
 
-### 3. Access Control & Security
+### 3. Resident — Visitor Management
 
-- [ ] **ACC-01**: Access points table (gates, barriers, doors, turnstiles)
-- [ ] **ACC-02**: Invitations table (single-use, event, recurring, vehicle pre-auth)
-- [ ] **ACC-03**: Access logs (immutable, photos, timestamps, method, result)
-- [ ] **ACC-04**: Blacklist table with protocols, evidence, expiration
-- [ ] **ACC-05**: Guards table with profiles, certifications
-- [ ] **ACC-06**: Guard shifts and assignments per access point
-- [ ] **ACC-07**: Patrol routes with checkpoint sequences
-- [ ] **ACC-08**: Patrol checkpoints with NFC tag IDs and GPS coordinates
-- [ ] **ACC-09**: Patrol logs with timestamp, GPS, photo evidence
-- [ ] **ACC-10**: Emergency alerts (panic, fire, medical) with dispatch status
-- [ ] **ACC-11**: QR codes table with cryptographic signatures and burn status
+- [ ] **RVIS-01**: Resident can create single-use visitor invitation with name, date, time window
+- [ ] **RVIS-02**: Resident can create recurring visitor invitation (e.g., housekeeper every Tuesday)
+- [ ] **RVIS-03**: System generates QR code for each invitation
+- [ ] **RVIS-04**: Resident can share QR invitation via WhatsApp
+- [ ] **RVIS-05**: Resident sees list of active/pending visitors with real-time status updates
+- [ ] **RVIS-06**: Resident receives push notification when visitor arrives at gate
+- [ ] **RVIS-07**: Resident can cancel a pending invitation
+- [ ] **RVIS-08**: Resident can view visitor history
 
-### 4. Financial Engine
+### 4. Resident — Payments & Finance
 
-- [ ] **FIN-01**: Fee structures (fixed, by coefficient, by rooms, hybrid formulas)
-- [ ] **FIN-02**: Chart of accounts (for double-entry ledger)
-- [ ] **FIN-03**: Ledger entries (debit/credit with account references)
-- [ ] **FIN-04**: Transactions (payments, charges, adjustments, reversals)
-- [ ] **FIN-05**: Interest and penalty rules configuration per community
-- [ ] **FIN-06**: Delinquency triggers (days -> action: notify, block amenities, block access)
-- [ ] **FIN-07**: Bank accounts for reconciliation
-- [ ] **FIN-08**: Bank statement imports with matching patterns
-- [ ] **FIN-09**: Payment proofs with validation workflow (pending, approved, rejected)
-- [ ] **FIN-10**: Budgets and expense categories
-- [ ] **FIN-11**: Invoices/statements generation history
+- [ ] **RPAY-01**: Resident can view current account balance and charges breakdown
+- [ ] **RPAY-02**: Resident can view payment history with dates and amounts
+- [ ] **RPAY-03**: Resident can upload payment proof (photo of bank transfer receipt)
+- [ ] **RPAY-04**: Resident can see payment proof status (pending, approved, rejected)
+- [ ] **RPAY-05**: Resident receives push notification when payment is approved or rejected
 
-### 5. Amenities & Reservations
+### 5. Resident — Maintenance
 
-- [ ] **AMEN-01**: Amenities catalog (photos, description, capacity, rules document)
-- [ ] **AMEN-02**: Amenity schedules (operating hours, maintenance days)
-- [ ] **AMEN-03**: Reservation slots with exclusion constraints (no double-booking)
-- [ ] **AMEN-04**: Booking rules engine (quotas per period, advance window, restrictions)
-- [ ] **AMEN-05**: Waitlist entries with auto-promotion logic
-- [ ] **AMEN-06**: Reservation fees and deposits
-- [ ] **AMEN-07**: No-show tracking and penalties
+- [ ] **RMAINT-01**: Resident can submit maintenance request with category, description, and photos
+- [ ] **RMAINT-02**: Resident can view status timeline of their tickets
+- [ ] **RMAINT-03**: Resident receives push notification on ticket status changes
+- [ ] **RMAINT-04**: Resident can add comments to their tickets
 
-### 6. Community & Communication
+### 6. Resident — Communication
 
-- [ ] **COMM-01**: Channels table (general, ventas, servicios, mascotas, etc.)
-- [ ] **COMM-02**: Posts with content, media, moderation status
-- [ ] **COMM-03**: Post reactions and comments (nested)
-- [ ] **COMM-04**: Announcements with priority, channels (push/email/SMS), segments
-- [ ] **COMM-05**: Announcement read receipts
-- [ ] **COMM-06**: Surveys with question types and options
-- [ ] **COMM-07**: Survey responses with one-vote-per-unit enforcement
-- [ ] **COMM-08**: Forum categories and threads
-- [ ] **COMM-09**: Service arrival notifications (garbage, water, gas trucks)
+- [ ] **RCOMM-01**: Resident can view announcements feed sorted by date
+- [ ] **RCOMM-02**: Resident can mark announcements as read
+- [ ] **RCOMM-03**: Resident receives push notification for new high-priority announcements
+- [ ] **RCOMM-04**: Resident can view and post on community social wall
+- [ ] **RCOMM-05**: Resident can react to and comment on social wall posts
+- [ ] **RCOMM-06**: Resident can participate in surveys and vote on community decisions
 
-### 7. Marketplace
+### 7. Resident — Amenities
 
-- [ ] **MRKT-01**: Listings (sale, service, rental, wanted) with photos and pricing
-- [ ] **MRKT-02**: Listing categories and tags
-- [ ] **MRKT-03**: Safe exchange zones with availability
-- [ ] **MRKT-04**: Exchange appointments
-- [ ] **MRKT-05**: Moderation queue with reasons
-- [ ] **MRKT-06**: Seller/service ratings and reviews
-- [ ] **MRKT-07**: Local business directory
+- [ ] **RAMEN-01**: Resident can browse amenity catalog with photos and rules
+- [ ] **RAMEN-02**: Resident can view amenity availability on a calendar
+- [ ] **RAMEN-03**: Resident can make a reservation for an available slot
+- [ ] **RAMEN-04**: Resident can cancel a reservation
+- [ ] **RAMEN-05**: Resident receives push notification for booking confirmation and reminders
 
-### 8. Maintenance
+### 8. Resident — Documents & Profile
 
-- [ ] **MAINT-01**: Ticket categories (plumbing, electrical, gardening, etc.)
-- [ ] **MAINT-02**: Tickets with priority, status, SLA tracking
-- [ ] **MAINT-03**: Ticket assignments and reassignments
-- [ ] **MAINT-04**: Ticket comments and status updates
-- [ ] **MAINT-05**: Ticket photos (before/after)
-- [ ] **MAINT-06**: Assets registry (pumps, elevators, generators, etc.)
-- [ ] **MAINT-07**: Preventive maintenance schedules
-- [ ] **MAINT-08**: Auto-generated tickets from schedules
-- [ ] **MAINT-09**: SLA definitions per category and priority
-- [ ] **MAINT-10**: Escalation rules
+- [ ] **RDOC-01**: Resident can view community documents (bylaws, minutes, reports)
+- [ ] **RDOC-02**: Resident can view and sign regulations requiring signature
+- [ ] **RPROF-01**: Resident can edit profile (phone, photo, emergency contacts)
+- [ ] **RPROF-02**: Resident can view their unit assignment and occupancy details
+- [ ] **RPROF-03**: Resident can manage their registered vehicles
+- [ ] **RPROF-04**: Resident can view package notifications and pickup codes
 
-### 9. Messaging & Chat
+### 9. Guard — Gate Operations
 
-- [ ] **CHAT-01**: Conversations (direct 1:1, group chats, resident-guard)
-- [ ] **CHAT-02**: Conversation participants with roles
-- [ ] **CHAT-03**: Messages with text, media, read receipts
-- [ ] **CHAT-04**: Message reactions
-- [ ] **CHAT-05**: Guard booth chat (per-shift conversation with residents)
-- [ ] **CHAT-06**: Quick responses (canned messages for guards)
+- [ ] **GGATE-01**: Guard can start shift and select active access point (gate)
+- [ ] **GGATE-02**: Guard sees expected visitors queue for today at their gate, sorted by time
+- [ ] **GGATE-03**: Guard can scan QR code and see instant verification result (approved/denied with details)
+- [ ] **GGATE-04**: Guard can manually check in walk-in visitors (name, unit, vehicle, call resident)
+- [ ] **GGATE-05**: Guard can log entry and exit with timestamp and method
+- [ ] **GGATE-06**: Guard can search resident directory by unit number or name
+- [ ] **GGATE-07**: Guard can search vehicles by license plate
+- [ ] **GGATE-08**: Guard sees blacklist alert during visitor check-in if name/plate matches
+- [ ] **GGATE-09**: Guard can capture visitor photo during check-in
 
-### 10. Documents & Files
+### 10. Guard — Packages
 
-- [ ] **DOCS-01**: Document categories (legal, assembly, financial, operational)
-- [ ] **DOCS-02**: Documents with versioning
-- [ ] **DOCS-03**: Document access permissions
-- [ ] **DOCS-04**: Regulation signatures (timestamp, IP, device)
-- [ ] **DOCS-05**: Assembly minutes with attendance and agreements
-- [ ] **DOCS-06**: Generic attachments table (polymorphic links to any entity)
+- [ ] **GPKG-01**: Guard can log incoming package (carrier, recipient unit, photo of label)
+- [ ] **GPKG-02**: System sends push notification to resident when package is received
+- [ ] **GPKG-03**: Guard can verify pickup code and confirm package delivery
+- [ ] **GPKG-04**: Guard can view pending packages list sorted by unit
 
-### 11. Notifications
+### 11. Guard — Patrol & Incidents
 
-- [ ] **NOTIF-01**: Notifications table (type, channel, recipient, status)
-- [ ] **NOTIF-02**: Push tokens (FCM/APNs device registration)
-- [ ] **NOTIF-03**: User notification preferences (what and how)
-- [ ] **NOTIF-04**: Notification templates per community
-- [ ] **NOTIF-05**: Notification batching rules
-- [ ] **NOTIF-06**: Delivery status tracking (sent, delivered, read, failed)
+- [ ] **GPATR-01**: Guard can view active patrol route with checkpoint sequence
+- [ ] **GPATR-02**: Guard can scan NFC checkpoint tags during patrol
+- [ ] **GPATR-03**: Guard can see patrol progress (scanned vs remaining checkpoints)
+- [ ] **GINC-01**: Guard can create incident report with type, severity, description, and photos/video
+- [ ] **GINC-02**: Guard can view incident timeline and add follow-up comments
+- [ ] **GINC-03**: Guard can leave shift handover notes for incoming guard
 
-### 12. Package Management (Digital Mailroom)
+### 12. Guard — Emergency & Safety
 
-- [ ] **PKG-01**: Packages with carrier, tracking, recipient, status
-- [ ] **PKG-02**: Package photos (intake condition)
-- [ ] **PKG-03**: Storage locations (shelf, row)
-- [ ] **PKG-04**: Pickup codes (PIN/QR)
-- [ ] **PKG-05**: Pickup signatures
-- [ ] **PKG-06**: Abandoned package alerts and disposal
+- [ ] **GEMRG-01**: Guard has persistent emergency panic button accessible from any screen
+- [ ] **GEMRG-02**: Panic button triggers alert to admin, other guards, and generates incident record
+- [ ] **GEMRG-03**: Guard can select emergency type (panic, fire, medical, intrusion)
+- [ ] **GEMRG-04**: Guard can verify service providers against authorized schedules
 
-### 13. Provider Management
+### 13. Admin Dashboard — Financial
 
-- [ ] **PROV-01**: Provider companies with contact, specialties, coverage
-- [ ] **PROV-02**: Provider documentation (insurance, certifications) with expiration
-- [ ] **PROV-03**: Provider employees (authorized personnel with photos)
-- [ ] **PROV-04**: Provider access schedules (allowed days/hours)
-- [ ] **PROV-05**: Provider ratings and performance history
-- [ ] **PROV-06**: Provider work orders
+- [ ] **AFIN-01**: Admin sees financial overview dashboard with KPI cards (collection rate, delinquency rate, total collected, total owed)
+- [ ] **AFIN-02**: Admin sees financial charts (monthly collection bar chart, delinquency trend line, expense pie chart)
+- [ ] **AFIN-03**: Admin can view unit-by-unit balance report with sorting, filtering, and Excel export
+- [ ] **AFIN-04**: Admin can approve or reject payment proofs with bulk operations
+- [ ] **AFIN-05**: Admin can generate monthly charges for all units (coefficient-based, fixed, hybrid)
+- [ ] **AFIN-06**: Admin can preview charge generation before applying
+- [ ] **AFIN-07**: Admin can view delinquency analytics (30/60/90/120+ day aging, per-building breakdown, trends)
+- [ ] **AFIN-08**: Admin can generate financial reports (income vs expense, budget vs actual)
 
-### 14. Move-in/Move-out
+### 14. Admin Dashboard — Residents & Units
 
-- [ ] **MOVE-01**: Move requests (type, date, time window, moving company)
-- [ ] **MOVE-02**: Pre-move validations checklist (debt-free, keys, vehicles)
-- [ ] **MOVE-03**: Damage deposits with refund workflow
-- [ ] **MOVE-04**: Move completion sign-off
-- [ ] **MOVE-05**: Elevator/loading dock reservations for moves
+- [ ] **ARES-01**: Admin can view, create, edit, and deactivate residents
+- [ ] **ARES-02**: Admin can invite residents via email
+- [ ] **ARES-03**: Admin can manage unit-resident occupancy (owner, tenant, authorized)
+- [ ] **ARES-04**: Admin can view and manage all units with type, area, coefficient
+- [ ] **ARES-05**: Admin can manage user roles and permissions
 
-### 15. Audit & Security
+### 15. Admin Dashboard — Operations
 
-- [ ] **AUDIT-01**: Comprehensive audit log (entity, action, actor, before/after)
-- [ ] **AUDIT-02**: User sessions with device info, IP, location
-- [ ] **AUDIT-03**: Failed login attempts
-- [ ] **AUDIT-04**: Security events (blocked access, blacklist hits, alerts)
-- [ ] **AUDIT-05**: Data export/download logs
+- [ ] **AOPS-01**: Admin can view maintenance tickets in table or kanban view
+- [ ] **AOPS-02**: Admin can assign tickets to staff or providers and update status
+- [ ] **AOPS-03**: Admin can view SLA metrics (response time, resolution time)
+- [ ] **AOPS-04**: Admin can create and schedule announcements with targeting (all, building, delinquent)
+- [ ] **AOPS-05**: Admin can view announcement read receipts
+- [ ] **AOPS-06**: Admin can view access log reports with date range and gate filters
+- [ ] **AOPS-07**: Admin can export access logs to CSV
+- [ ] **AOPS-08**: Admin can manage document repository (upload, categorize, set visibility)
+- [ ] **AOPS-09**: Admin can manage amenities (create, edit, set rules and schedules)
+- [ ] **AOPS-10**: Admin can view amenity utilization reports (booking rates, peak hours)
 
-### 16. Configuration
+### 16. Admin Dashboard — Governance
 
-- [ ] **CONFIG-01**: Community settings (hours, rules, branding, contact)
-- [ ] **CONFIG-02**: User preferences (theme, language, notifications)
-- [ ] **CONFIG-03**: Feature flags per community
-- [ ] **CONFIG-04**: Custom fields definitions (extensible attributes)
-- [ ] **CONFIG-05**: Roles and permissions matrix
+- [ ] **AGOV-01**: Admin can create elections with options and voting rules
+- [ ] **AGOV-02**: Admin can open/close voting and view real-time results with quorum tracking
+- [ ] **AGOV-03**: Admin can manage assemblies (schedule, track attendance with coefficient-weighted quorum)
+- [ ] **AGOV-04**: Admin can create surveys and view responses
+- [ ] **AGOV-05**: Admin can record assembly agreements and action items
 
-### 17. Incident Reports
+### 17. Admin Dashboard — Analytics & Configuration
 
-- [ ] **INC-01**: Incident types and categories
-- [ ] **INC-02**: Incidents (type, severity, location, description, status)
-- [ ] **INC-03**: Incident media (photos, videos, audio transcriptions)
-- [ ] **INC-04**: Incident timeline and follow-up comments
-- [ ] **INC-05**: Incident assignments and escalations
-- [ ] **INC-06**: Incident resolution and closure
+- [ ] **ACONF-01**: Admin can configure community settings (name, branding, hours, rules)
+- [ ] **ACONF-02**: Admin can manage feature flags per community
+- [ ] **ACONF-03**: Admin can view guard performance metrics (patrol completion, response times)
+- [ ] **ACONF-04**: Admin can view audit trail of administrative actions
+- [ ] **ACONF-05**: Admin can perform bulk charge generation and bulk notification sending
 
-### 18. Voting & Assemblies
+### 18. Resident — Marketplace
 
-- [ ] **VOTE-01**: Elections (board elections, extraordinary decisions)
-- [ ] **VOTE-02**: Election candidates/options
-- [ ] **VOTE-03**: Ballots with weighted voting by coefficient
-- [ ] **VOTE-04**: Quorum tracking and validation
-- [ ] **VOTE-05**: Assembly events (virtual/in-person)
-- [ ] **VOTE-06**: Assembly attendance with proxy delegation
-- [ ] **VOTE-07**: Assembly agreements and action items
+- [ ] **RMRKT-01**: Resident can create listing (sale, service, rental, wanted) with photos and price
+- [ ] **RMRKT-02**: Resident can browse and search marketplace listings by category
+- [ ] **RMRKT-03**: Resident can view listing details and contact seller
+- [ ] **RMRKT-04**: Resident can mark listing as sold/completed
 
-### 19. Parking
+### 19. Admin Dashboard — Marketplace Moderation
 
-- [ ] **PARK-01**: Parking spots inventory (type: assigned, visitor, commercial, disabled)
-- [ ] **PARK-02**: Parking assignments per unit
-- [ ] **PARK-03**: Visitor parking reservations
-- [ ] **PARK-04**: Parking violations with evidence
-- [ ] **PARK-05**: Parking fees and passes
+- [ ] **AMRKT-01**: Admin can view moderation queue of new/reported listings
+- [ ] **AMRKT-02**: Admin can approve, reject, or remove listings
+- [ ] **AMRKT-03**: Admin can manage marketplace categories
 
-### 20. Keys & Access Devices
+### 20. Admin Dashboard — Parking Management
 
-- [ ] **KEY-01**: Access device types (tag, remote, key, card)
-- [ ] **KEY-02**: Device inventory with serial numbers
-- [ ] **KEY-03**: Device assignments (unit, resident, provider)
-- [ ] **KEY-04**: Device returns and transfers
-- [ ] **KEY-05**: Lost device reports and deactivation
-- [ ] **KEY-06**: Device replacement fees
+- [ ] **APARK-01**: Admin can manage parking spot inventory (type, location, assigned unit)
+- [ ] **APARK-02**: Admin can assign/unassign parking spots to units
+- [ ] **APARK-03**: Admin can view visitor parking reservations
+- [ ] **APARK-04**: Admin can view and manage parking violations
 
-### 21. Emergency Contacts & Medical
+### 21. Admin Dashboard — Provider Management
 
-- [ ] **EMERG-01**: Emergency contacts per resident (relationship, priority)
-- [ ] **EMERG-02**: Medical conditions registry (allergies, conditions)
-- [ ] **EMERG-03**: Special needs/accessibility requirements
-- [ ] **EMERG-04**: Authorized emergency responders
+- [ ] **APROV-01**: Admin can manage provider companies (contact, specialties, status)
+- [ ] **APROV-02**: Admin can manage provider documentation (insurance, certifications, expiry tracking)
+- [ ] **APROV-03**: Admin can manage provider personnel (authorized employees with photos)
+- [ ] **APROV-04**: Admin can configure provider access schedules (allowed days/hours)
+- [ ] **APROV-05**: Admin can create and track work orders
 
-### 22. Violations & Sanctions
+### 22. Admin Dashboard — Move-in/Move-out
 
-- [ ] **VIOL-01**: Violation types with default penalties
-- [ ] **VIOL-02**: Violation records with evidence, location
-- [ ] **VIOL-03**: Warnings and formal sanctions
-- [ ] **VIOL-04**: Appeals and resolutions
-- [ ] **VIOL-05**: Violation-triggered financial penalties
-- [ ] **VIOL-06**: Repeat offender tracking
+- [ ] **AMOVE-01**: Admin can create and manage move requests (type, date, moving company)
+- [ ] **AMOVE-02**: Admin can track pre-move validation checklist (debt-free, keys, vehicles)
+- [ ] **AMOVE-03**: Admin can manage damage deposits (collection, deductions, refund)
+- [ ] **AMOVE-04**: Admin can sign off move completion
 
-### 23. Analytics & Metrics
+### 23. Admin Dashboard — Keys & Devices
 
-- [ ] **ANLY-01**: Pre-computed daily/weekly/monthly KPIs
-- [ ] **ANLY-02**: Access pattern summaries (peak hours, trends)
-- [ ] **ANLY-03**: Financial summaries (collection rate, delinquency)
-- [ ] **ANLY-04**: Security metrics (incidents by zone/shift)
-- [ ] **ANLY-05**: Amenity utilization stats
-- [ ] **ANLY-06**: Communication engagement metrics
+- [ ] **AKEY-01**: Admin can manage access device inventory (tags, remotes, keys, cards)
+- [ ] **AKEY-02**: Admin can assign and track device assignments to units/residents
+- [ ] **AKEY-03**: Admin can process device returns, transfers, and lost reports
+- [ ] **AKEY-04**: Admin can track device replacement fees
 
-### 24. Integrations
+### 24. Admin Dashboard — Violations & Emergency
 
-- [ ] **INTG-01**: Integration configurations (type, credentials, status)
-- [ ] **INTG-02**: Bank feed connections
-- [ ] **INTG-03**: LPR/CCTV hardware endpoints
-- [ ] **INTG-04**: Webhook endpoints for external systems
-- [ ] **INTG-05**: API keys for third-party access
-- [ ] **INTG-06**: Sync status and error logs per integration
+- [ ] **AVIOL-01**: Admin can create and manage violation records with evidence
+- [ ] **AVIOL-02**: Admin can issue warnings and sanctions (verbal, written, fine, suspension)
+- [ ] **AVIOL-03**: Admin can manage violation appeals and resolutions
+- [ ] **AVIOL-04**: Admin can view violation history with repeat offender tracking
+- [ ] **AEMRG-01**: Admin can manage emergency contacts per resident
+- [ ] **AEMRG-02**: Admin can view medical conditions and accessibility needs (privacy-controlled)
+- [ ] **AEMRG-03**: Admin can generate evacuation priority list
+
+### 25. Push Notifications & Real-time
+
+- [ ] **PUSH-01**: Mobile app registers for push notifications (FCM/APNs) on login
+- [ ] **PUSH-02**: User receives push for: visitor arrived, payment status, maintenance updates, announcements, packages
+- [ ] **PUSH-03**: Real-time updates for visitor status (gate entry/exit) via Supabase Realtime
+- [ ] **PUSH-04**: Real-time updates for guard expected visitors queue
+- [ ] **PUSH-05**: User can manage notification preferences
+
+### 26. Shared Infrastructure
+
+- [ ] **INFRA-01**: Monorepo shared package provides typed Supabase client, query key factories, and Zod validators
+- [ ] **INFRA-02**: Mobile app uses Expo Router with role-based navigation (resident/guard/admin tab groups)
+- [ ] **INFRA-03**: Admin dashboard uses Next.js App Router with sidebar navigation and role-based layouts
+- [ ] **INFRA-04**: Both apps share TanStack Query hooks for data fetching with caching and optimistic updates
+- [ ] **INFRA-05**: File upload utility for photos (payment proofs, incidents, packages, profiles) using Supabase Storage
+- [ ] **INFRA-06**: All UI designs use frontend-design skill for distinctive, production-grade interfaces
 
 ## v2 Requirements
 
-Deferred to future releases. Not in current roadmap.
+Deferred to future milestones. Not in current roadmap.
 
-### AI/ML Features
-- **AI-01**: Sentiment analysis for moderation
-- **AI-02**: Predictive delinquency scoring
-- **AI-03**: Anomaly detection in access patterns
-- **AI-04**: Smart matching for bank reconciliation ML
+### In-App Chat
+- **CHAT-01**: Resident-to-admin direct messaging
+- **CHAT-02**: Guard-to-guard coordination chat
+- **CHAT-03**: Guard booth shift chat
 
-### Advanced IoT
-- **IOT-01**: Real-time sensor data (water, electricity meters)
-- **IOT-02**: Smart lock integrations
-- **IOT-03**: Environmental monitoring (air quality, noise)
+### Offline & Sync
+- **OFFL-01**: Guard app works offline with cached visitor data
+- **OFFL-02**: PowerSync integration for offline-first sync
+- **OFFL-03**: Offline mutation queue with conflict resolution
 
-### Mobile Wallet
-- **WALLET-01**: Apple Wallet credential provisioning
-- **WALLET-02**: Google Wallet credential provisioning
+### Payment Gateway
+- **PGWY-01**: In-app payment via Stripe/SPEI
+- **PGWY-02**: Automatic payment matching
+
+### Advanced Features
+- **ADV-01**: Biometric authentication (Face ID / Touch ID)
+- **ADV-02**: Multi-community switching
+- **ADV-03**: Financial reports suite (balance sheet, cash flow)
+- **ADV-04**: White-label theming engine
+- **ADV-05**: Multi-language i18n
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Frontend implementation | Separate phase after DB complete |
-| Payment gateway integration | Schema only, no Stripe/PayPal code |
-| Push notification service | Schema for records, not FCM/APNs implementation |
-| LPR ML model training | Schema supports it, training is separate |
-| Multi-language content | Single language first, i18n later |
-| White-label theming engine | Basic branding only in v1 |
+| LPR camera integration | Requires hardware partnerships, IoT scope |
+| Facial recognition | Privacy concerns, ML infrastructure |
+| AI chatbot / ML predictions | Needs usage data first, premature |
+| Full accounting system | UPOE is property management, not QuickBooks |
+| Real-time video monitoring | Requires video infrastructure, RTSP streaming |
+| IoT device management (smart locks) | Hardware integration, separate milestone |
+| CRM for sales/rentals | Different product category |
 
 ## Traceability
 
+Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 to FOUND-07 | Phase 1 | Pending |
-| CRM-01 to CRM-07 | Phase 2 | Pending |
-| ACC-01 to ACC-11 | Phase 3 | Pending |
-| FIN-01 to FIN-11 | Phase 4 | Pending |
-| AMEN-01 to AMEN-07 | Phase 5 | Pending |
-| COMM-01 to COMM-09 | Phase 5 | Pending |
-| MRKT-01 to MRKT-07 | Phase 5 | Pending |
-| MAINT-01 to MAINT-10 | Phase 6 | Pending |
-| CHAT-01 to CHAT-06 | Phase 6 | Pending |
-| DOCS-01 to DOCS-06 | Phase 6 | Pending |
-| NOTIF-01 to NOTIF-06 | Phase 6 | Pending |
-| PKG-01 to PKG-06 | Phase 7 | Pending |
-| PROV-01 to PROV-06 | Phase 7 | Pending |
-| MOVE-01 to MOVE-05 | Phase 7 | Pending |
-| AUDIT-01 to AUDIT-05 | Phase 7 | Pending |
-| CONFIG-01 to CONFIG-05 | Phase 7 | Pending |
-| INC-01 to INC-06 | Phase 8 | Pending |
-| VOTE-01 to VOTE-07 | Phase 8 | Pending |
-| PARK-01 to PARK-05 | Phase 8 | Pending |
-| KEY-01 to KEY-06 | Phase 8 | Pending |
-| EMERG-01 to EMERG-04 | Phase 8 | Pending |
-| VIOL-01 to VIOL-06 | Phase 8 | Pending |
-| ANLY-01 to ANLY-06 | Phase 8 | Pending |
-| INTG-01 to INTG-06 | Phase 8 | Pending |
+| (Updated by roadmapper) | — | Pending |
 
 **Coverage:**
-- v1 requirements: 147 total
-- Mapped to phases: 147
-- Unmapped: 0 ✓
+- v1 requirements: 143 total
+- Mapped to phases: 0 (awaiting roadmap)
+- Unmapped: 143
 
 ---
-*Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Requirements defined: 2026-02-06*
+*Last updated: 2026-02-06 after adding all modules*
