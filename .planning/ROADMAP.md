@@ -146,14 +146,15 @@ Plans:
   3. Guard has persistent emergency panic button accessible from any screen that triggers alerts and generates incident records with emergency type selection
   4. Admin can manage providers (companies, documentation, personnel, access schedules, work orders) and verify provider authorization
   5. Admin can manage parking inventory and assignments, view visitor parking and violations, manage moves (requests, checklists, deposits, sign-off), and moderate marketplace listings
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
-- [ ] 14-01-PLAN.md - Guard patrol: route display, NFC checkpoint scanning, progress tracking
-- [ ] 14-02-PLAN.md - Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
-- [ ] 14-03-PLAN.md - Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
-- [ ] 14-04-PLAN.md - Admin providers and work orders: company CRUD, documentation tracking, personnel, access schedules, work orders
-- [ ] 14-05-PLAN.md - Admin parking, moves, marketplace moderation: parking inventory, move workflow, marketplace moderation queue
+- [ ] 14-01-PLAN.md -- Foundation: migrations (shift_handovers, provider_work_orders), native deps (NFC, GPS, haptics), query key factories, guard tab + admin sidebar updates
+- [ ] 14-02-PLAN.md -- Guard patrol: route display, NFC checkpoint scanning, GPS validation, progress tracking
+- [ ] 14-03-PLAN.md -- Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
+- [ ] 14-04-PLAN.md -- Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
+- [ ] 14-05-PLAN.md -- Admin providers and work orders: company CRUD, documentation tracking, personnel, access schedules, work orders
+- [ ] 14-06-PLAN.md -- Admin parking, moves, marketplace moderation: parking inventory, move workflow, deposit management, moderation queue
 
 ### Phase 15: Admin Governance & Analytics
 **Goal**: Administrators can manage community governance (elections, assemblies, surveys), track violations, access emergency information, manage keys/devices, view guard performance, and review audit trails
@@ -209,12 +210,12 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
-| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/5 | Not started | - |
+| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/6 | Not started | - |
 | 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 22/34 plans
+**v2.0 Total:** 22/35 plans
 
 ---
 *Roadmap created: 2026-01-29*
