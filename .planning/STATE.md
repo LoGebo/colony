@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 9 of 16 (Auth & Shared Infrastructure)
-Plan: 0 of 5 in current phase
-Status: Ready to plan
-Last activity: 2026-02-07 -- v2.0 roadmap created (8 phases, 34 plans)
+Plan: 2 of 5 in current phase
+Status: In progress
+Last activity: 2026-02-08 -- Completed 09-02-PLAN.md (Mobile App Shell)
 
-Progress: [░░░░░░░░░░] 0% (0/34 v2.0 plans)
+Progress: [█░░░░░░░░░] 3% (1/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [░░░░░░░░░░] 0% (0/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 0
-- Average duration: --
-- Total execution time: 0 min
+- Total plans completed: 1
+- Average duration: 7 min
+- Total execution time: 7 min
 
 ## Accumulated Context
 
@@ -44,16 +44,22 @@ Key decisions carrying forward to v2.0:
 - TanStack Query v5 as universal data layer
 - frontend-design skill for all UI implementations
 
+New v2.0 decisions:
+- expo-sqlite localStorage polyfill for Supabase auth storage (NOT SecureStore or MMKV)
+- NativeWind v4.2 + Tailwind CSS v3.4.17 (NOT Tailwind v4) for mobile styling
+- Stack.Protected for role-based routing (Expo SDK 54 feature)
+- Custom env.d.ts for process.env types (not @types/node)
+
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-07
-Stopped at: v2.0 roadmap created, ready to plan Phase 9
+Last session: 2026-02-08
+Stopped at: Completed 09-02-PLAN.md (Mobile App Shell)
 Resume file: None
