@@ -100,6 +100,33 @@ export const documents = createQueryKeys('documents', {
   versions: (documentId: string) => [{ documentId }],
 });
 
+export const posts = createQueryKeys('posts', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  comments: (postId: string) => [{ postId }],
+});
+
+export const marketplace = createQueryKeys('marketplace', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  myListings: (residentId: string) => [{ residentId }],
+});
+
+export const vehicles = createQueryKeys('vehicles', {
+  all: null,
+  list: (residentId: string) => [{ residentId }],
+  detail: (id: string) => [id],
+});
+
+export const elections = createQueryKeys('elections', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  results: (id: string) => [{ id }],
+});
+
 export const queryKeys = mergeQueryKeys(
   residents,
   visitors,
@@ -117,4 +144,8 @@ export const queryKeys = mergeQueryKeys(
   tickets,
   announcements,
   documents,
+  posts,
+  marketplace,
+  vehicles,
+  elections,
 );
