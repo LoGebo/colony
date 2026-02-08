@@ -14,28 +14,34 @@ export default function GuardLayout() {
         name="index"
         options={{
           tabBarLabel: 'Caseta',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'🛡️'}</Text>,
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>{'🛡️'}</Text>
+          ),
         }}
       />
       <Tabs.Screen
-        name="visitors"
+        name="directory"
         options={{
-          tabBarLabel: 'Visitantes',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'👥'}</Text>,
+          tabBarLabel: 'Directorio',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>{'🔍'}</Text>
+          ),
         }}
       />
       <Tabs.Screen
-        name="patrol"
+        name="packages"
         options={{
-          tabBarLabel: 'Patrulla',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'🗺️'}</Text>,
+          tabBarLabel: 'Paquetes',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>{'📦'}</Text>
+          ),
         }}
       />
+      {/* Hide gate stack from tabs -- accessed via router.push from index */}
       <Tabs.Screen
-        name="incidents"
+        name="gate"
         options={{
-          tabBarLabel: 'Incidentes',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'⚠️'}</Text>,
+          href: null,
         }}
       />
     </Tabs>
