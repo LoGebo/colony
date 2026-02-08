@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 9 of 16 (Auth & Shared Infrastructure)
-Plan: 3 of 5 in current phase (Wave 1 complete: 01, 02, 03)
+Plan: 4 of 5 in current phase (Wave 1: 01, 02, 03; Wave 2: 04)
 Status: In progress
-Last activity: 2026-02-08 -- Completed 09-01-PLAN.md (Shared Package Foundation)
+Last activity: 2026-02-08 -- Completed 09-04-PLAN.md (Auth Screens Implementation)
 
-Progress: [█░░░░░░░░░] 9% (3/34 v2.0 plans)
+Progress: [█░░░░░░░░░] 12% (4/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█░░░░░░░░░] 9% (3/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 3
-- Average duration: 8 min
-- Total execution time: 24 min
+- Total plans completed: 4
+- Average duration: 7.0 min
+- Total execution time: 28 min
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ New v2.0 decisions:
 - Next.js middleware.ts kept despite deprecation warning (proxy.ts rename deferred)
 - Disabled declaration generation in @upoe/shared tsconfig (raw TS source consumption, avoids pnpm TS2742)
 - @tanstack/react-query + query-core as devDependencies in shared (typecheck only, runtime from consumers)
+- Use undefined (not null) for optional RPC params (matches generated Database types)
 
 ### Pending Todos
 
@@ -67,5 +68,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 09-01-PLAN.md (Shared Package Foundation)
+Stopped at: Completed 09-04-PLAN.md (Auth Screens Implementation)
 Resume file: None
