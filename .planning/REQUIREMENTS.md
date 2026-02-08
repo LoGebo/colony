@@ -47,15 +47,15 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 5. Resident — Maintenance
 
-- [ ] **RMAINT-01**: Resident can submit maintenance request with category, description, and photos
-- [ ] **RMAINT-02**: Resident can view status timeline of their tickets
+- [x] **RMAINT-01**: Resident can submit maintenance request with category, description, and photos
+- [x] **RMAINT-02**: Resident can view status timeline of their tickets
 - [ ] **RMAINT-03**: Resident receives push notification on ticket status changes
-- [ ] **RMAINT-04**: Resident can add comments to their tickets
+- [x] **RMAINT-04**: Resident can add comments to their tickets
 
 ### 6. Resident — Communication
 
-- [ ] **RCOMM-01**: Resident can view announcements feed sorted by date
-- [ ] **RCOMM-02**: Resident can mark announcements as read
+- [x] **RCOMM-01**: Resident can view announcements feed sorted by date
+- [x] **RCOMM-02**: Resident can mark announcements as read
 - [ ] **RCOMM-03**: Resident receives push notification for new high-priority announcements
 - [ ] **RCOMM-04**: Resident can view and post on community social wall
 - [ ] **RCOMM-05**: Resident can react to and comment on social wall posts
@@ -134,16 +134,16 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 15. Admin Dashboard — Operations
 
-- [ ] **AOPS-01**: Admin can view maintenance tickets in table or kanban view
-- [ ] **AOPS-02**: Admin can assign tickets to staff or providers and update status
-- [ ] **AOPS-03**: Admin can view SLA metrics (response time, resolution time)
-- [ ] **AOPS-04**: Admin can create and schedule announcements with targeting (all, building, delinquent)
-- [ ] **AOPS-05**: Admin can view announcement read receipts
-- [ ] **AOPS-06**: Admin can view access log reports with date range and gate filters
-- [ ] **AOPS-07**: Admin can export access logs to CSV
-- [ ] **AOPS-08**: Admin can manage document repository (upload, categorize, set visibility)
-- [ ] **AOPS-09**: Admin can manage amenities (create, edit, set rules and schedules)
-- [ ] **AOPS-10**: Admin can view amenity utilization reports (booking rates, peak hours)
+- [x] **AOPS-01**: Admin can view maintenance tickets in table or kanban view
+- [x] **AOPS-02**: Admin can assign tickets to staff or providers and update status
+- [x] **AOPS-03**: Admin can view SLA metrics (response time, resolution time)
+- [x] **AOPS-04**: Admin can create and schedule announcements with targeting (all, building, delinquent)
+- [x] **AOPS-05**: Admin can view announcement read receipts
+- [x] **AOPS-06**: Admin can view access log reports with date range and gate filters
+- [x] **AOPS-07**: Admin can export access logs to CSV
+- [x] **AOPS-08**: Admin can manage document repository (upload, categorize, set visibility)
+- [x] **AOPS-09**: Admin can manage amenities (create, edit, set rules and schedules)
+- [x] **AOPS-10**: Admin can view amenity utilization reports (booking rates, peak hours)
 
 ### 16. Admin Dashboard — Governance
 
@@ -333,23 +333,23 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | ARES-05 | Phase 11 | Complete |
 | ACONF-01 | Phase 11 | Complete |
 | ACONF-02 | Phase 11 | Complete |
-| AOPS-01 | Phase 12 | Pending |
-| AOPS-02 | Phase 12 | Pending |
-| AOPS-03 | Phase 12 | Pending |
-| AOPS-04 | Phase 12 | Pending |
-| AOPS-05 | Phase 12 | Pending |
-| AOPS-06 | Phase 12 | Pending |
-| AOPS-07 | Phase 12 | Pending |
-| AOPS-08 | Phase 12 | Pending |
-| AOPS-09 | Phase 12 | Pending |
-| AOPS-10 | Phase 12 | Pending |
-| RMAINT-01 | Phase 12 | Pending |
-| RMAINT-02 | Phase 12 | Pending |
-| RMAINT-03 | Phase 12 | Pending |
-| RMAINT-04 | Phase 12 | Pending |
-| RCOMM-01 | Phase 12 | Pending |
-| RCOMM-02 | Phase 12 | Pending |
-| RCOMM-03 | Phase 12 | Pending |
+| AOPS-01 | Phase 12 | Complete |
+| AOPS-02 | Phase 12 | Complete |
+| AOPS-03 | Phase 12 | Complete |
+| AOPS-04 | Phase 12 | Complete |
+| AOPS-05 | Phase 12 | Complete |
+| AOPS-06 | Phase 12 | Complete |
+| AOPS-07 | Phase 12 | Complete |
+| AOPS-08 | Phase 12 | Complete |
+| AOPS-09 | Phase 12 | Complete |
+| AOPS-10 | Phase 12 | Complete |
+| RMAINT-01 | Phase 12 | Complete |
+| RMAINT-02 | Phase 12 | Complete |
+| RMAINT-03 | Phase 16 | Pending |
+| RMAINT-04 | Phase 12 | Complete |
+| RCOMM-01 | Phase 12 | Complete |
+| RCOMM-02 | Phase 12 | Complete |
+| RCOMM-03 | Phase 16 | Pending |
 | RCOMM-04 | Phase 13 | Pending |
 | RCOMM-05 | Phase 13 | Pending |
 | RCOMM-06 | Phase 13 | Pending |
@@ -426,4 +426,4 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-08 -- Phase 10 complete (25 requirements: RHOME-01 to RHOME-03, RVIS-01 to RVIS-05/07/08, RPAY-01 to RPAY-04, GGATE-01 to GGATE-09, GPKG-01/03/04; 3 push notifications deferred to Phase 16)*
+*Last updated: 2026-02-08 -- Phase 12 complete (14 requirements: AOPS-01 to AOPS-10, RMAINT-01/02/04, RCOMM-01/02; RMAINT-03 and RCOMM-03 push notifications deferred to Phase 16)*

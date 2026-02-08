@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
 - [x] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
 - [x] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
-- [ ] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
+- [x] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
 - [ ] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
 - [ ] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
 - [ ] **Phase 15: Admin Governance & Analytics** - Elections, assemblies, surveys, violations, emergency info, keys/devices, guard metrics, audit trail
@@ -113,10 +113,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 12-01-PLAN.md - Shared query keys, sidebar children, admin ticket hooks/components, ticket table/kanban page, ticket detail with assignment/SLA
-- [ ] 12-02-PLAN.md - Mobile resident maintenance: ticket list, create with photos, detail with timeline and comments
-- [ ] 12-03-PLAN.md - Admin announcement management with targeting and read receipts; mobile announcement feed with auto-read
-- [ ] 12-04-PLAN.md - Admin access logs with CSV export, document repository with upload, amenity CRUD with utilization charts
+- [x] 12-01-PLAN.md - Shared query keys, sidebar children, admin ticket hooks/components, ticket table/kanban page, ticket detail with assignment/SLA
+- [x] 12-02-PLAN.md - Mobile resident maintenance: ticket list, create with photos, detail with timeline and comments
+- [x] 12-03-PLAN.md - Admin announcement management with targeting and read receipts; mobile announcement feed with auto-read
+- [x] 12-04-PLAN.md - Admin access logs with CSV export, document repository with upload, amenity CRUD with utilization charts
 
 ### Phase 13: Advanced Resident Features
 **Goal**: Residents can engage with community through social wall, reserve amenities, access documents, manage their profile, and use the marketplace
@@ -207,14 +207,14 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 9. Auth & Shared Infrastructure | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
-| 12. Admin Dashboard Operations | v2.0 | 0/4 | Not started | - |
+| 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 13. Advanced Resident Features | v2.0 | 0/4 | Not started | - |
 | 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/5 | Not started | - |
 | 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 14/34 plans
+**v2.0 Total:** 18/34 plans
 
 ---
 *Roadmap created: 2026-01-29*
