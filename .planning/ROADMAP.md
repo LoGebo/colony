@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
 - [x] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
 - [x] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
-- [ ] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
+- [x] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
 - [ ] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
 - [ ] **Phase 15: Admin Governance & Analytics** - Elections, assemblies, surveys, violations, emergency info, keys/devices, guard metrics, audit trail
 - [ ] **Phase 16: Push Notifications & Real-time Polish** - Push registration, notification delivery, real-time subscriptions, notification preferences
@@ -131,10 +131,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 13-01-PLAN.md -- RLS identity fix migration, query key factories, community tab layout, social wall feed with posts/reactions/comments/polls
-- [ ] 13-02-PLAN.md -- Amenity reservations: catalog grid, availability calendar (react-native-calendars), booking via create_reservation RPC, my reservations, cancellation
-- [ ] 13-03-PLAN.md -- More tab layout, documents (get_accessible_documents RPC, regulation signing via capture_signature), profile editor, vehicles CRUD, packages with pickup codes
-- [ ] 13-04-PLAN.md -- Marketplace: listing creation with photo upload, category browse, listing detail, WhatsApp seller contact, mark as sold
+- [x] 13-01-PLAN.md -- RLS identity fix migration, query key factories, community tab layout, social wall feed with posts/reactions/comments/polls
+- [x] 13-02-PLAN.md -- Amenity reservations: catalog grid, availability calendar (react-native-calendars), booking via create_reservation RPC, my reservations, cancellation
+- [x] 13-03-PLAN.md -- More tab layout, documents (get_accessible_documents RPC, regulation signing via capture_signature), profile editor, vehicles CRUD, packages with pickup codes
+- [x] 13-04-PLAN.md -- Marketplace: listing creation with photo upload, category browse, listing detail, WhatsApp seller contact, mark as sold
 
 ### Phase 14: Guard Advanced + Admin Providers/Parking/Moves
 **Goal**: Guards can conduct patrols, report incidents, and perform shift handovers, while admins can manage providers, parking, moves, and marketplace moderation
@@ -208,13 +208,13 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
-| 13. Advanced Resident Features | v2.0 | 0/4 | Not started | - |
+| 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/5 | Not started | - |
 | 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 18/34 plans
+**v2.0 Total:** 22/34 plans
 
 ---
 *Roadmap created: 2026-01-29*

@@ -57,26 +57,26 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 - [x] **RCOMM-01**: Resident can view announcements feed sorted by date
 - [x] **RCOMM-02**: Resident can mark announcements as read
 - [ ] **RCOMM-03**: Resident receives push notification for new high-priority announcements
-- [ ] **RCOMM-04**: Resident can view and post on community social wall
-- [ ] **RCOMM-05**: Resident can react to and comment on social wall posts
-- [ ] **RCOMM-06**: Resident can participate in surveys and vote on community decisions
+- [x] **RCOMM-04**: Resident can view and post on community social wall
+- [x] **RCOMM-05**: Resident can react to and comment on social wall posts
+- [x] **RCOMM-06**: Resident can participate in surveys and vote on community decisions
 
 ### 7. Resident — Amenities
 
-- [ ] **RAMEN-01**: Resident can browse amenity catalog with photos and rules
-- [ ] **RAMEN-02**: Resident can view amenity availability on a calendar
-- [ ] **RAMEN-03**: Resident can make a reservation for an available slot
-- [ ] **RAMEN-04**: Resident can cancel a reservation
-- [ ] **RAMEN-05**: Resident receives push notification for booking confirmation and reminders
+- [x] **RAMEN-01**: Resident can browse amenity catalog with photos and rules
+- [x] **RAMEN-02**: Resident can view amenity availability on a calendar
+- [x] **RAMEN-03**: Resident can make a reservation for an available slot
+- [x] **RAMEN-04**: Resident can cancel a reservation
+- [ ] **RAMEN-05**: Resident receives push notification for booking confirmation and reminders (deferred to Phase 16)
 
 ### 8. Resident — Documents & Profile
 
-- [ ] **RDOC-01**: Resident can view community documents (bylaws, minutes, reports)
-- [ ] **RDOC-02**: Resident can view and sign regulations requiring signature
-- [ ] **RPROF-01**: Resident can edit profile (phone, photo, emergency contacts)
-- [ ] **RPROF-02**: Resident can view their unit assignment and occupancy details
-- [ ] **RPROF-03**: Resident can manage their registered vehicles
-- [ ] **RPROF-04**: Resident can view package notifications and pickup codes
+- [x] **RDOC-01**: Resident can view community documents (bylaws, minutes, reports)
+- [x] **RDOC-02**: Resident can view and sign regulations requiring signature
+- [x] **RPROF-01**: Resident can edit profile (phone, photo, emergency contacts)
+- [x] **RPROF-02**: Resident can view their unit assignment and occupancy details
+- [x] **RPROF-03**: Resident can manage their registered vehicles
+- [x] **RPROF-04**: Resident can view package notifications and pickup codes
 
 ### 9. Guard — Gate Operations
 
@@ -163,10 +163,10 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 18. Resident — Marketplace
 
-- [ ] **RMRKT-01**: Resident can create listing (sale, service, rental, wanted) with photos and price
-- [ ] **RMRKT-02**: Resident can browse and search marketplace listings by category
-- [ ] **RMRKT-03**: Resident can view listing details and contact seller
-- [ ] **RMRKT-04**: Resident can mark listing as sold/completed
+- [x] **RMRKT-01**: Resident can create listing (sale, service, rental, wanted) with photos and price
+- [x] **RMRKT-02**: Resident can browse and search marketplace listings by category
+- [x] **RMRKT-03**: Resident can view listing details and contact seller
+- [x] **RMRKT-04**: Resident can mark listing as sold/completed
 
 ### 19. Admin Dashboard — Marketplace Moderation
 
@@ -350,24 +350,24 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | RCOMM-01 | Phase 12 | Complete |
 | RCOMM-02 | Phase 12 | Complete |
 | RCOMM-03 | Phase 16 | Pending |
-| RCOMM-04 | Phase 13 | Pending |
-| RCOMM-05 | Phase 13 | Pending |
-| RCOMM-06 | Phase 13 | Pending |
-| RAMEN-01 | Phase 13 | Pending |
-| RAMEN-02 | Phase 13 | Pending |
-| RAMEN-03 | Phase 13 | Pending |
-| RAMEN-04 | Phase 13 | Pending |
-| RAMEN-05 | Phase 13 | Pending |
-| RDOC-01 | Phase 13 | Pending |
-| RDOC-02 | Phase 13 | Pending |
-| RPROF-01 | Phase 13 | Pending |
-| RPROF-02 | Phase 13 | Pending |
-| RPROF-03 | Phase 13 | Pending |
-| RPROF-04 | Phase 13 | Pending |
-| RMRKT-01 | Phase 13 | Pending |
-| RMRKT-02 | Phase 13 | Pending |
-| RMRKT-03 | Phase 13 | Pending |
-| RMRKT-04 | Phase 13 | Pending |
+| RCOMM-04 | Phase 13 | Complete |
+| RCOMM-05 | Phase 13 | Complete |
+| RCOMM-06 | Phase 13 | Complete |
+| RAMEN-01 | Phase 13 | Complete |
+| RAMEN-02 | Phase 13 | Complete |
+| RAMEN-03 | Phase 13 | Complete |
+| RAMEN-04 | Phase 13 | Complete |
+| RAMEN-05 | Phase 16 | Deferred |
+| RDOC-01 | Phase 13 | Complete |
+| RDOC-02 | Phase 13 | Complete |
+| RPROF-01 | Phase 13 | Complete |
+| RPROF-02 | Phase 13 | Complete |
+| RPROF-03 | Phase 13 | Complete |
+| RPROF-04 | Phase 13 | Complete |
+| RMRKT-01 | Phase 13 | Complete |
+| RMRKT-02 | Phase 13 | Complete |
+| RMRKT-03 | Phase 13 | Complete |
+| RMRKT-04 | Phase 13 | Complete |
 | GPATR-01 | Phase 14 | Pending |
 | GPATR-02 | Phase 14 | Pending |
 | GPATR-03 | Phase 14 | Pending |
