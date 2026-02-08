@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
 - [x] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
-- [ ] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
+- [x] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
 - [ ] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
 - [ ] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
 - [ ] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
@@ -95,10 +95,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 11-01-PLAN.md - Financial KPI dashboard: overview cards, collection/delinquency charts, income vs expense reports
-- [ ] 11-02-PLAN.md - Payment operations: proof approval queue with bulk ops, charge generation with preview, balance reports with export
-- [ ] 11-03-PLAN.md - Resident and unit management: CRUD, invite workflow, occupancy assignments, role management
-- [ ] 11-04-PLAN.md - Community configuration: settings editor, branding, feature flags
+- [x] 11-01-PLAN.md - Financial KPI dashboard: overview cards, collection/delinquency charts, income vs expense reports
+- [x] 11-02-PLAN.md - Payment operations: proof approval queue with bulk ops, charge generation with preview, balance reports with export
+- [x] 11-03-PLAN.md - Resident and unit management: CRUD, invite workflow, occupancy assignments, role management
+- [x] 11-04-PLAN.md - Community configuration: settings editor, branding, feature flags
 
 ### Phase 12: Admin Dashboard Operations
 **Goal**: Administrators can manage day-to-day operations including maintenance tickets, announcements, access logs, documents, and amenities
@@ -206,7 +206,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 8. Governance & Analytics | v1.0 | 9/9 | Complete | 2026-01-30 |
 | 9. Auth & Shared Infrastructure | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 5/5 | Complete | 2026-02-08 |
-| 11. Admin Dashboard Financial Core | v2.0 | 0/4 | Not started | - |
+| 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 12. Admin Dashboard Operations | v2.0 | 0/4 | Not started | - |
 | 13. Advanced Resident Features | v2.0 | 0/4 | Not started | - |
 | 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/5 | Not started | - |
@@ -214,7 +214,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 10/34 plans
+**v2.0 Total:** 14/34 plans
 
 ---
 *Roadmap created: 2026-01-29*

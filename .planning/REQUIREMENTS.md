@@ -115,22 +115,22 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 13. Admin Dashboard — Financial
 
-- [ ] **AFIN-01**: Admin sees financial overview dashboard with KPI cards (collection rate, delinquency rate, total collected, total owed)
-- [ ] **AFIN-02**: Admin sees financial charts (monthly collection bar chart, delinquency trend line, expense pie chart)
-- [ ] **AFIN-03**: Admin can view unit-by-unit balance report with sorting, filtering, and Excel export
-- [ ] **AFIN-04**: Admin can approve or reject payment proofs with bulk operations
-- [ ] **AFIN-05**: Admin can generate monthly charges for all units (coefficient-based, fixed, hybrid)
-- [ ] **AFIN-06**: Admin can preview charge generation before applying
-- [ ] **AFIN-07**: Admin can view delinquency analytics (30/60/90/120+ day aging, per-building breakdown, trends)
-- [ ] **AFIN-08**: Admin can generate financial reports (income vs expense, budget vs actual)
+- [x] **AFIN-01**: Admin sees financial overview dashboard with KPI cards (collection rate, delinquency rate, total collected, total owed)
+- [x] **AFIN-02**: Admin sees financial charts (monthly collection bar chart, delinquency trend line, expense pie chart)
+- [x] **AFIN-03**: Admin can view unit-by-unit balance report with sorting, filtering, and Excel export
+- [x] **AFIN-04**: Admin can approve or reject payment proofs with bulk operations
+- [x] **AFIN-05**: Admin can generate monthly charges for all units (coefficient-based, fixed, hybrid)
+- [x] **AFIN-06**: Admin can preview charge generation before applying
+- [x] **AFIN-07**: Admin can view delinquency analytics (30/60/90/120+ day aging, per-building breakdown, trends)
+- [x] **AFIN-08**: Admin can generate financial reports (income vs expense, budget vs actual)
 
 ### 14. Admin Dashboard — Residents & Units
 
-- [ ] **ARES-01**: Admin can view, create, edit, and deactivate residents
-- [ ] **ARES-02**: Admin can invite residents via email
-- [ ] **ARES-03**: Admin can manage unit-resident occupancy (owner, tenant, authorized)
-- [ ] **ARES-04**: Admin can view and manage all units with type, area, coefficient
-- [ ] **ARES-05**: Admin can manage user roles and permissions
+- [x] **ARES-01**: Admin can view, create, edit, and deactivate residents
+- [x] **ARES-02**: Admin can invite residents via email
+- [x] **ARES-03**: Admin can manage unit-resident occupancy (owner, tenant, authorized)
+- [x] **ARES-04**: Admin can view and manage all units with type, area, coefficient
+- [x] **ARES-05**: Admin can manage user roles and permissions
 
 ### 15. Admin Dashboard — Operations
 
@@ -155,8 +155,8 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 17. Admin Dashboard — Analytics & Configuration
 
-- [ ] **ACONF-01**: Admin can configure community settings (name, branding, hours, rules)
-- [ ] **ACONF-02**: Admin can manage feature flags per community
+- [x] **ACONF-01**: Admin can configure community settings (name, branding, hours, rules)
+- [x] **ACONF-02**: Admin can manage feature flags per community
 - [ ] **ACONF-03**: Admin can view guard performance metrics (patrol completion, response times)
 - [ ] **ACONF-04**: Admin can view audit trail of administrative actions
 - [ ] **ACONF-05**: Admin can perform bulk charge generation and bulk notification sending
@@ -318,21 +318,21 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | GPKG-02 | Phase 16 | Pending |
 | GPKG-03 | Phase 10 | Complete |
 | GPKG-04 | Phase 10 | Complete |
-| AFIN-01 | Phase 11 | Pending |
-| AFIN-02 | Phase 11 | Pending |
-| AFIN-03 | Phase 11 | Pending |
-| AFIN-04 | Phase 11 | Pending |
-| AFIN-05 | Phase 11 | Pending |
-| AFIN-06 | Phase 11 | Pending |
-| AFIN-07 | Phase 11 | Pending |
-| AFIN-08 | Phase 11 | Pending |
-| ARES-01 | Phase 11 | Pending |
-| ARES-02 | Phase 11 | Pending |
-| ARES-03 | Phase 11 | Pending |
-| ARES-04 | Phase 11 | Pending |
-| ARES-05 | Phase 11 | Pending |
-| ACONF-01 | Phase 11 | Pending |
-| ACONF-02 | Phase 11 | Pending |
+| AFIN-01 | Phase 11 | Complete |
+| AFIN-02 | Phase 11 | Complete |
+| AFIN-03 | Phase 11 | Complete |
+| AFIN-04 | Phase 11 | Complete |
+| AFIN-05 | Phase 11 | Complete |
+| AFIN-06 | Phase 11 | Complete |
+| AFIN-07 | Phase 11 | Complete |
+| AFIN-08 | Phase 11 | Complete |
+| ARES-01 | Phase 11 | Complete |
+| ARES-02 | Phase 11 | Complete |
+| ARES-03 | Phase 11 | Complete |
+| ARES-04 | Phase 11 | Complete |
+| ARES-05 | Phase 11 | Complete |
+| ACONF-01 | Phase 11 | Complete |
+| ACONF-02 | Phase 11 | Complete |
 | AOPS-01 | Phase 12 | Pending |
 | AOPS-02 | Phase 12 | Pending |
 | AOPS-03 | Phase 12 | Pending |

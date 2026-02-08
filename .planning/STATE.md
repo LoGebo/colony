@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-07)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Milestone v2.0 -- Phase 11: Admin Dashboard Financial Core
+**Current focus:** Milestone v2.0 -- Phase 12: Admin Dashboard Operations
 
 ## Current Position
 
-Phase: 11 of 16 (Admin Dashboard Financial Core)
-Plan: 1 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-08 -- Completed 11-01-PLAN.md (financial dashboard foundation)
+Phase: 12 of 16 (Admin Dashboard Operations)
+Plan: 0 of 4 in current phase
+Status: Not started
+Last activity: 2026-02-08 -- Completed Phase 11 (Admin Dashboard Financial Core) -- all 4 plans
 
-Progress: [████░░░░░░] 32% (11/34 v2.0 plans)
+Progress: [████░░░░░░] 41% (14/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████░░░░░░] 32% (11/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 11
-- Average duration: 6.2 min
-- Total execution time: ~68 min
+- Total plans completed: 14
+- Average duration: 6.5 min
+- Total execution time: ~91 min
 
 ## Accumulated Context
 
@@ -66,6 +66,8 @@ New v2.0 decisions:
 - Lazy Supabase client in queryFn (not hook body) to prevent SSR prerender crashes in financial hooks
 - Inclusive RLS role update: community_admin added alongside admin (not replacing) for backwards compat
 - Recharts v3 Tooltip formatter uses untyped value param with Number() cast
+- record_charge RPC typed as 'never' cast (types not regenerated after migration deployment)
+- Badge component has no size prop -- all badges use text-xs by default
 
 ### Pending Todos
 
@@ -78,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 11-01-PLAN.md. Ready for 11-02.
+Stopped at: Completed Phase 11 (all 4 plans). Ready for Phase 12.
 Resume file: None
