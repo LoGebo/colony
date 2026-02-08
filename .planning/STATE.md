@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 12 of 16 (Admin Dashboard Operations)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-08 -- Completed 12-02-PLAN.md (Mobile Maintenance Screens)
+Last activity: 2026-02-08 -- Completed 12-03-PLAN.md (Announcements Management & Feed)
 
-Progress: [████░░░░░░] 47% (16/34 v2.0 plans)
+Progress: [█████░░░░░] 50% (17/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████░░░░░░] 47% (16/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 16
-- Average duration: 6.2 min
-- Total execution time: ~100 min
+- Total plans completed: 17
+- Average duration: 6.1 min
+- Total execution time: ~104 min
 
 ## Accumulated Context
 
@@ -72,6 +72,9 @@ New v2.0 decisions:
 - Non-null assertion on user!.id for mutations (admin must be authenticated)
 - Photo attachments on tickets stored as ticket_comments with photo_urls array (not ticket fields)
 - Internal comments (is_internal=true) filtered out in resident-facing ticket detail view
+- Two-step create mutation for announcements: insert then call expand_announcement_recipients RPC explicitly
+- Auto-mark announcement as read on detail screen mount using useEffect with ref guard
+- Use 'as never' cast for RPC call and target_segment enum insert (types not regenerated)
 
 ### Pending Todos
 
@@ -84,5 +87,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 12-02-PLAN.md. Ready for 12-03.
+Stopped at: Completed 12-03-PLAN.md. Ready for 12-04.
 Resume file: None
