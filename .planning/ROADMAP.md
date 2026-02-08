@@ -113,10 +113,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 12-01-PLAN.md - Maintenance dashboard: ticket table/kanban, assignment, status workflow, SLA metrics
-- [ ] 12-02-PLAN.md - Resident maintenance: request submission with photos, status timeline, comments, push notifications
-- [ ] 12-03-PLAN.md - Announcements: admin creator with targeting, read receipts; resident feed with read marking and push
-- [ ] 12-04-PLAN.md - Access logs, documents, amenity management: log reports with export, document repository, amenity CRUD with utilization
+- [ ] 12-01-PLAN.md - Shared query keys, sidebar children, admin ticket hooks/components, ticket table/kanban page, ticket detail with assignment/SLA
+- [ ] 12-02-PLAN.md - Mobile resident maintenance: ticket list, create with photos, detail with timeline and comments
+- [ ] 12-03-PLAN.md - Admin announcement management with targeting and read receipts; mobile announcement feed with auto-read
+- [ ] 12-04-PLAN.md - Admin access logs with CSV export, document repository with upload, amenity CRUD with utilization charts
 
 ### Phase 13: Advanced Resident Features
 **Goal**: Residents can engage with community through social wall, reserve amenities, access documents, manage their profile, and use the marketplace
