@@ -273,13 +273,157 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Updated by roadmapper) | — | Pending |
+| AUTH-01 | Phase 9 | Pending |
+| AUTH-02 | Phase 9 | Pending |
+| AUTH-03 | Phase 9 | Pending |
+| AUTH-04 | Phase 9 | Pending |
+| AUTH-05 | Phase 9 | Pending |
+| AUTH-06 | Phase 9 | Pending |
+| AUTH-07 | Phase 9 | Pending |
+| AUTH-08 | Phase 9 | Pending |
+| AUTH-09 | Phase 9 | Pending |
+| AUTH-10 | Phase 9 | Pending |
+| INFRA-01 | Phase 9 | Pending |
+| INFRA-02 | Phase 9 | Pending |
+| INFRA-03 | Phase 9 | Pending |
+| INFRA-04 | Phase 9 | Pending |
+| INFRA-05 | Phase 9 | Pending |
+| INFRA-06 | Phase 9 | Pending |
+| RHOME-01 | Phase 10 | Pending |
+| RHOME-02 | Phase 10 | Pending |
+| RHOME-03 | Phase 10 | Pending |
+| RVIS-01 | Phase 10 | Pending |
+| RVIS-02 | Phase 10 | Pending |
+| RVIS-03 | Phase 10 | Pending |
+| RVIS-04 | Phase 10 | Pending |
+| RVIS-05 | Phase 10 | Pending |
+| RVIS-06 | Phase 10 | Pending |
+| RVIS-07 | Phase 10 | Pending |
+| RVIS-08 | Phase 10 | Pending |
+| RPAY-01 | Phase 10 | Pending |
+| RPAY-02 | Phase 10 | Pending |
+| RPAY-03 | Phase 10 | Pending |
+| RPAY-04 | Phase 10 | Pending |
+| RPAY-05 | Phase 10 | Pending |
+| GGATE-01 | Phase 10 | Pending |
+| GGATE-02 | Phase 10 | Pending |
+| GGATE-03 | Phase 10 | Pending |
+| GGATE-04 | Phase 10 | Pending |
+| GGATE-05 | Phase 10 | Pending |
+| GGATE-06 | Phase 10 | Pending |
+| GGATE-07 | Phase 10 | Pending |
+| GGATE-08 | Phase 10 | Pending |
+| GGATE-09 | Phase 10 | Pending |
+| GPKG-01 | Phase 10 | Pending |
+| GPKG-02 | Phase 10 | Pending |
+| GPKG-03 | Phase 10 | Pending |
+| GPKG-04 | Phase 10 | Pending |
+| AFIN-01 | Phase 11 | Pending |
+| AFIN-02 | Phase 11 | Pending |
+| AFIN-03 | Phase 11 | Pending |
+| AFIN-04 | Phase 11 | Pending |
+| AFIN-05 | Phase 11 | Pending |
+| AFIN-06 | Phase 11 | Pending |
+| AFIN-07 | Phase 11 | Pending |
+| AFIN-08 | Phase 11 | Pending |
+| ARES-01 | Phase 11 | Pending |
+| ARES-02 | Phase 11 | Pending |
+| ARES-03 | Phase 11 | Pending |
+| ARES-04 | Phase 11 | Pending |
+| ARES-05 | Phase 11 | Pending |
+| ACONF-01 | Phase 11 | Pending |
+| ACONF-02 | Phase 11 | Pending |
+| AOPS-01 | Phase 12 | Pending |
+| AOPS-02 | Phase 12 | Pending |
+| AOPS-03 | Phase 12 | Pending |
+| AOPS-04 | Phase 12 | Pending |
+| AOPS-05 | Phase 12 | Pending |
+| AOPS-06 | Phase 12 | Pending |
+| AOPS-07 | Phase 12 | Pending |
+| AOPS-08 | Phase 12 | Pending |
+| AOPS-09 | Phase 12 | Pending |
+| AOPS-10 | Phase 12 | Pending |
+| RMAINT-01 | Phase 12 | Pending |
+| RMAINT-02 | Phase 12 | Pending |
+| RMAINT-03 | Phase 12 | Pending |
+| RMAINT-04 | Phase 12 | Pending |
+| RCOMM-01 | Phase 12 | Pending |
+| RCOMM-02 | Phase 12 | Pending |
+| RCOMM-03 | Phase 12 | Pending |
+| RCOMM-04 | Phase 13 | Pending |
+| RCOMM-05 | Phase 13 | Pending |
+| RCOMM-06 | Phase 13 | Pending |
+| RAMEN-01 | Phase 13 | Pending |
+| RAMEN-02 | Phase 13 | Pending |
+| RAMEN-03 | Phase 13 | Pending |
+| RAMEN-04 | Phase 13 | Pending |
+| RAMEN-05 | Phase 13 | Pending |
+| RDOC-01 | Phase 13 | Pending |
+| RDOC-02 | Phase 13 | Pending |
+| RPROF-01 | Phase 13 | Pending |
+| RPROF-02 | Phase 13 | Pending |
+| RPROF-03 | Phase 13 | Pending |
+| RPROF-04 | Phase 13 | Pending |
+| RMRKT-01 | Phase 13 | Pending |
+| RMRKT-02 | Phase 13 | Pending |
+| RMRKT-03 | Phase 13 | Pending |
+| RMRKT-04 | Phase 13 | Pending |
+| GPATR-01 | Phase 14 | Pending |
+| GPATR-02 | Phase 14 | Pending |
+| GPATR-03 | Phase 14 | Pending |
+| GINC-01 | Phase 14 | Pending |
+| GINC-02 | Phase 14 | Pending |
+| GINC-03 | Phase 14 | Pending |
+| GEMRG-01 | Phase 14 | Pending |
+| GEMRG-02 | Phase 14 | Pending |
+| GEMRG-03 | Phase 14 | Pending |
+| GEMRG-04 | Phase 14 | Pending |
+| APROV-01 | Phase 14 | Pending |
+| APROV-02 | Phase 14 | Pending |
+| APROV-03 | Phase 14 | Pending |
+| APROV-04 | Phase 14 | Pending |
+| APROV-05 | Phase 14 | Pending |
+| APARK-01 | Phase 14 | Pending |
+| APARK-02 | Phase 14 | Pending |
+| APARK-03 | Phase 14 | Pending |
+| APARK-04 | Phase 14 | Pending |
+| AMOVE-01 | Phase 14 | Pending |
+| AMOVE-02 | Phase 14 | Pending |
+| AMOVE-03 | Phase 14 | Pending |
+| AMOVE-04 | Phase 14 | Pending |
+| AMRKT-01 | Phase 14 | Pending |
+| AMRKT-02 | Phase 14 | Pending |
+| AMRKT-03 | Phase 14 | Pending |
+| AGOV-01 | Phase 15 | Pending |
+| AGOV-02 | Phase 15 | Pending |
+| AGOV-03 | Phase 15 | Pending |
+| AGOV-04 | Phase 15 | Pending |
+| AGOV-05 | Phase 15 | Pending |
+| ACONF-03 | Phase 15 | Pending |
+| ACONF-04 | Phase 15 | Pending |
+| ACONF-05 | Phase 15 | Pending |
+| AVIOL-01 | Phase 15 | Pending |
+| AVIOL-02 | Phase 15 | Pending |
+| AVIOL-03 | Phase 15 | Pending |
+| AVIOL-04 | Phase 15 | Pending |
+| AEMRG-01 | Phase 15 | Pending |
+| AEMRG-02 | Phase 15 | Pending |
+| AEMRG-03 | Phase 15 | Pending |
+| AKEY-01 | Phase 15 | Pending |
+| AKEY-02 | Phase 15 | Pending |
+| AKEY-03 | Phase 15 | Pending |
+| AKEY-04 | Phase 15 | Pending |
+| PUSH-01 | Phase 16 | Pending |
+| PUSH-02 | Phase 16 | Pending |
+| PUSH-03 | Phase 16 | Pending |
+| PUSH-04 | Phase 16 | Pending |
+| PUSH-05 | Phase 16 | Pending |
 
 **Coverage:**
-- v1 requirements: 143 total
-- Mapped to phases: 0 (awaiting roadmap)
-- Unmapped: 143
+- v1 requirements: 145 total
+- Mapped to phases: 145
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-06 after adding all modules*
+*Last updated: 2026-02-07 -- traceability complete, all 145 requirements mapped*

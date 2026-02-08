@@ -1,8 +1,9 @@
-# Roadmap: UPOE Database Architecture
+# Roadmap: UPOE Frontend Applications
 
-## Overview
+## Milestones
 
-This roadmap delivers the complete Supabase database schema for UPOE (Unified Property Operations Ecosystem) across 8 phases. Starting with multi-tenant foundation and RLS security, we build through identity, access control, financials, community features, and operational systems. Each phase creates tables, types, RLS policies, and indexes that subsequent phases depend on. The 147 requirements across 24 domains map to natural delivery boundaries where each phase delivers a coherent, testable capability.
+- **v1.0 Database Architecture** - Phases 1-8 (shipped 2026-01-30)
+- **v2.0 Frontend Applications** - Phases 9-16 (in progress)
 
 ## Phases
 
@@ -12,221 +13,210 @@ This roadmap delivers the complete Supabase database schema for UPOE (Unified Pr
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Foundation & Multi-Tenant Security** - Core tables, RLS patterns, audit infrastructure ✓
-- [x] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding ✓
-- [x] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies ✓
-- [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation ✓
-- [x] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings ✓
-- [x] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts ✓
-- [x] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config ✓
-- [ ] **Phase 8: Governance & Analytics** - Incidents, voting, parking, keys, violations, metrics, integrations
+<details>
+<summary>v1.0 Database Architecture (Phases 1-8) - SHIPPED 2026-01-30</summary>
+
+- [x] **Phase 1: Foundation & Multi-Tenant Security** - Core tables, RLS patterns, audit infrastructure
+- [x] **Phase 2: Identity & CRM** - Units, residents, vehicles, pets, onboarding
+- [x] **Phase 3: Access Control & Security** - Gates, guards, visitors, patrols, emergencies
+- [x] **Phase 4: Financial Engine** - Double-entry ledger, fees, payments, reconciliation
+- [x] **Phase 5: Amenities, Communication & Marketplace** - Reservations, social wall, listings
+- [x] **Phase 6: Maintenance, Chat, Documents & Notifications** - Tickets, messaging, files, alerts
+- [x] **Phase 7: Operations & Compliance** - Packages, providers, moves, audit, config
+- [x] **Phase 8: Governance & Analytics** - Incidents, voting, parking, keys, violations, metrics, integrations
+
+**Total:** 38/38 plans - PROJECT COMPLETE
+
+</details>
+
+### v2.0 Frontend Applications (Phases 9-16)
+
+**Milestone Goal:** Build React Native (Expo) mobile app and Next.js admin dashboard consuming the complete Supabase backend, delivering working applications for residents, guards, and administrators.
+
+- [ ] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
+- [ ] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
+- [ ] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
+- [ ] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
+- [ ] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
+- [ ] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
+- [ ] **Phase 15: Admin Governance & Analytics** - Elections, assemblies, surveys, violations, emergency info, keys/devices, guard metrics, audit trail
+- [ ] **Phase 16: Push Notifications & Real-time Polish** - Push registration, notification delivery, real-time subscriptions, notification preferences
 
 ## Phase Details
 
-### Phase 1: Foundation & Multi-Tenant Security
-**Goal**: Establish the multi-tenant architecture with RLS-enforced isolation, audit patterns, and base types that all subsequent tables depend on
-**Depends on**: Nothing (first phase)
-**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07
+### Phase 9: Auth & Shared Infrastructure
+**Goal**: All user roles can authenticate on their respective platform (mobile or web) and see role-appropriate navigation, with shared infrastructure (typed client, query hooks, validators) supporting all subsequent feature development
+**Depends on**: v1.0 backend (auth triggers, RLS policies, seed data)
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06
 **Success Criteria** (what must be TRUE):
-  1. Organizations and communities tables exist with proper RLS policies
-  2. All tables use UUID v7 primary keys generated by database functions
-  3. Soft delete pattern (deleted_at) functions correctly on test tables
-  4. RLS policies correctly filter by community_id from JWT app_metadata
-  5. Audit columns (created_at, updated_at, deleted_at, created_by) auto-populate via triggers
-**Plans**: 3 plans in 2 waves
+  1. Invited resident can sign up on mobile, see resident tab navigation, and persist session across app restarts
+  2. Invited guard can sign up on mobile, see guard tab navigation, and persist session across app restarts
+  3. New admin can sign up on web, complete onboarding (create org + community), and see admin sidebar navigation
+  4. User can log in, log out, and reset password on both mobile and web platforms
+  5. Shared package provides typed Supabase client, TanStack Query hooks skeleton, Zod validators, and file upload utility usable by both platforms
+**Plans**: 5 plans
 
 Plans:
-- [x] 01-01-PLAN.md - Core utilities: UUID v7 function, audit triggers, RLS helpers (Wave 1) ✓
-- [x] 01-02-PLAN.md - Base enums and domain types for status fields (Wave 1) ✓
-- [x] 01-03-PLAN.md - Organizations and communities tables with RLS policies (Wave 2) ✓
+- [ ] 09-01-PLAN.md - Shared package: typed Supabase client factories, query key factories, Zod validators, constants
+- [ ] 09-02-PLAN.md - Mobile Expo Router setup: file-based routing, role-based route groups, auth storage with expo-sqlite
+- [ ] 09-03-PLAN.md - Admin Next.js setup: App Router, middleware token refresh, @supabase/ssr, sidebar layout
+- [ ] 09-04-PLAN.md - Auth screens: sign-in, sign-up, password reset, onboarding flows (both platforms)
+- [ ] 09-05-PLAN.md - Shared hooks: TanStack Query provider, file upload utility, role navigation guards
 
-### Phase 2: Identity & CRM
-**Goal**: Model the core entities that identify who lives in each community - units, residents, vehicles, and pets with their relationships
-**Depends on**: Phase 1 (needs community_id, RLS patterns, audit columns)
-**Requirements**: CRM-01, CRM-02, CRM-03, CRM-04, CRM-05, CRM-06, CRM-07
+### Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate
+**Goal**: Residents can manage visitors with QR codes and view their financial status, while guards can verify visitors and manage gate operations — the tightly coupled daily-use workflows
+**Depends on**: Phase 9 (auth, navigation, shared hooks)
+**Requirements**: RHOME-01, RHOME-02, RHOME-03, RVIS-01, RVIS-02, RVIS-03, RVIS-04, RVIS-05, RVIS-06, RVIS-07, RVIS-08, RPAY-01, RPAY-02, RPAY-03, RPAY-04, RPAY-05, GGATE-01, GGATE-02, GGATE-03, GGATE-04, GGATE-05, GGATE-06, GGATE-07, GGATE-08, GGATE-09, GPKG-01, GPKG-02, GPKG-03, GPKG-04
 **Success Criteria** (what must be TRUE):
-  1. Units can be created with type (casa, departamento, local, bodega), area, and coefficient
-  2. Residents link to units via occupancy junction with owner/tenant/authorized roles
-  3. Vehicles link to residents/units with LPR-ready plate storage
-  4. Pets have vaccination records and incident history tracking
-  5. Onboarding workflow states transition correctly (invited -> registered -> verified -> active)
-**Plans**: 3 plans in 3 waves
+  1. Resident sees home dashboard with summary cards (balance, visitors, announcements, maintenance) that link to detail screens
+  2. Resident can create single-use and recurring visitor invitations, generate QR codes, share via WhatsApp, and cancel pending invitations
+  3. Resident can view account balance, payment history, upload payment proof photo, and see proof approval status
+  4. Guard can start shift, view expected visitors queue, scan QR codes for instant verification, and manually check in walk-in visitors
+  5. Guard can log entry/exit, search residents by unit or name, search vehicles by plate, see blacklist alerts, and capture visitor photos
+**Plans**: 5 plans
 
 Plans:
-- [x] 02-01-PLAN.md - Create units table with types, areas, coefficients, and CRM enums (Wave 1) ✓
-- [x] 02-02-PLAN.md - Create residents, occupancies, vehicles, pets tables with RLS (Wave 2) ✓
-- [x] 02-03-PLAN.md - Create resident documents table and storage bucket with RLS (Wave 3) ✓
+- [ ] 10-01-PLAN.md - Resident home dashboard with summary cards and community branding
+- [ ] 10-02-PLAN.md - Resident visitor management: invitations, QR generation, WhatsApp sharing, visitor list and history
+- [ ] 10-03-PLAN.md - Resident payments: balance view, payment history, proof upload with status tracking
+- [ ] 10-04-PLAN.md - Guard gate operations: shift start, expected visitors, QR scanner, manual check-in, entry/exit logging
+- [ ] 10-05-PLAN.md - Guard directory and packages: resident search, vehicle search, blacklist alerts, package reception and pickup
 
-### Phase 3: Access Control & Security
-**Goal**: Model the security operations infrastructure - access points, guards, visitors, patrols, and emergency alerts
-**Depends on**: Phase 2 (needs residents, units, vehicles for visitor relationships)
-**Requirements**: ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-07, ACC-08, ACC-09, ACC-10, ACC-11
+### Phase 11: Admin Dashboard Financial Core
+**Goal**: Administrators can oversee community finances with KPI dashboards, approve payments, generate charges, and manage residents and units
+**Depends on**: Phase 9 (admin auth, Next.js layout), Phase 10 (payment proofs submitted by residents)
+**Requirements**: AFIN-01, AFIN-02, AFIN-03, AFIN-04, AFIN-05, AFIN-06, AFIN-07, AFIN-08, ARES-01, ARES-02, ARES-03, ARES-04, ARES-05, ACONF-01, ACONF-02
 **Success Criteria** (what must be TRUE):
-  1. Access points (gates, barriers, doors) can be configured per community
-  2. Invitations support single-use, event, recurring, and vehicle pre-auth types
-  3. Access logs are immutable with photos, timestamps, method, and result
-  4. Blacklist entries have protocols, evidence, and expiration dates
-  5. Patrol routes with NFC checkpoints can be defined and logged
-  6. Emergency alerts (panic, fire, medical) capture type, location, and dispatch status
-  7. QR codes store cryptographic signatures with burn status
-**Plans**: 4 plans in 3 waves
+  1. Admin sees financial overview with KPI cards (collection rate, delinquency rate, total collected) and charts (monthly collection, delinquency trend, expense breakdown)
+  2. Admin can view unit-by-unit balance report with sorting, filtering, and Excel export
+  3. Admin can approve or reject payment proofs individually and in bulk, and generate monthly charges with preview
+  4. Admin can create, edit, deactivate residents, invite via email, and manage unit-resident occupancy assignments
+  5. Admin can configure community settings (name, branding, hours, rules) and manage feature flags
+**Plans**: 4 plans
 
 Plans:
-- [x] 03-01-PLAN.md - Access point enums and tables, guards, shifts, assignments (Wave 1) ✓
-- [x] 03-02-PLAN.md - Invitations with polymorphic validation, immutable access logs, blacklist (Wave 2) ✓
-- [x] 03-03-PLAN.md - Patrol checkpoints with NFC serial, routes, patrol logs (Wave 2) ✓
-- [x] 03-04-PLAN.md - QR codes with HMAC signatures, emergency alerts and responders (Wave 3) ✓
+- [ ] 11-01-PLAN.md - Financial KPI dashboard: overview cards, collection/delinquency charts, income vs expense reports
+- [ ] 11-02-PLAN.md - Payment operations: proof approval queue with bulk ops, charge generation with preview, balance reports with export
+- [ ] 11-03-PLAN.md - Resident and unit management: CRUD, invite workflow, occupancy assignments, role management
+- [ ] 11-04-PLAN.md - Community configuration: settings editor, branding, feature flags
 
-### Phase 4: Financial Engine
-**Goal**: Implement double-entry accounting with fee structures, payments, reconciliation, and delinquency management
-**Depends on**: Phase 2 (needs units for fee assignment, residents for payment attribution)
-**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06, FIN-07, FIN-08, FIN-09, FIN-10, FIN-11
+### Phase 12: Admin Dashboard Operations
+**Goal**: Administrators can manage day-to-day operations including maintenance tickets, announcements, access logs, documents, and amenities
+**Depends on**: Phase 11 (admin dashboard layout, resident management), Phase 10 (maintenance tickets and access logs created by mobile users)
+**Requirements**: AOPS-01, AOPS-02, AOPS-03, AOPS-04, AOPS-05, AOPS-06, AOPS-07, AOPS-08, AOPS-09, AOPS-10, RMAINT-01, RMAINT-02, RMAINT-03, RMAINT-04, RCOMM-01, RCOMM-02, RCOMM-03
 **Success Criteria** (what must be TRUE):
-  1. Fee structures support fixed, coefficient-based, and hybrid formulas
-  2. Chart of accounts enables proper double-entry categorization
-  3. Ledger entries enforce debit/credit balance (sum must equal zero)
-  4. Transactions (payments, charges, adjustments) create corresponding ledger entries
-  5. Interest/penalty rules can be configured per community
-  6. Delinquency triggers (days -> action) are configurable
-  7. Bank accounts and statement imports support reconciliation workflow
-  8. Payment proofs flow through validation workflow (pending -> approved/rejected)
-**Plans**: 4 plans in 3 waves
+  1. Admin can view maintenance tickets in table or kanban view, assign to staff/providers, update status, and see SLA metrics
+  2. Admin can create and schedule announcements with targeting (all, building, delinquent), and view read receipts
+  3. Admin can view access log reports with date range and gate filters, and export to CSV
+  4. Admin can manage document repository (upload, categorize, set visibility) and manage amenities (create, edit, rules, schedules, utilization reports)
+  5. Resident can submit maintenance requests with photos, view ticket status timeline, add comments, and view/read announcements with push notifications
+**Plans**: 4 plans
 
 Plans:
-- [x] 04-01-PLAN.md - Chart of accounts and ledger entries with immutability triggers (Wave 1) ✓
-- [x] 04-02-PLAN.md - Fee structures, schedules, payment/charge recording functions (Wave 2) ✓
-- [x] 04-03-PLAN.md - Interest rules, delinquency triggers, budgets (Wave 2) ✓
-- [x] 04-04-PLAN.md - Bank accounts, statement imports, payment proofs, unit_balances view (Wave 3) ✓
+- [ ] 12-01-PLAN.md - Maintenance dashboard: ticket table/kanban, assignment, status workflow, SLA metrics
+- [ ] 12-02-PLAN.md - Resident maintenance: request submission with photos, status timeline, comments, push notifications
+- [ ] 12-03-PLAN.md - Announcements: admin creator with targeting, read receipts; resident feed with read marking and push
+- [ ] 12-04-PLAN.md - Access logs, documents, amenity management: log reports with export, document repository, amenity CRUD with utilization
 
-### Phase 5: Amenities, Communication & Marketplace
-**Goal**: Enable community engagement through amenity reservations, social communication, and internal marketplace
-**Depends on**: Phase 2 (needs residents/units for reservations, posts, listings)
-**Requirements**: AMEN-01, AMEN-02, AMEN-03, AMEN-04, AMEN-05, AMEN-06, AMEN-07, COMM-01, COMM-02, COMM-03, COMM-04, COMM-05, COMM-06, COMM-07, COMM-08, COMM-09, MRKT-01, MRKT-02, MRKT-03, MRKT-04, MRKT-05, MRKT-06, MRKT-07
+### Phase 13: Advanced Resident Features
+**Goal**: Residents can engage with community through social wall, reserve amenities, access documents, manage their profile, and use the marketplace
+**Depends on**: Phase 12 (admin amenity management, document repository, announcements)
+**Requirements**: RCOMM-04, RCOMM-05, RCOMM-06, RAMEN-01, RAMEN-02, RAMEN-03, RAMEN-04, RAMEN-05, RDOC-01, RDOC-02, RPROF-01, RPROF-02, RPROF-03, RPROF-04, RMRKT-01, RMRKT-02, RMRKT-03, RMRKT-04
 **Success Criteria** (what must be TRUE):
-  1. Amenities have schedules, capacity, rules, and photos
-  2. Reservation slots prevent double-booking via exclusion constraints
-  3. Booking rules engine enforces quotas, advance windows, and restrictions
-  4. Waitlist entries auto-promote when slots become available
-  5. Channels support categorized community discussions with moderation
-  6. Posts have content, media, reactions, and nested comments
-  7. Announcements target segments with read receipt tracking
-  8. Surveys enforce one-vote-per-unit
-  9. Marketplace listings support sale, service, rental, wanted types
-  10. Safe exchange zones and moderation queue function correctly
-**Plans**: 5 plans in 2 waves
+  1. Resident can view, post on, react to, and comment on the community social wall
+  2. Resident can browse amenity catalog, view availability calendar, make and cancel reservations, and receive booking confirmations via push
+  3. Resident can view community documents, sign regulations, and participate in surveys
+  4. Resident can edit profile (phone, photo, emergency contacts), view unit assignment, manage vehicles, and view package notifications
+  5. Resident can create marketplace listings with photos, browse/search by category, contact sellers, and mark as sold
+**Plans**: 4 plans
 
 Plans:
-- [x] 05-01-PLAN.md - Amenity enums, amenities table with schedules, booking rules engine (Wave 1) ✓
-- [x] 05-02-PLAN.md - Reservations with exclusion constraints, waitlist auto-promotion, fees (Wave 2) ✓
-- [x] 05-03-PLAN.md - Channels, posts, nested comments, reactions with denormalized counters (Wave 1) ✓
-- [x] 05-04-PLAN.md - Announcements with segment targeting, surveys with one-vote-per-unit (Wave 2) ✓
-- [x] 05-05-PLAN.md - Marketplace listings, exchange zones, moderation queue with SKIP LOCKED (Wave 1) ✓
+- [ ] 13-01-PLAN.md - Social wall: feed, posts, reactions, comments, surveys and voting
+- [ ] 13-02-PLAN.md - Amenity reservations: catalog browsing, availability calendar, booking, cancellation, push confirmations
+- [ ] 13-03-PLAN.md - Documents and profile: document viewer, regulation signing, profile editor, unit details, vehicle management, package notifications
+- [ ] 13-04-PLAN.md - Marketplace: listing creation, browsing/search, listing details, contact seller, mark sold
 
-### Phase 6: Maintenance, Chat, Documents & Notifications
-**Goal**: Operational support systems for maintenance requests, real-time messaging, document management, and notification delivery
-**Depends on**: Phase 2 (needs residents for ticket creation, messaging), Phase 5 (patterns for media/attachments)
-**Requirements**: MAINT-01, MAINT-02, MAINT-03, MAINT-04, MAINT-05, MAINT-06, MAINT-07, MAINT-08, MAINT-09, MAINT-10, CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04, NOTIF-05, NOTIF-06
+### Phase 14: Guard Advanced + Admin Providers/Parking/Moves
+**Goal**: Guards can conduct patrols, report incidents, and perform shift handovers, while admins can manage providers, parking, moves, and marketplace moderation
+**Depends on**: Phase 10 (guard gate operations foundation), Phase 11 (admin dashboard foundation)
+**Requirements**: GPATR-01, GPATR-02, GPATR-03, GINC-01, GINC-02, GINC-03, GEMRG-01, GEMRG-02, GEMRG-03, GEMRG-04, APROV-01, APROV-02, APROV-03, APROV-04, APROV-05, APARK-01, APARK-02, APARK-03, APARK-04, AMOVE-01, AMOVE-02, AMOVE-03, AMOVE-04, AMRKT-01, AMRKT-02, AMRKT-03
 **Success Criteria** (what must be TRUE):
-  1. Tickets have category, priority, status, SLA tracking, and assignment workflow
-  2. SLA definitions per category/priority enable breach detection
-  3. Preventive maintenance schedules auto-generate tickets
-  4. Asset registry tracks community infrastructure (pumps, elevators)
-  5. Conversations support 1:1, group, and guard-booth patterns
-  6. Messages have text, media, read receipts, and reactions
-  7. Document categories organize legal, assembly, financial, operational files
-  8. Documents support versioning and access permissions
-  9. Regulation signatures capture timestamp, IP, device
-  10. Notifications track type, channel, recipient, and delivery status
-  11. Push tokens register FCM/APNs devices
-  12. User notification preferences control what and how
-**Plans**: 5 plans in 2 waves
+  1. Guard can view active patrol route, scan NFC checkpoints, and see patrol progress (scanned vs remaining)
+  2. Guard can create incident reports with type, severity, photos/video, view incident timeline, add follow-ups, and leave shift handover notes
+  3. Guard has persistent emergency panic button accessible from any screen that triggers alerts and generates incident records with emergency type selection
+  4. Admin can manage providers (companies, documentation, personnel, access schedules, work orders) and verify provider authorization
+  5. Admin can manage parking inventory and assignments, view visitor parking and violations, manage moves (requests, checklists, deposits, sign-off), and moderate marketplace listings
+**Plans**: 5 plans
 
 Plans:
-- [x] 06-01-PLAN.md - Ticket categories, tickets with state machine, SLA definitions, assignments (Wave 1) ✓
-- [x] 06-02-PLAN.md - Assets, preventive schedules with RRULE, escalation rules (Wave 2) ✓
-- [x] 06-03-PLAN.md - Conversations, participants, messages, read receipts, reactions (Wave 1) ✓
-- [x] 06-04-PLAN.md - Documents, versioning, permissions, regulation signatures (Wave 1) ✓
-- [x] 06-05-PLAN.md - Notifications, push tokens, preferences, templates (Wave 2) ✓
+- [ ] 14-01-PLAN.md - Guard patrol: route display, NFC checkpoint scanning, progress tracking
+- [ ] 14-02-PLAN.md - Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
+- [ ] 14-03-PLAN.md - Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
+- [ ] 14-04-PLAN.md - Admin providers and work orders: company CRUD, documentation tracking, personnel, access schedules, work orders
+- [ ] 14-05-PLAN.md - Admin parking, moves, marketplace moderation: parking inventory, move workflow, marketplace moderation queue
 
-### Phase 7: Operations & Compliance
-**Goal**: Package management, provider relationships, move coordination, comprehensive audit logging, and system configuration
-**Depends on**: Phase 2 (residents for packages), Phase 3 (access for provider schedules), Phase 4 (deposits for moves)
-**Requirements**: PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06, PROV-01, PROV-02, PROV-03, PROV-04, PROV-05, PROV-06, MOVE-01, MOVE-02, MOVE-03, MOVE-04, MOVE-05, AUDIT-01, AUDIT-02, AUDIT-03, AUDIT-04, AUDIT-05, CONFIG-01, CONFIG-02, CONFIG-03, CONFIG-04, CONFIG-05
+### Phase 15: Admin Governance & Analytics
+**Goal**: Administrators can manage community governance (elections, assemblies, surveys), track violations, access emergency information, manage keys/devices, view guard performance, and review audit trails
+**Depends on**: Phase 12 (admin operations foundation), Phase 14 (guard data for performance metrics)
+**Requirements**: AGOV-01, AGOV-02, AGOV-03, AGOV-04, AGOV-05, ACONF-03, ACONF-04, ACONF-05, AVIOL-01, AVIOL-02, AVIOL-03, AVIOL-04, AEMRG-01, AEMRG-02, AEMRG-03, AKEY-01, AKEY-02, AKEY-03, AKEY-04
 **Success Criteria** (what must be TRUE):
-  1. Packages track carrier, recipient, storage location, and pickup workflow
-  2. Pickup codes (PIN/QR) and signatures validate package handoff
-  3. Provider companies have contact, specialties, and authorized personnel
-  4. Provider documentation tracks insurance/certifications with expiration
-  5. Provider access schedules restrict allowed days/hours
-  6. Move requests coordinate date, time window, moving company
-  7. Pre-move validations check debt-free, keys, vehicles
-  8. Damage deposits flow through refund workflow
-  9. Audit log captures entity, action, actor, before/after for all sensitive operations
-  10. User sessions track device, IP, location
-  11. Community settings configure hours, rules, branding
-  12. Feature flags enable/disable features per community
-  13. Roles and permissions matrix is configurable
-**Plans**: 5 plans in 2 waves
+  1. Admin can create elections with voting rules, open/close voting, view real-time results with quorum tracking, and manage assemblies with coefficient-weighted attendance
+  2. Admin can create surveys, view responses, and record assembly agreements and action items
+  3. Admin can create violation records with evidence, issue warnings/sanctions, manage appeals, and view violation history with repeat offender tracking
+  4. Admin can manage emergency contacts, view medical conditions and accessibility needs, generate evacuation priority lists, and manage access device inventory with assignments and lifecycle tracking
+  5. Admin can view guard performance metrics (patrol completion, response times), view audit trail of administrative actions, and perform bulk operations (charge generation, notification sending)
+**Plans**: 4 plans
 
 Plans:
-- [x] 07-01-PLAN.md - Packages, storage locations, pickup codes (PIN/QR with HMAC), signatures (Wave 1) ✓
-- [x] 07-02-PLAN.md - Providers, documents with expiration tracking, personnel, access schedules (Wave 1) ✓
-- [x] 07-03-PLAN.md - Move requests, auto-generated validations, damage deposits with refund workflow (Wave 1) ✓
-- [x] 07-04-PLAN.md - Audit schema, immutable audit_log, user sessions, security events (Wave 2) ✓
-- [x] 07-05-PLAN.md - Community settings, JSONB feature flags, roles, permissions, RBAC functions (Wave 2) ✓
+- [ ] 15-01-PLAN.md - Governance: elections with voting, assemblies with quorum, surveys, agreements
+- [ ] 15-02-PLAN.md - Violations: records with evidence, warnings/sanctions, appeals, repeat offender tracking
+- [ ] 15-03-PLAN.md - Emergency and keys: emergency contacts, medical info, evacuation lists, device inventory, assignments, lifecycle
+- [ ] 15-04-PLAN.md - Analytics and audit: guard performance metrics, audit trail viewer, bulk operations
 
-### Phase 8: Governance & Analytics
-**Goal**: Complete the system with incident management, formal voting, parking, keys, violations, pre-computed analytics, and external integrations
-**Depends on**: All previous phases (incidents reference many entities, analytics aggregate all data)
-**Requirements**: INC-01, INC-02, INC-03, INC-04, INC-05, INC-06, VOTE-01, VOTE-02, VOTE-03, VOTE-04, VOTE-05, VOTE-06, VOTE-07, PARK-01, PARK-02, PARK-03, PARK-04, PARK-05, KEY-01, KEY-02, KEY-03, KEY-04, KEY-05, KEY-06, EMERG-01, EMERG-02, EMERG-03, EMERG-04, VIOL-01, VIOL-02, VIOL-03, VIOL-04, VIOL-05, VIOL-06, ANLY-01, ANLY-02, ANLY-03, ANLY-04, ANLY-05, ANLY-06, INTG-01, INTG-02, INTG-03, INTG-04, INTG-05, INTG-06
+### Phase 16: Push Notifications & Real-time Polish
+**Goal**: Users receive timely push notifications for all relevant events and see real-time updates for time-sensitive data like visitor arrivals and guard queues
+**Depends on**: All previous phases (notification triggers exist across all features)
+**Requirements**: PUSH-01, PUSH-02, PUSH-03, PUSH-04, PUSH-05
 **Success Criteria** (what must be TRUE):
-  1. Incidents have type, severity, location, media, timeline, and resolution workflow
-  2. Elections support board elections and extraordinary decisions
-  3. Ballots enable weighted voting by coefficient with quorum tracking
-  4. Assembly events track attendance and proxy delegation
-  5. Parking spots are inventoried by type with assignments per unit
-  6. Visitor parking reservations and violations are tracked
-  7. Access devices (tag, remote, key, card) have inventory with serial numbers
-  8. Device assignments, returns, and lost reports flow correctly
-  9. Emergency contacts per resident have relationship and priority
-  10. Medical conditions and accessibility requirements are recorded
-  11. Violation types have default penalties; records capture evidence
-  12. Warnings, sanctions, and appeals flow through resolution
-  13. Pre-computed KPIs aggregate daily/weekly/monthly metrics
-  14. Access patterns, financial summaries, and utilization stats are queryable
-  15. Integration configurations store credentials and connection status
-  16. Webhook endpoints and API keys enable third-party access
-**Plans**: TBD
+  1. Mobile app registers for push notifications (FCM/APNs) on login and stores token correctly
+  2. Users receive push notifications for visitor arrivals, payment status changes, maintenance updates, announcements, and package deliveries
+  3. Visitor status updates (gate entry/exit) and guard expected visitors queue update in real-time via Supabase Realtime without page refresh
+  4. Users can manage their notification preferences (which events, which channels)
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: Create incident types, incidents, media, timeline
-- [ ] 08-02: Create elections, candidates, ballots, quorum
-- [ ] 08-03: Create assembly events, attendance, agreements
-- [ ] 08-04: Create parking spots, assignments, reservations, violations
-- [ ] 08-05: Create access device types, inventory, assignments
-- [ ] 08-06: Create emergency contacts, medical conditions, responders
-- [ ] 08-07: Create violation types, records, sanctions, appeals
-- [ ] 08-08: Create analytics KPIs, summaries, metrics tables
-- [ ] 08-09: Create integrations, webhooks, API keys, sync status
+- [ ] 16-01-PLAN.md - Push notification infrastructure: FCM/APNs registration, token management, send-push edge function integration
+- [ ] 16-02-PLAN.md - Notification delivery: event-driven push for all modules (visitors, payments, maintenance, announcements, packages)
+- [ ] 16-03-PLAN.md - Real-time subscriptions and preferences: Supabase Realtime for visitor/guard queues, notification preference management
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation & Multi-Tenant Security | 3/3 | Complete ✓ | 2026-01-29 |
-| 2. Identity & CRM | 3/3 | Complete ✓ | 2026-01-29 |
-| 3. Access Control & Security | 4/4 | Complete ✓ | 2026-01-29 |
-| 4. Financial Engine | 4/4 | Complete ✓ | 2026-01-29 |
-| 5. Amenities, Communication & Marketplace | 5/5 | Complete ✓ | 2026-01-29 |
-| 6. Maintenance, Chat, Documents & Notifications | 5/5 | Complete ✓ | 2026-01-30 |
-| 7. Operations & Compliance | 5/5 | Complete ✓ | 2026-01-30 |
-| 8. Governance & Analytics | 0/9 | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation & Multi-Tenant Security | v1.0 | 3/3 | Complete | 2026-01-29 |
+| 2. Identity & CRM | v1.0 | 3/3 | Complete | 2026-01-29 |
+| 3. Access Control & Security | v1.0 | 4/4 | Complete | 2026-01-29 |
+| 4. Financial Engine | v1.0 | 4/4 | Complete | 2026-01-29 |
+| 5. Amenities, Communication & Marketplace | v1.0 | 5/5 | Complete | 2026-01-29 |
+| 6. Maintenance, Chat, Documents & Notifications | v1.0 | 5/5 | Complete | 2026-01-30 |
+| 7. Operations & Compliance | v1.0 | 5/5 | Complete | 2026-01-30 |
+| 8. Governance & Analytics | v1.0 | 9/9 | Complete | 2026-01-30 |
+| 9. Auth & Shared Infrastructure | v2.0 | 0/5 | Not started | - |
+| 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 0/5 | Not started | - |
+| 11. Admin Dashboard Financial Core | v2.0 | 0/4 | Not started | - |
+| 12. Admin Dashboard Operations | v2.0 | 0/4 | Not started | - |
+| 13. Advanced Resident Features | v2.0 | 0/4 | Not started | - |
+| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/5 | Not started | - |
+| 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
+| 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
-**Total:** 29/38 plans
+**v1.0 Total:** 38/38 plans -- COMPLETE
+**v2.0 Total:** 0/34 plans
 
 ---
 *Roadmap created: 2026-01-29*
-*Last updated: 2026-01-30 - Phase 7 complete*
+*v2.0 phases added: 2026-02-07*
+*Last updated: 2026-02-07*
