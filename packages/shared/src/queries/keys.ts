@@ -77,6 +77,29 @@ export const shifts = createQueryKeys('shifts', {
   current: (guardId: string) => [{ guardId }],
 });
 
+export const tickets = createQueryKeys('tickets', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  comments: (ticketId: string) => [{ ticketId }],
+  slaMetrics: (communityId: string) => [{ communityId }],
+});
+
+export const announcements = createQueryKeys('announcements', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  recipients: (announcementId: string) => [{ announcementId }],
+  feed: (residentId: string) => [{ residentId }],
+});
+
+export const documents = createQueryKeys('documents', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  versions: (documentId: string) => [{ documentId }],
+});
+
 export const queryKeys = mergeQueryKeys(
   residents,
   visitors,
@@ -91,4 +114,7 @@ export const queryKeys = mergeQueryKeys(
   packages,
   occupancies,
   shifts,
+  tickets,
+  announcements,
+  documents,
 );

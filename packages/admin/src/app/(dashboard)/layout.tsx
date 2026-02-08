@@ -27,7 +27,18 @@ const navItems: NavItem[] = [
   },
   { href: '/residents', label: 'Residentes', icon: 'people' },
   { href: '/units', label: 'Unidades', icon: 'building' },
-  { href: '/operations', label: 'Operaciones', icon: 'wrench' },
+  {
+    href: '/operations',
+    label: 'Operaciones',
+    icon: 'wrench',
+    children: [
+      { href: '/operations/tickets', label: 'Tickets' },
+      { href: '/operations/announcements', label: 'Avisos' },
+      { href: '/operations/access-logs', label: 'Accesos' },
+      { href: '/operations/documents', label: 'Documentos' },
+      { href: '/operations/amenities', label: 'Amenidades' },
+    ],
+  },
   { href: '/reports', label: 'Reportes', icon: 'chart' },
   {
     href: '/settings',
