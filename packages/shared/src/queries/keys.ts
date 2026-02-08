@@ -29,7 +29,9 @@ export const accessLogs = createQueryKeys('access-logs', {
 export const amenities = createQueryKeys('amenities', {
   all: null,
   list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
   reservations: (amenityId: string, date?: string) => [{ amenityId, date }],
+  myReservations: (residentId: string) => [{ residentId }],
 });
 
 export const notifications = createQueryKeys('notifications', {
