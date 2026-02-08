@@ -5,14 +5,30 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLE_LABELS, type SystemRole } from '@upoe/shared';
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  children?: { href: string; label: string }[];
+}
+
+const navItems: NavItem[] = [
   { href: '/', label: 'Inicio', icon: 'home' },
-  { href: '/finances', label: 'Finanzas', icon: 'dollar' },
+  {
+    href: '/finances',
+    label: 'Finanzas',
+    icon: 'dollar',
+    children: [
+      { href: '/finances/approvals', label: 'Aprobaciones' },
+      { href: '/finances/charges', label: 'Cargos' },
+      { href: '/finances/reports', label: 'Reportes' },
+    ],
+  },
   { href: '/residents', label: 'Residentes', icon: 'people' },
   { href: '/operations', label: 'Operaciones', icon: 'wrench' },
   { href: '/reports', label: 'Reportes', icon: 'chart' },
   { href: '/settings', label: 'Configuracion', icon: 'gear' },
-] as const;
+];
 
 function NavIcon({ icon }: { icon: string }) {
   switch (icon) {
@@ -58,22 +74,45 @@ function NavIcon({ icon }: { icon: string }) {
   }
 }
 
-function NavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
-  const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+  const isExpanded = item.children && isActive;
 
   return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-        isActive
-          ? 'bg-gray-800 text-white'
-          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-      }`}
-    >
-      <NavIcon icon={icon} />
-      {label}
-    </Link>
+    <div>
+      <Link
+        href={item.href}
+        className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+          isActive
+            ? 'bg-gray-800 text-white'
+            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+        }`}
+      >
+        <NavIcon icon={item.icon} />
+        {item.label}
+      </Link>
+      {isExpanded && item.children && (
+        <div className="ml-8 mt-1 space-y-1">
+          {item.children.map((child) => {
+            const childActive = pathname === child.href;
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                className={`block rounded-lg px-4 py-2 text-sm transition ${
+                  childActive
+                    ? 'font-medium text-white'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                {child.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -144,12 +183,7 @@ export default function DashboardLayout({
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-            />
+            <NavLink key={item.href} item={item} />
           ))}
         </nav>
 
