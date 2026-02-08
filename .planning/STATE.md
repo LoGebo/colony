@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 13 of 16 (Advanced Resident Features)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-08 -- Completed 13-01-PLAN.md (Community Social Wall + RLS Fix)
+Last activity: 2026-02-08 -- Completed 13-02-PLAN.md (Amenity Reservation System)
 
-Progress: [██████▒░░░] 56% (19/34 v2.0 plans)
+Progress: [██████▒░░░] 59% (20/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [██████▒░░░] 56% (19/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 19
-- Average duration: 6.2 min
-- Total execution time: ~118 min
+- Total plans completed: 20
+- Average duration: 6.3 min
+- Total execution time: ~126 min
 
 ## Accumulated Context
 
@@ -82,6 +82,9 @@ New v2.0 decisions:
 - Client-side poll voting via posts.poll_results jsonb (formal governance uses elections/cast_vote RPC)
 - Post media stored in community-assets bucket with posts/ category prefix
 - Max 3 levels of comment thread indent (72px) on mobile
+- Client-side month filtering for amenity reservations (PostgREST tstzrange ops unreliable)
+- Local MarkedDates type definition (react-native-calendars doesn't re-export from main index)
+- Hourly slots 8am-9pm default for amenity time picker
 
 ### Pending Todos
 
@@ -94,5 +97,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 13-01-PLAN.md (Community Social Wall + RLS Fix). Ready for 13-02.
+Stopped at: Completed 13-02-PLAN.md (Amenity Reservation System). Ready for 13-03.
 Resume file: None
