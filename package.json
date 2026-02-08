@@ -1,0 +1,15 @@
+{
+  "name": "colony-app",
+  "private": true,
+  "scripts": {
+    "dev:admin": "pnpm --filter @upoe/admin dev",
+    "dev:mobile": "pnpm --filter @upoe/mobile start",
+    "build:admin": "pnpm --filter @upoe/admin build",
+    "lint": "pnpm -r lint",
+    "types:generate": "pnpm supabase gen types typescript --project-id qbaiviuluiqdbaymgxhq > packages/shared/src/types/database.types.ts"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  }
+}
