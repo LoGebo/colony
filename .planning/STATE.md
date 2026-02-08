@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 12 of 16 (Admin Dashboard Operations)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-08 -- Completed 12-03-PLAN.md (Announcements Management & Feed)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-08 -- Completed 12-04-PLAN.md (Access Logs, Documents & Amenities)
 
-Progress: [█████░░░░░] 50% (17/34 v2.0 plans)
+Progress: [█████▒░░░░] 53% (18/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████░░░░░] 50% (17/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 17
-- Average duration: 6.1 min
-- Total execution time: ~104 min
+- Total plans completed: 18
+- Average duration: 6.3 min
+- Total execution time: ~113 min
 
 ## Accumulated Context
 
@@ -75,6 +75,9 @@ New v2.0 decisions:
 - Two-step create mutation for announcements: insert then call expand_announcement_recipients RPC explicitly
 - Auto-mark announcement as read on detail screen mount using useEffect with ref guard
 - Use 'as never' cast for RPC call and target_segment enum insert (types not regenerated)
+- Document schema uses name/is_public/category-enum (not title/visibility/free-text-category as planned)
+- amenity_rules requires community_id on insert (not just amenity_id)
+- Card grid layout (not DataTable) for amenity list pages (fewer items, richer display)
 
 ### Pending Todos
 
@@ -87,5 +90,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 12-03-PLAN.md. Ready for 12-04.
+Stopped at: Completed 12-04-PLAN.md. Phase 12 complete. Ready for Phase 13.
 Resume file: None
