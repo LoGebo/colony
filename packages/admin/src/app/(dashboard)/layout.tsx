@@ -1,3 +1,10 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { ROLE_LABELS, type SystemRole } from '@upoe/shared';
+
 const navItems = [
   { href: '/', label: 'Inicio', icon: 'home' },
   { href: '/finances', label: 'Finanzas', icon: 'dollar' },
@@ -51,6 +58,72 @@ function NavIcon({ icon }: { icon: string }) {
   }
 }
 
+function NavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+  const pathname = usePathname();
+  const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+        isActive
+          ? 'bg-gray-800 text-white'
+          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+      }`}
+    >
+      <NavIcon icon={icon} />
+      {label}
+    </Link>
+  );
+}
+
+function SidebarUser() {
+  const { user, role, signOut, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="border-t border-gray-800 px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 animate-pulse rounded-full bg-gray-700" />
+          <div className="flex-1 space-y-1">
+            <div className="h-4 w-24 animate-pulse rounded bg-gray-700" />
+            <div className="h-3 w-16 animate-pulse rounded bg-gray-700" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const email = user?.email ?? 'Sin correo';
+  const initial = email.charAt(0).toUpperCase();
+  const roleLabel = role
+    ? ROLE_LABELS[role as SystemRole] ?? role
+    : 'Sin rol';
+
+  return (
+    <div className="border-t border-gray-800 px-4 py-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-700 text-sm font-medium">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-gray-200">{email}</p>
+          <p className="truncate text-xs text-gray-400">{roleLabel}</p>
+        </div>
+      </div>
+      <button
+        onClick={signOut}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 transition hover:bg-gray-800 hover:text-white"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+        </svg>
+        Cerrar Sesion
+      </button>
+    </div>
+  );
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -71,33 +144,17 @@ export default function DashboardLayout({
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => (
-            <a
+            <NavLink
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition hover:bg-gray-800 hover:text-white"
-            >
-              <NavIcon icon={item.icon} />
-              {item.label}
-            </a>
+              label={item.label}
+              icon={item.icon}
+            />
           ))}
         </nav>
 
-        {/* User info placeholder */}
-        <div className="border-t border-gray-800 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700 text-sm font-medium">
-              A
-            </div>
-            <div className="flex-1 truncate">
-              <p className="truncate text-sm font-medium text-gray-200">
-                Administrador
-              </p>
-              <p className="truncate text-xs text-gray-400">
-                admin@upoe.app
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* User info + logout */}
+        <SidebarUser />
       </aside>
 
       {/* Main content */}

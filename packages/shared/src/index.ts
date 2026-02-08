@@ -13,3 +13,6 @@ export * from './queries';
 // Lib
 export { createSupabaseClient } from './lib/supabase';
 export type { SupabaseClient } from './lib/supabase';
+
+// Upload utilities
+export { generateUploadPath, getContentType } from './lib/upload';
