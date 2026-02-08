@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 10 of 16 (Mobile Core — Resident Visitors/Payments + Guard Gate)
-Plan: 3 of 5 in current phase
+Plan: 5 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-08 -- Completed 10-03-PLAN.md (Resident Payments)
+Last activity: 2026-02-08 -- Completed 10-05-PLAN.md (Guard Directory & Packages)
 
-Progress: [██░░░░░░░░] 24% (8/34 v2.0 plans)
+Progress: [██░░░░░░░░] 26% (9/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [██░░░░░░░░] 24% (8/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 6.0 min
-- Total execution time: 48.0 min
+- Total execution time: 54.3 min
 
 ## Accumulated Context
 
@@ -61,6 +61,7 @@ New v2.0 decisions:
 - occupancy_type='owner' priority for primary unit resolution (occupancies table lacks is_primary column)
 - expo-file-system v19 File/Paths API (not legacy cacheDirectory/writeAsStringAsync)
 - Client-side fallback QR payload with 'unsigned' signature until HMAC secret configured
+- PostgREST FK hints required for ambiguous occupancies->residents joins (authorized_by vs resident_id)
 
 ### Pending Todos
 
@@ -73,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 10-03-PLAN.md
+Stopped at: Completed 10-05-PLAN.md
 Resume file: None
