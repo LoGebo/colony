@@ -149,7 +149,7 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 14-01-PLAN.md -- Foundation: migrations (shift_handovers, provider_work_orders), native deps (NFC, GPS, haptics), query key factories, guard tab + admin sidebar updates
+- [x] 14-01-PLAN.md -- Foundation: migrations (shift_handovers, provider_work_orders), native deps (NFC, GPS, haptics), query key factories, guard tab + admin sidebar updates
 - [ ] 14-02-PLAN.md -- Guard patrol: route display, NFC checkpoint scanning, GPS validation, progress tracking
 - [ ] 14-03-PLAN.md -- Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
 - [ ] 14-04-PLAN.md -- Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
@@ -210,12 +210,12 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
-| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 0/6 | Not started | - |
+| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 1/6 | In progress | - |
 | 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 22/35 plans
+**v2.0 Total:** 23/35 plans
 
 ---
 *Roadmap created: 2026-01-29*

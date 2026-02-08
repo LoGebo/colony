@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 14 of 16 (Guard Advanced + Admin Providers/Parking/Moves)
-Plan: 0 of 5 in current phase
-Status: Not started
-Last activity: 2026-02-08 -- Completed Phase 13 (Advanced Resident Features) -- all 4 plans
+Plan: 1 of 6 in current phase
+Status: In progress
+Last activity: 2026-02-08 -- Completed 14-01-PLAN.md (Foundations)
 
-Progress: [██████▒░░░] 65% (22/34 v2.0 plans)
+Progress: [██████▒░░░] 68% (23/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [██████▒░░░] 65% (22/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 22
-- Average duration: 6.3 min
-- Total execution time: ~141 min
+- Total plans completed: 23
+- Average duration: 6.1 min
+- Total execution time: ~145 min
 
 ## Accumulated Context
 
@@ -102,9 +102,11 @@ None.
 ### Blockers/Concerns
 
 - Database migrations 20260208123300, 20260208123301, and 20260208210500 need to be applied to live Supabase instance before resident/admin features work
+- Migrations 20260208220000 (shift_handovers) and 20260208220100 (provider_work_orders) need to be applied before handover and work order features work
+- NFC testing requires EAS Build development client (not Expo Go)
 
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed Phase 13 (Advanced Resident Features) -- all 4 plans. Ready for Phase 14.
+Stopped at: Completed 14-01-PLAN.md (Phase 14 Foundations)
 Resume file: None
