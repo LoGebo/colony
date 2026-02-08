@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-07)
 
 **Core value:** Symbiosis operativa total - security, administration, community, and commerce unified in one ecosystem
-**Current focus:** Milestone v2.0 -- Phase 9: Auth & Shared Infrastructure
+**Current focus:** Milestone v2.0 -- Phase 10: Mobile Core
 
 ## Current Position
 
-Phase: 9 of 16 (Auth & Shared Infrastructure)
-Plan: 5 of 5 in current phase (Wave 1: 01, 02, 03; Wave 2: 04, 05)
-Status: Phase complete
-Last activity: 2026-02-08 -- Completed 09-05-PLAN.md (Shared Hooks, QueryProvider, Upload Utilities)
+Phase: 10 of 16 (Mobile Core — Resident Visitors/Payments + Guard Gate)
+Plan: 0 of 5 in current phase
+Status: Not started
+Last activity: 2026-02-08 -- Completed Phase 9: Auth & Shared Infrastructure (5/5 plans, verified PASSED)
 
-Progress: [█░░░░░░░░░] 15% (5/34 v2.0 plans)
+Progress: [██░░░░░░░░] 15% (5/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ New v2.0 decisions:
 - @tanstack/react-query + query-core as devDependencies in shared (typecheck only, runtime from consumers)
 - Use undefined (not null) for optional RPC params (matches generated Database types)
 - Lazy Supabase client creation in admin useAuth (avoids SSR prerender crashes)
+- force-dynamic on auth-dependent dashboard pages
 
 ### Pending Todos
 
@@ -69,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 09-05-PLAN.md (Shared Hooks, QueryProvider, Upload Utilities) -- Phase 9 complete
+Stopped at: Completed Phase 9 verification (PASSED). Ready for Phase 10.
 Resume file: None

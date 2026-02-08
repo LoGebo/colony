@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Build React Native (Expo) mobile app and Next.js admin dashboard consuming the complete Supabase backend, delivering working applications for residents, guards, and administrators.
 
-- [ ] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
+- [x] **Phase 9: Auth & Shared Infrastructure** - Monorepo config, typed clients, auth flows for all roles on both platforms
 - [ ] **Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate** - Daily-use resident features and tightly coupled guard gate operations
 - [ ] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
 - [ ] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
@@ -57,11 +57,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans
 
 Plans:
-- [ ] 09-01-PLAN.md - Shared package: typed Supabase client factories, query key factories, Zod validators, constants
-- [ ] 09-02-PLAN.md - Mobile Expo Router setup: file-based routing, role-based route groups, auth storage with expo-sqlite
-- [ ] 09-03-PLAN.md - Admin Next.js setup: App Router, middleware token refresh, @supabase/ssr, sidebar layout
-- [ ] 09-04-PLAN.md - Auth screens: sign-in, sign-up, password reset, onboarding flows (both platforms)
-- [ ] 09-05-PLAN.md - Shared hooks: TanStack Query provider, file upload utility, role navigation guards
+- [x] 09-01-PLAN.md - Shared package: typed Supabase client factories, query key factories, Zod validators, constants
+- [x] 09-02-PLAN.md - Mobile Expo Router setup: file-based routing, role-based route groups, auth storage with expo-sqlite
+- [x] 09-03-PLAN.md - Admin Next.js setup: App Router, middleware token refresh, @supabase/ssr, sidebar layout
+- [x] 09-04-PLAN.md - Auth screens: sign-in, sign-up, password reset, onboarding flows (both platforms)
+- [x] 09-05-PLAN.md - Shared hooks: TanStack Query provider, file upload utility, role navigation guards
 
 ### Phase 10: Mobile Core — Resident Visitors/Payments + Guard Gate
 **Goal**: Residents can manage visitors with QR codes and view their financial status, while guards can verify visitors and manage gate operations — the tightly coupled daily-use workflows
@@ -204,7 +204,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 6. Maintenance, Chat, Documents & Notifications | v1.0 | 5/5 | Complete | 2026-01-30 |
 | 7. Operations & Compliance | v1.0 | 5/5 | Complete | 2026-01-30 |
 | 8. Governance & Analytics | v1.0 | 9/9 | Complete | 2026-01-30 |
-| 9. Auth & Shared Infrastructure | v2.0 | 0/5 | Not started | - |
+| 9. Auth & Shared Infrastructure | v2.0 | 5/5 | Complete | 2026-02-08 |
 | 10. Mobile Core — Resident Visitors/Payments + Guard Gate | v2.0 | 0/5 | Not started | - |
 | 11. Admin Dashboard Financial Core | v2.0 | 0/4 | Not started | - |
 | 12. Admin Dashboard Operations | v2.0 | 0/4 | Not started | - |
@@ -214,9 +214,9 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 0/34 plans
+**v2.0 Total:** 5/34 plans
 
 ---
 *Roadmap created: 2026-01-29*
 *v2.0 phases added: 2026-02-07*
-*Last updated: 2026-02-07*
+*Last updated: 2026-02-08*

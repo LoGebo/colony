@@ -9,16 +9,16 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 1. Auth & Onboarding
 
-- [ ] **AUTH-01**: Invited resident can sign up via email link and create account
-- [ ] **AUTH-02**: Invited guard can sign up via email link and create account
-- [ ] **AUTH-03**: New admin can sign up, create organization and community via complete_admin_onboarding
-- [ ] **AUTH-04**: User can log in with email and password on mobile and web
-- [ ] **AUTH-05**: User session persists across app restart (mobile) and browser refresh (web)
-- [ ] **AUTH-06**: JWT token auto-refreshes before expiry on both platforms
-- [ ] **AUTH-07**: User sees role-appropriate navigation after login (resident tabs, guard tabs, admin sidebar)
-- [ ] **AUTH-08**: User can log out from any screen
-- [ ] **AUTH-09**: User can reset password via email link
-- [ ] **AUTH-10**: Admin can invite residents and guards via email from dashboard
+- [x] **AUTH-01**: Invited resident can sign up via email link and create account
+- [x] **AUTH-02**: Invited guard can sign up via email link and create account
+- [x] **AUTH-03**: New admin can sign up, create organization and community via complete_admin_onboarding
+- [x] **AUTH-04**: User can log in with email and password on mobile and web
+- [x] **AUTH-05**: User session persists across app restart (mobile) and browser refresh (web)
+- [x] **AUTH-06**: JWT token auto-refreshes before expiry on both platforms
+- [x] **AUTH-07**: User sees role-appropriate navigation after login (resident tabs, guard tabs, admin sidebar)
+- [x] **AUTH-08**: User can log out from any screen
+- [x] **AUTH-09**: User can reset password via email link
+- [x] **AUTH-10**: Admin can invite residents and guards via email from dashboard
 
 ### 2. Resident — Home & Dashboard
 
@@ -223,12 +223,12 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 26. Shared Infrastructure
 
-- [ ] **INFRA-01**: Monorepo shared package provides typed Supabase client, query key factories, and Zod validators
-- [ ] **INFRA-02**: Mobile app uses Expo Router with role-based navigation (resident/guard/admin tab groups)
-- [ ] **INFRA-03**: Admin dashboard uses Next.js App Router with sidebar navigation and role-based layouts
-- [ ] **INFRA-04**: Both apps share TanStack Query hooks for data fetching with caching and optimistic updates
-- [ ] **INFRA-05**: File upload utility for photos (payment proofs, incidents, packages, profiles) using Supabase Storage
-- [ ] **INFRA-06**: All UI designs use frontend-design skill for distinctive, production-grade interfaces
+- [x] **INFRA-01**: Monorepo shared package provides typed Supabase client, query key factories, and Zod validators
+- [x] **INFRA-02**: Mobile app uses Expo Router with role-based navigation (resident/guard/admin tab groups)
+- [x] **INFRA-03**: Admin dashboard uses Next.js App Router with sidebar navigation and role-based layouts
+- [x] **INFRA-04**: Both apps share TanStack Query hooks for data fetching with caching and optimistic updates
+- [x] **INFRA-05**: File upload utility for photos (payment proofs, incidents, packages, profiles) using Supabase Storage
+- [x] **INFRA-06**: All UI designs use frontend-design skill for distinctive, production-grade interfaces
 
 ## v2 Requirements
 
@@ -273,22 +273,22 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 9 | Pending |
-| AUTH-02 | Phase 9 | Pending |
-| AUTH-03 | Phase 9 | Pending |
-| AUTH-04 | Phase 9 | Pending |
-| AUTH-05 | Phase 9 | Pending |
-| AUTH-06 | Phase 9 | Pending |
-| AUTH-07 | Phase 9 | Pending |
-| AUTH-08 | Phase 9 | Pending |
-| AUTH-09 | Phase 9 | Pending |
-| AUTH-10 | Phase 9 | Pending |
-| INFRA-01 | Phase 9 | Pending |
-| INFRA-02 | Phase 9 | Pending |
-| INFRA-03 | Phase 9 | Pending |
-| INFRA-04 | Phase 9 | Pending |
-| INFRA-05 | Phase 9 | Pending |
-| INFRA-06 | Phase 9 | Pending |
+| AUTH-01 | Phase 9 | Complete |
+| AUTH-02 | Phase 9 | Complete |
+| AUTH-03 | Phase 9 | Complete |
+| AUTH-04 | Phase 9 | Complete |
+| AUTH-05 | Phase 9 | Complete |
+| AUTH-06 | Phase 9 | Complete |
+| AUTH-07 | Phase 9 | Complete |
+| AUTH-08 | Phase 9 | Complete |
+| AUTH-09 | Phase 9 | Complete |
+| AUTH-10 | Phase 9 | Complete |
+| INFRA-01 | Phase 9 | Complete |
+| INFRA-02 | Phase 9 | Complete |
+| INFRA-03 | Phase 9 | Complete |
+| INFRA-04 | Phase 9 | Complete |
+| INFRA-05 | Phase 9 | Complete |
+| INFRA-06 | Phase 9 | Complete |
 | RHOME-01 | Phase 10 | Pending |
 | RHOME-02 | Phase 10 | Pending |
 | RHOME-03 | Phase 10 | Pending |
@@ -426,4 +426,4 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 
 ---
 *Requirements defined: 2026-02-06*
-*Last updated: 2026-02-07 -- traceability complete, all 145 requirements mapped*
+*Last updated: 2026-02-08 -- Phase 9 complete (16 requirements: AUTH-01 to AUTH-10, INFRA-01 to INFRA-06)*
