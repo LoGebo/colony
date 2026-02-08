@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 13 of 16 (Advanced Resident Features)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-08 -- Completed 13-03-PLAN.md (More Tab: Profile, Documents, Vehicles, Packages)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-08 -- Completed 13-04-PLAN.md (Marketplace)
 
-Progress: [██████▒░░░] 62% (21/34 v2.0 plans)
+Progress: [██████▒░░░] 65% (22/34 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [██████▒░░░] 62% (21/34 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 21
-- Average duration: 6.4 min
-- Total execution time: ~135 min
+- Total plans completed: 22
+- Average duration: 6.3 min
+- Total execution time: ~141 min
 
 ## Accumulated Context
 
@@ -91,6 +91,9 @@ New v2.0 decisions:
 - residents: no resident_type or status columns; uses onboarding_status
 - document_versions: storage_path/storage_bucket/file_name (not file_url/file_size/uploaded_at)
 - Occupancy-based package query (packages -> occupancies -> units, not direct resident_id)
+- Contact seller via WhatsApp deep link with SMS fallback (no in-app messaging)
+- Marketplace photo uploads to community-assets bucket with marketplace/ category prefix
+- Fire-and-forget RPCs for view_count and inquiry_count (no await)
 
 ### Pending Todos
 
@@ -103,5 +106,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 13-03-PLAN.md (More Tab: Profile, Documents, Vehicles, Packages). Ready for 13-04.
+Stopped at: Completed 13-04-PLAN.md (Marketplace). Phase 13 complete. Ready for Phase 14.
 Resume file: None
