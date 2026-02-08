@@ -14,7 +14,7 @@ export function useResidentSearch(query: string) {
       let q = supabase
         .from('residents')
         .select(
-          'id, first_name, paternal_surname, maternal_surname, email, phone, occupancies(unit_id, units(unit_number, building))'
+          'id, first_name, paternal_surname, maternal_surname, email, phone, occupancies!occupancies_resident_id_fkey(unit_id, units(unit_number, building))'
         )
         .eq('community_id', communityId!)
         .is('deleted_at', null)
@@ -47,7 +47,7 @@ export function useUnitSearch(unitNumber: string) {
       const { data, error } = await supabase
         .from('units')
         .select(
-          'id, unit_number, building, floor_number, occupancies(resident_id, residents(id, first_name, paternal_surname, phone))'
+          'id, unit_number, building, floor_number, occupancies(resident_id, residents!occupancies_resident_id_fkey(id, first_name, paternal_surname, phone))'
         )
         .eq('community_id', communityId!)
         .ilike('unit_number', `%${unitNumber}%`)
@@ -73,7 +73,7 @@ export function useVehicleSearch(plate: string) {
       const { data, error } = await supabase
         .from('vehicles')
         .select(
-          'id, plate_number, plate_normalized, plate_state, make, model, year, color, access_enabled, residents(id, first_name, paternal_surname, occupancies(units(unit_number)))'
+          'id, plate_number, plate_normalized, plate_state, make, model, year, color, access_enabled, residents(id, first_name, paternal_surname, occupancies!occupancies_resident_id_fkey(units(unit_number)))'
         )
         .eq('community_id', communityId!)
         .ilike('plate_normalized', `%${normalized}%`)
