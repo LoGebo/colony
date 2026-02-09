@@ -166,13 +166,14 @@ Plans:
   3. Admin can create violation records with evidence, issue warnings/sanctions, manage appeals, and view violation history with repeat offender tracking
   4. Admin can manage emergency contacts, view medical conditions and accessibility needs, generate evacuation priority lists, and manage access device inventory with assignments and lifecycle tracking
   5. Admin can view guard performance metrics (patrol completion, response times), view audit trail of administrative actions, and perform bulk operations (charge generation, notification sending)
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
-- [ ] 15-01-PLAN.md - Governance: elections with voting, assemblies with quorum, surveys, agreements
-- [ ] 15-02-PLAN.md - Violations: records with evidence, warnings/sanctions, appeals, repeat offender tracking
-- [ ] 15-03-PLAN.md - Emergency and keys: emergency contacts, medical info, evacuation lists, device inventory, assignments, lifecycle
-- [ ] 15-04-PLAN.md - Analytics and audit: guard performance metrics, audit trail viewer, bulk operations
+- [ ] 15-01-PLAN.md -- Foundation: sidebar navigation (governance, violations, emergency, devices, analytics) and query key factories for all Phase 15 entities
+- [ ] 15-02-PLAN.md -- Governance: elections list/detail/create with quorum tracking, assemblies with attendance and agreements
+- [ ] 15-03-PLAN.md -- Violations: records with evidence, sanctions timeline, appeals management, repeat offender tracking
+- [ ] 15-04-PLAN.md -- Emergency and devices: emergency contacts, medical info, evacuation lists, access device inventory with assignment lifecycle
+- [ ] 15-05-PLAN.md -- Guard analytics and audit: performance KPIs with charts, audit trail viewer with filters and CSV export
 
 ### Phase 16: Push Notifications & Real-time Polish
 **Goal**: Users receive timely push notifications for all relevant events and see real-time updates for time-sensitive data like visitor arrivals and guard queues
@@ -211,11 +212,11 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 6/6 | Complete | 2026-02-08 |
-| 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
+| 15. Admin Governance & Analytics | v2.0 | 0/5 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 28/35 plans
+**v2.0 Total:** 28/36 plans
 
 ---
 *Roadmap created: 2026-01-29*
