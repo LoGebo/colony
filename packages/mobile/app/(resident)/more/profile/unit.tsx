@@ -1,86 +1,334 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { useResidentOccupancy } from '@/hooks/useOccupancy';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { StatusBadge } from '@/components/ui/Badge';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useResidentUnit, useResidentOccupancy } from '@/hooks/useOccupancy';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const OCCUPANCY_TYPE_VARIANTS: Record<string, { bg: string; text: string; label: string }> = {
-  owner: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Propietario' },
-  tenant: { bg: 'bg-green-100', text: 'text-green-800', label: 'Inquilino' },
-  family_member: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Familiar' },
-  authorized: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Autorizado' },
-};
-
-export default function UnitDetailScreen() {
+export default function UnitInfoScreen() {
+  const router = useRouter();
   const { residentId } = useAuth();
-  const { data: occupancies, isLoading } = useResidentOccupancy(residentId);
+  const { unitNumber, building, floorNumber, isLoading: unitLoading } = useResidentUnit();
+  const { data: occupancies, isLoading: occLoading } = useResidentOccupancy(residentId);
 
-  if (isLoading) {
-    return <LoadingSpinner message="Cargando unidad..." />;
-  }
+  const isLoading = unitLoading || occLoading;
+  const primaryOccupancy = occupancies?.find((o) => o.occupancy_type === 'owner') ?? occupancies?.[0];
 
-  if (!occupancies || occupancies.length === 0) {
-    return <EmptyState message="No tienes una unidad asignada" icon={'\u{1F3E0}'} />;
-  }
+  const formatOccupancyType = (type: string | undefined): string => {
+    if (!type) return 'N/A';
+    return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
+  };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      <Text className="text-xl font-bold text-gray-900 mb-6">Mi Unidad</Text>
+    <View style={styles.container}>
+      <AmbientBackground />
 
-      {occupancies.map((occupancy) => {
-        const unit = occupancy.units as {
-          id: string;
-          unit_number: string;
-          building: string | null;
-          floor_number: number | null;
-        } | null;
-
-        return (
-          <View key={occupancy.id} className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            {/* Unit info */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-lg font-bold text-gray-900">
-                {unit?.unit_number ?? 'Sin unidad'}
-              </Text>
-              <StatusBadge
-                status={occupancy.occupancy_type}
-                variants={OCCUPANCY_TYPE_VARIANTS}
-              />
-            </View>
-
-            {unit?.building ? (
-              <View className="flex-row mb-2">
-                <Text className="text-sm text-gray-500 w-24">Edificio:</Text>
-                <Text className="text-sm text-gray-900">{unit.building}</Text>
-              </View>
-            ) : null}
-
-            {unit?.floor_number != null ? (
-              <View className="flex-row mb-2">
-                <Text className="text-sm text-gray-500 w-24">Piso:</Text>
-                <Text className="text-sm text-gray-900">{unit.floor_number}</Text>
-              </View>
-            ) : null}
-
-            <View className="flex-row mb-2">
-              <Text className="text-sm text-gray-500 w-24">Tipo:</Text>
-              <Text className="text-sm text-gray-900">
-                {OCCUPANCY_TYPE_VARIANTS[occupancy.occupancy_type]?.label ?? occupancy.occupancy_type}
-              </Text>
-            </View>
-          </View>
-        );
-      })}
-
-      <View className="bg-blue-50 rounded-xl p-4 mt-2">
-        <Text className="text-sm text-blue-800">
-          Las asignaciones de unidad son administradas por la administracion.
-          Si necesitas hacer un cambio, contacta a tu administrador.
-        </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Unit Info</Text>
+        </View>
       </View>
-    </ScrollView>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <View style={styles.content}>
+          {/* Unit Card */}
+          <GlassCard style={styles.unitCard}>
+            <View style={styles.unitIconRow}>
+              <View style={styles.unitIconBox}>
+                <Ionicons name="business" size={28} color={colors.primary} />
+              </View>
+              <View style={styles.unitBadge}>
+                <Text style={styles.unitBadgeText}>
+                  {formatOccupancyType(primaryOccupancy?.occupancy_type)}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.unitNumberLabel}>Unit Number</Text>
+            <Text style={styles.unitNumber}>{unitNumber ?? 'N/A'}</Text>
+          </GlassCard>
+
+          {/* Details Card */}
+          <View style={styles.detailsCard}>
+            {/* Building */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconBox}>
+                <Ionicons name="location-outline" size={18} color={colors.textCaption} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Building</Text>
+                <Text style={styles.detailValue}>{building ?? 'N/A'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailDivider} />
+
+            {/* Floor */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconBox}>
+                <Ionicons name="layers-outline" size={18} color={colors.textCaption} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Floor</Text>
+                <Text style={styles.detailValue}>
+                  {floorNumber != null ? `Floor ${floorNumber}` : 'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailDivider} />
+
+            {/* Occupancy Type */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailIconBox}>
+                <Ionicons name="key-outline" size={18} color={colors.textCaption} />
+              </View>
+              <View style={styles.detailTextGroup}>
+                <Text style={styles.detailLabel}>Occupancy Type</Text>
+                <Text style={styles.detailValue}>
+                  {formatOccupancyType(primaryOccupancy?.occupancy_type)}
+                </Text>
+              </View>
+            </View>
+
+            {/* All Occupancies (if multiple) */}
+            {occupancies && occupancies.length > 1 && (
+              <>
+                <View style={styles.detailDivider} />
+                <View style={styles.multiOccHeader}>
+                  <Text style={styles.multiOccTitle}>All Occupancies</Text>
+                </View>
+                {occupancies.map((occ) => {
+                  const unit = occ.units as { id: string; unit_number: string; building: string | null; floor_number: number | null } | null;
+                  return (
+                    <View key={occ.id} style={styles.multiOccRow}>
+                      <View style={styles.multiOccDot} />
+                      <View style={styles.multiOccInfo}>
+                        <Text style={styles.multiOccUnit}>
+                          Unit {unit?.unit_number ?? 'N/A'}
+                        </Text>
+                        <Text style={styles.multiOccType}>
+                          {formatOccupancyType(occ.occupancy_type)}
+                          {unit?.building ? ` \u2022 ${unit.building}` : ''}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
+          </View>
+
+          {/* Info Note */}
+          <View style={styles.infoNote}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.textCaption} />
+            <Text style={styles.infoNoteText}>
+              Unit information is managed by your community administrator. Contact them for any updates.
+            </Text>
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.xl,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+
+  // Content
+  content: {
+    paddingHorizontal: spacing.pagePaddingX,
+    gap: spacing['3xl'],
+  },
+
+  // Unit Card
+  unitCard: {
+    borderRadius: borderRadius['2xl'],
+    padding: spacing['3xl'],
+    alignItems: 'center',
+  },
+  unitIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: spacing['3xl'],
+  },
+  unitIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unitBadge: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.primaryLightAlt,
+    borderRadius: borderRadius.full,
+  },
+  unitBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  unitNumberLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: spacing.xs,
+  },
+  unitNumber: {
+    fontFamily: fonts.bold,
+    fontSize: 40,
+    color: colors.textPrimary,
+    letterSpacing: -1,
+  },
+
+  // Details Card
+  detailsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    padding: spacing.xl,
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.xl,
+  },
+  detailIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTextGroup: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+  },
+  detailValue: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+
+  // Multi-occupancy
+  multiOccHeader: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  multiOccTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  multiOccRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  multiOccDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  multiOccInfo: {
+    flex: 1,
+  },
+  multiOccUnit: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  multiOccType: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  // Info Note
+  infoNote: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  infoNoteText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    lineHeight: 18,
+  },
+});
