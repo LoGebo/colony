@@ -44,18 +44,40 @@ export default function GuardLayout() {
         }}
       />
       <Tabs.Screen
-        name="gate"
+        name="incidents"
         options={{
           title: 'INCIDENTS',
-          href: null,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name={focused ? 'alert-circle' : 'alert-circle-outline'} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="patrol"
         options={{
+          title: 'PATROL',
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name={focused ? 'navigate' : 'navigate-outline'} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="gate"
+        options={{
+          title: 'MORE',
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon
+              name={focused ? 'ellipsis-horizontal' : 'ellipsis-horizontal-outline'}
+              color={color}
+            />
+          ),
           href: null,
         }}
       />
+      {/* Hidden screens accessible via navigation */}
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="packages" options={{ href: null }} />
+      <Tabs.Screen name="directory" options={{ href: null }} />
     </Tabs>
   );
 }
