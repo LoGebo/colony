@@ -197,34 +197,84 @@ export const moderation = createQueryKeys('moderation', {
   stats: (communityId: string) => [{ communityId }],
 });
 
+export const assemblies = createQueryKeys('assemblies', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  attendance: (assemblyId: string) => [{ assemblyId }],
+  agreements: (assemblyId: string) => [{ assemblyId }],
+});
+
+export const violations = createQueryKeys('violations', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  sanctions: (violationId: string) => [{ violationId }],
+  appeals: (violationId: string) => [{ violationId }],
+  types: (communityId: string) => [{ communityId }],
+});
+
+export const emergencyContacts = createQueryKeys('emergency-contacts', {
+  all: null,
+  byResident: (residentId: string) => [{ residentId }],
+  byUnit: (unitId: string) => [{ unitId }],
+  evacuation: (communityId: string) => [{ communityId }],
+  medical: (communityId: string) => [{ communityId }],
+});
+
+export const devices = createQueryKeys('devices', {
+  all: null,
+  list: (communityId: string) => [{ communityId }],
+  detail: (id: string) => [id],
+  types: (communityId: string) => [{ communityId }],
+  assignments: (deviceId: string) => [{ deviceId }],
+});
+
+export const guardMetrics = createQueryKeys('guard-metrics', {
+  all: null,
+  performance: (communityId: string, dateRange?: { from: string; to: string }) => [{ communityId, dateRange }],
+  patrolStats: (communityId: string) => [{ communityId }],
+});
+
+export const audit = createQueryKeys('audit', {
+  all: null,
+  logs: (communityId: string, filters?: Record<string, unknown>) => [{ communityId, filters }],
+});
+
 export const queryKeys = mergeQueryKeys(
-  residents,
-  visitors,
-  payments,
   accessLogs,
   amenities,
-  notifications,
-  kpis,
+  announcements,
+  assemblies,
+  audit,
   communities,
-  units,
+  devices,
+  documents,
+  elections,
+  emergencies,
+  emergencyContacts,
+  guardMetrics,
   guards,
-  packages,
+  handovers,
+  incidents,
+  kpis,
+  marketplace,
+  moderation,
+  moves,
+  notifications,
   occupancies,
+  packages,
+  parking,
+  patrols,
+  payments,
+  posts,
+  providers,
+  residents,
   shifts,
   tickets,
-  announcements,
-  documents,
-  posts,
-  marketplace,
+  units,
   vehicles,
-  elections,
-  patrols,
-  incidents,
-  emergencies,
-  handovers,
-  providers,
+  violations,
+  visitors,
   workOrders,
-  parking,
-  moves,
-  moderation,
 );
