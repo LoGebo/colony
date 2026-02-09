@@ -2,210 +2,449 @@ import { useState } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   TextInput,
   ScrollView,
-  Pressable,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useResidentUnit } from '@/hooks/useOccupancy';
 import { useUploadPaymentProof } from '@/hooks/usePayments';
 import { pickAndUploadImage } from '@/lib/upload';
-import { STORAGE_BUCKETS } from '@upoe/shared';
-import { supabase } from '@/lib/supabase';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-export default function UploadProofScreen() {
+type ProofType = 'transfer' | 'deposit' | 'cash';
+
+const PROOF_TYPES: { key: ProofType; label: string; icon: string }[] = [
+  { key: 'transfer', label: 'Transfer', icon: 'swap-horizontal-outline' },
+  { key: 'deposit', label: 'Deposit', icon: 'business-outline' },
+  { key: 'cash', label: 'Cash', icon: 'cash-outline' },
+];
+
+export default function UploadPaymentProofScreen() {
   const router = useRouter();
   const { communityId } = useAuth();
   const { unitId } = useResidentUnit();
   const uploadMutation = useUploadPaymentProof();
 
   const [amount, setAmount] = useState('');
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [referenceNumber, setReferenceNumber] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
   const [bankName, setBankName] = useState('');
-  const [documentPath, setDocumentPath] = useState<string | null>(null);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [proofType, setProofType] = useState<ProofType>('transfer');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const handlePickImage = async () => {
+  const canSubmit =
+    amount.trim().length > 0 &&
+    paymentDate.trim().length > 0 &&
+    photoUrl !== null &&
+    unitId !== null &&
+    !uploadMutation.isPending;
+
+  const handlePickPhoto = async () => {
     if (!communityId) return;
     setUploading(true);
     try {
-      const path = await pickAndUploadImage(
-        STORAGE_BUCKETS.PAYMENT_PROOFS,
-        communityId,
-        'receipts'
-      );
+      const path = await pickAndUploadImage('payment-proofs', communityId, 'receipt');
       if (path) {
-        setDocumentPath(path);
+        setPhotoUrl(path);
       }
     } finally {
       setUploading(false);
     }
   };
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from(STORAGE_BUCKETS.PAYMENT_PROOFS)
-      .getPublicUrl(path);
-    return data.publicUrl;
-  };
-
   const handleSubmit = async () => {
-    const parsedAmount = parseFloat(amount);
+    if (!canSubmit || !unitId) return;
+
+    const parsedAmount = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Error', 'Ingresa un monto valido');
-      return;
-    }
-    if (!paymentDate) {
-      Alert.alert('Error', 'Ingresa la fecha de pago');
-      return;
-    }
-    if (!documentPath) {
-      Alert.alert('Error', 'Sube una imagen del comprobante');
-      return;
-    }
-    if (!unitId) {
-      Alert.alert('Error', 'No se encontro unidad asociada');
+      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
       return;
     }
 
     try {
       await uploadMutation.mutateAsync({
         amount: parsedAmount,
-        payment_date: paymentDate,
-        reference_number: referenceNumber || undefined,
-        bank_name: bankName || undefined,
-        document_url: documentPath,
-        proof_type: 'bank_transfer',
+        payment_date: paymentDate.trim(),
+        reference_number: referenceNumber.trim() || undefined,
+        bank_name: bankName.trim() || undefined,
+        document_url: photoUrl!,
+        proof_type: proofType,
         unit_id: unitId,
       });
 
-      Alert.alert('Comprobante enviado', 'Tu comprobante sera revisado por administracion.', [
+      Alert.alert('Receipt Uploaded', 'Your payment proof has been submitted for review.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch {
-      Alert.alert('Error', 'No se pudo enviar el comprobante. Intenta de nuevo.');
+    } catch (error: any) {
+      Alert.alert('Upload Failed', error?.message ?? 'Something went wrong. Please try again.');
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-gray-50"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Upload Receipt</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        {/* Header */}
-        <Text className="text-xl font-bold text-gray-900 mb-6">Subir Comprobante</Text>
-
-        {/* Image Upload */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Imagen del comprobante *
-          </Text>
-          {documentPath ? (
-            <View className="items-center">
-              <Image
-                source={{ uri: getPublicUrl(documentPath) }}
-                className="w-full h-48 rounded-lg mb-2"
-                resizeMode="cover"
-              />
-              <Pressable
-                onPress={handlePickImage}
-                className="active:opacity-70"
-                disabled={uploading}
-              >
-                <Text className="text-blue-600 text-sm underline">
-                  {uploading ? 'Subiendo...' : 'Cambiar imagen'}
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable
-              onPress={handlePickImage}
-              disabled={uploading}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 items-center active:opacity-80"
-            >
-              <Text className="text-3xl mb-2">📷</Text>
-              <Text className="text-gray-500 text-sm">
-                {uploading ? 'Subiendo imagen...' : 'Toca para seleccionar imagen'}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Amount */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Monto *</Text>
-          <TextInput
-            className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-
-        {/* Payment Date */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Fecha de pago *</Text>
-          <TextInput
-            className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-            value={paymentDate}
-            onChangeText={setPaymentDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-
-        {/* Reference Number */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Numero de referencia
-          </Text>
-          <TextInput
-            className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-            value={referenceNumber}
-            onChangeText={setReferenceNumber}
-            placeholder="Opcional"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-
-        {/* Bank Name */}
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Banco</Text>
-          <TextInput
-            className="bg-white border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900"
-            value={bankName}
-            onChangeText={setBankName}
-            placeholder="Opcional"
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-
-        {/* Submit Button */}
-        <Pressable
-          onPress={handleSubmit}
-          disabled={uploadMutation.isPending || uploading}
-          className={`rounded-lg px-4 py-3 items-center active:opacity-80 ${
-            uploadMutation.isPending || uploading ? 'bg-gray-400' : 'bg-blue-600'
-          }`}
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-white font-semibold">
-            {uploadMutation.isPending ? 'Enviando...' : 'Enviar Comprobante'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Amount Input */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>AMOUNT</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.currencyPrefix}>$</Text>
+              <TextInput
+                style={styles.amountInput}
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="0.00"
+                placeholderTextColor={colors.textDisabled}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </View>
+
+          {/* Payment Date */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>PAYMENT DATE</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="calendar-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={paymentDate}
+                onChangeText={setPaymentDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.textDisabled}
+              />
+            </View>
+          </View>
+
+          {/* Bank Name (Optional) */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>BANK NAME (OPTIONAL)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="business-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={bankName}
+                onChangeText={setBankName}
+                placeholder="e.g. BBVA, Banamex"
+                placeholderTextColor={colors.textDisabled}
+              />
+            </View>
+          </View>
+
+          {/* Reference Number (Optional) */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>REFERENCE NUMBER (OPTIONAL)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="document-text-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={referenceNumber}
+                onChangeText={setReferenceNumber}
+                placeholder="e.g. TRF-9021"
+                placeholderTextColor={colors.textDisabled}
+              />
+            </View>
+          </View>
+
+          {/* Proof Type */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>PAYMENT TYPE</Text>
+            <View style={styles.proofTypeRow}>
+              {PROOF_TYPES.map((pt) => {
+                const active = proofType === pt.key;
+                return (
+                  <TouchableOpacity
+                    key={pt.key}
+                    style={[styles.proofTypePill, active && styles.proofTypePillActive]}
+                    onPress={() => setProofType(pt.key)}
+                  >
+                    <Ionicons
+                      name={pt.icon as any}
+                      size={16}
+                      color={active ? colors.textOnDark : colors.textMuted}
+                    />
+                    <Text style={[styles.proofTypeText, active && styles.proofTypeTextActive]}>
+                      {pt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Photo Upload */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>RECEIPT PHOTO</Text>
+            {photoUrl ? (
+              <View style={styles.photoPreviewContainer}>
+                <View style={styles.photoPreview}>
+                  <Ionicons name="document-attach-outline" size={32} color={colors.primary} />
+                  <Text style={styles.photoPreviewText}>Photo attached</Text>
+                </View>
+                <TouchableOpacity style={styles.photoChangeButton} onPress={handlePickPhoto}>
+                  <Text style={styles.photoChangeText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.uploadArea} onPress={handlePickPhoto} disabled={uploading}>
+                {uploading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <>
+                    <View style={styles.uploadIconBox}>
+                      <Ionicons name="camera-outline" size={28} color={colors.primary} />
+                    </View>
+                    <Text style={styles.uploadTitle}>Tap to upload</Text>
+                    <Text style={styles.uploadSubtitle}>Take a photo or select from gallery</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {uploadMutation.isPending ? (
+              <ActivityIndicator color={colors.textOnDark} />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Receipt</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  // Header
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  // Scroll
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.bottomNavClearance + 16,
+  },
+  // Fields
+  fieldGroup: {
+    marginBottom: spacing['3xl'],
+  },
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: spacing.inputHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  currencyPrefix: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textMuted,
+    marginRight: spacing.md,
+  },
+  amountInput: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  // Proof Type
+  proofTypeRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  proofTypePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  proofTypePillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  proofTypeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  proofTypeTextActive: {
+    color: colors.textOnDark,
+  },
+  // Upload Area
+  uploadArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing['4xl'],
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.borderDashed,
+    backgroundColor: colors.surface,
+  },
+  uploadIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  uploadTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  uploadSubtitle: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    marginTop: spacing.xs,
+  },
+  // Photo Preview
+  photoPreviewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.xl,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.primaryLightAlt,
+  },
+  photoPreview: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  photoPreviewText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  photoChangeButton: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.primaryLightAlt,
+  },
+  photoChangeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  // Submit
+  submitButton: {
+    height: spacing.buttonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    ...shadows.blueGlow,
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+});

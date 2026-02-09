@@ -3,269 +3,714 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   ScrollView,
-  Alert,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCreateInvitation } from '@/hooks/useVisitors';
 import { useResidentUnit } from '@/hooks/useOccupancy';
-import { DAY_LABELS } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const DAY_CHIPS = [
-  { value: 1, label: 'Lun' },
-  { value: 2, label: 'Mar' },
-  { value: 3, label: 'Mie' },
-  { value: 4, label: 'Jue' },
-  { value: 5, label: 'Vie' },
-  { value: 6, label: 'Sab' },
-  { value: 0, label: 'Dom' },
+type InvitationType = 'single_use' | 'recurring' | 'event' | 'vehicle_preauth';
+
+const TYPE_OPTIONS: {
+  key: InvitationType;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: 'single_use', label: 'One-time', icon: 'person-outline' },
+  { key: 'recurring', label: 'Recurring', icon: 'calendar-outline' },
+  { key: 'event', label: 'Event', icon: 'sparkles-outline' },
 ];
 
-type InvitationType = 'single_use' | 'recurring';
+const DAY_PILLS = [
+  { label: 'M', value: 1 },
+  { label: 'T', value: 2 },
+  { label: 'W', value: 3 },
+  { label: 'T', value: 4 },
+  { label: 'F', value: 5 },
+  { label: 'S', value: 6 },
+  { label: 'S', value: 0 },
+];
+
+function formatDateDisplay(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatTimeDisplay(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function padTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`;
+}
 
 export default function CreateInvitationScreen() {
   const router = useRouter();
-  const { mutate: createInvitation, isPending } = useCreateInvitation();
+  const createMutation = useCreateInvitation();
   const { unitId } = useResidentUnit();
 
   // Form state
-  const [visitorName, setVisitorName] = useState('');
-  const [visitorPhone, setVisitorPhone] = useState('');
-  const [vehiclePlate, setVehiclePlate] = useState('');
   const [invitationType, setInvitationType] = useState<InvitationType>('single_use');
-  const [validFrom, setValidFrom] = useState('');
-  const [validUntil, setValidUntil] = useState('');
+  const [visitorName, setVisitorName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [showVehicle, setShowVehicle] = useState(false);
+
+  // Date/time state
+  const [validFrom] = useState(() => new Date());
+  const [validUntil] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 8);
+    return d;
+  });
+
+  // Recurring state
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
-  const [recurringStartTime, setRecurringStartTime] = useState('');
-  const [recurringEndTime, setRecurringEndTime] = useState('');
+  const [recurringStartTime] = useState(() => {
+    const d = new Date();
+    d.setHours(8, 0, 0, 0);
+    return d;
+  });
+  const [recurringEndTime] = useState(() => {
+    const d = new Date();
+    d.setHours(20, 0, 0, 0);
+    return d;
+  });
 
   const toggleDay = useCallback((day: number) => {
     setRecurringDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = async () => {
     if (!visitorName.trim()) {
-      Alert.alert('Error', 'El nombre del visitante es requerido');
+      Alert.alert('Required', 'Please enter the visitor name.');
       return;
     }
 
-    if (invitationType === 'single_use' && !validFrom.trim()) {
-      Alert.alert('Error', 'La fecha de inicio es requerida');
+    if (invitationType === 'recurring' && recurringDays.length === 0) {
+      Alert.alert('Required', 'Please select at least one day for recurring access.');
       return;
     }
 
-    const payload = {
-      visitor_name: visitorName.trim(),
-      invitation_type: invitationType as 'single_use' | 'recurring',
-      valid_from:
-        invitationType === 'recurring'
-          ? new Date().toISOString()
-          : new Date(validFrom).toISOString(),
-      valid_until: validUntil.trim()
-        ? new Date(validUntil).toISOString()
-        : undefined,
-      visitor_phone: visitorPhone.trim() || undefined,
-      vehicle_plate: vehiclePlate.trim() || undefined,
-      recurring_days:
-        invitationType === 'recurring' && recurringDays.length > 0
-          ? recurringDays
-          : undefined,
-      recurring_start_time:
-        invitationType === 'recurring' && recurringStartTime.trim()
-          ? recurringStartTime.trim()
-          : undefined,
-      recurring_end_time:
-        invitationType === 'recurring' && recurringEndTime.trim()
-          ? recurringEndTime.trim()
-          : undefined,
-      unit_id: unitId ?? undefined,
-    };
+    try {
+      await createMutation.mutateAsync({
+        visitor_name: visitorName.trim(),
+        invitation_type: invitationType,
+        valid_from: validFrom.toISOString(),
+        valid_until: invitationType !== 'recurring' ? validUntil.toISOString() : undefined,
+        visitor_phone: phone.trim() || undefined,
+        vehicle_plate: showVehicle && vehiclePlate.trim() ? vehiclePlate.trim() : undefined,
+        recurring_days: invitationType === 'recurring' ? recurringDays : undefined,
+        recurring_start_time: invitationType === 'recurring' ? padTime(recurringStartTime) : undefined,
+        recurring_end_time: invitationType === 'recurring' ? padTime(recurringEndTime) : undefined,
+        unit_id: unitId ?? undefined,
+      });
 
-    createInvitation(payload, {
-      onSuccess: (data) => {
-        router.push(`/(resident)/visitors/${data.id}`);
-      },
-      onError: (error) => {
-        Alert.alert('Error', error.message);
-      },
-    });
-  }, [
-    visitorName,
-    visitorPhone,
-    vehiclePlate,
-    invitationType,
-    validFrom,
-    validUntil,
-    recurringDays,
-    recurringStartTime,
-    recurringEndTime,
-    unitId,
-    createInvitation,
-    router,
-  ]);
+      Alert.alert('Success', 'Invitation created successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create invitation.';
+      Alert.alert('Error', message);
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ padding: 16 }}>
-        <Text className="text-xl font-bold text-gray-900 mb-6">Nueva Invitacion</Text>
+    <View style={styles.container}>
+      <AmbientBackground />
 
-        {/* Invitation type selector */}
-        <View className="flex-row mb-6 bg-gray-100 rounded-lg p-1">
-          <Pressable
-            onPress={() => setInvitationType('single_use')}
-            className={`flex-1 rounded-md py-2 items-center ${
-              invitationType === 'single_use' ? 'bg-blue-600' : ''
-            }`}
-          >
-            <Text
-              className={`font-medium ${
-                invitationType === 'single_use' ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Una vez
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setInvitationType('recurring')}
-            className={`flex-1 rounded-md py-2 items-center ${
-              invitationType === 'recurring' ? 'bg-blue-600' : ''
-            }`}
-          >
-            <Text
-              className={`font-medium ${
-                invitationType === 'recurring' ? 'text-white' : 'text-gray-700'
-              }`}
-            >
-              Recurrente
-            </Text>
-          </Pressable>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Create Invitation</Text>
         </View>
+      </View>
 
-        {/* Visitor name */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">
-          Nombre del visitante *
-        </Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-          placeholder="Nombre completo"
-          value={visitorName}
-          onChangeText={setVisitorName}
-          autoCapitalize="words"
-        />
-
-        {/* Visitor phone */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Telefono (opcional)</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-          placeholder="+52 123 456 7890"
-          value={visitorPhone}
-          onChangeText={setVisitorPhone}
-          keyboardType="phone-pad"
-        />
-
-        {/* Vehicle plate */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">
-          Placas del vehiculo (opcional)
-        </Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-          placeholder="ABC-1234"
-          value={vehiclePlate}
-          onChangeText={setVehiclePlate}
-          autoCapitalize="characters"
-        />
-
-        {/* Single-use specific fields */}
-        {invitationType === 'single_use' ? (
-          <>
-            <Text className="text-sm font-medium text-gray-700 mb-1">
-              Fecha y hora de inicio *
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-              placeholder="YYYY-MM-DD HH:mm"
-              value={validFrom}
-              onChangeText={setValidFrom}
-            />
-
-            <Text className="text-sm font-medium text-gray-700 mb-1">
-              Fecha y hora limite (opcional)
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-              placeholder="YYYY-MM-DD HH:mm"
-              value={validUntil}
-              onChangeText={setValidUntil}
-            />
-          </>
-        ) : null}
-
-        {/* Recurring specific fields */}
-        {invitationType === 'recurring' ? (
-          <>
-            <Text className="text-sm font-medium text-gray-700 mb-2">Dias de la semana</Text>
-            <View className="flex-row flex-wrap gap-2 mb-4">
-              {DAY_CHIPS.map((day) => {
-                const selected = recurringDays.includes(day.value);
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Invitation Type Selector */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Invitation Type</Text>
+            <View style={styles.typeGrid}>
+              {TYPE_OPTIONS.map((opt) => {
+                const isActive = invitationType === opt.key;
                 return (
-                  <Pressable
-                    key={day.value}
-                    onPress={() => toggleDay(day.value)}
-                    className={`rounded-full px-4 py-2 ${
-                      selected ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.typeCard, isActive && styles.typeCardActive]}
+                    onPress={() => setInvitationType(opt.key)}
+                    activeOpacity={0.7}
                   >
-                    <Text
-                      className={`text-sm font-medium ${
-                        selected ? 'text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {day.label}
+                    <Ionicons
+                      name={opt.icon}
+                      size={20}
+                      color={isActive ? colors.primary : colors.textCaption}
+                    />
+                    <Text style={[styles.typeLabel, isActive && styles.typeLabelActive]}>
+                      {opt.label}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 );
               })}
             </View>
+          </View>
 
-            <Text className="text-sm font-medium text-gray-700 mb-1">Hora de inicio</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-              placeholder="HH:mm (ej. 08:00)"
-              value={recurringStartTime}
-              onChangeText={setRecurringStartTime}
-            />
+          {/* Guest Info */}
+          <View style={styles.section}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Guest Name</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="person-outline" size={20} color={colors.textDisabled} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Michael Smith"
+                  placeholderTextColor={colors.textDisabled}
+                  value={visitorName}
+                  onChangeText={setVisitorName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
-            <Text className="text-sm font-medium text-gray-700 mb-1">Hora de fin</Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-              placeholder="HH:mm (ej. 18:00)"
-              value={recurringEndTime}
-              onChangeText={setRecurringEndTime}
-            />
-          </>
-        ) : null}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="call-outline" size={20} color={colors.textDisabled} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="+1 (555) 000-0000"
+                  placeholderTextColor={colors.textDisabled}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
+          </View>
 
-        {/* Submit button */}
-        <Pressable
+          {/* Date/Time for non-recurring */}
+          {invitationType !== 'recurring' && (
+            <View style={styles.section}>
+              <View style={styles.dateRow}>
+                <View style={styles.dateField}>
+                  <Text style={styles.fieldLabel}>Valid From</Text>
+                  <View style={styles.dateButton}>
+                    <Ionicons name="calendar-outline" size={16} color={colors.textCaption} />
+                    <Text style={styles.dateButtonText}>{formatDateDisplay(validFrom)}</Text>
+                  </View>
+                  <View style={styles.dateButton}>
+                    <Ionicons name="time-outline" size={16} color={colors.textCaption} />
+                    <Text style={styles.dateButtonText}>{formatTimeDisplay(validFrom)}</Text>
+                  </View>
+                </View>
+                <View style={styles.dateField}>
+                  <Text style={styles.fieldLabel}>Valid Until</Text>
+                  <View style={styles.dateButton}>
+                    <Ionicons name="calendar-outline" size={16} color={colors.textCaption} />
+                    <Text style={styles.dateButtonText}>{formatDateDisplay(validUntil)}</Text>
+                  </View>
+                  <View style={styles.dateButton}>
+                    <Ionicons name="time-outline" size={16} color={colors.textCaption} />
+                    <Text style={styles.dateButtonText}>{formatTimeDisplay(validUntil)}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Recurring Options */}
+          {invitationType === 'recurring' && (
+            <View style={styles.section}>
+              <Text style={styles.fieldLabel}>Select Days</Text>
+              <View style={styles.dayPillsRow}>
+                {DAY_PILLS.map((day, idx) => {
+                  const isActive = recurringDays.includes(day.value);
+                  return (
+                    <TouchableOpacity
+                      key={`day-${idx}-${day.value}`}
+                      style={[styles.dayPill, isActive && styles.dayPillActive]}
+                      onPress={() => toggleDay(day.value)}
+                    >
+                      <Text style={[styles.dayPillText, isActive && styles.dayPillTextActive]}>
+                        {day.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.timeRangeRow}>
+                <View style={styles.dateField}>
+                  <Text style={styles.fieldLabel}>From</Text>
+                  <View style={styles.timeInput}>
+                    <Text style={styles.timeInputText}>{formatTimeDisplay(recurringStartTime)}</Text>
+                  </View>
+                </View>
+                <View style={styles.dateField}>
+                  <Text style={styles.fieldLabel}>Until</Text>
+                  <View style={styles.timeInput}>
+                    <Text style={styles.timeInputText}>{formatTimeDisplay(recurringEndTime)}</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Vehicle Access Toggle */}
+          <GlassCard style={styles.vehicleCard}>
+            <View style={styles.vehicleHeader}>
+              <View style={styles.vehicleHeaderLeft}>
+                <View style={styles.vehicleIconBox}>
+                  <Ionicons name="car-outline" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.vehicleTitle}>Vehicle Access</Text>
+                  <Text style={styles.vehicleSubtitle}>Register vehicle details</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.toggle, showVehicle && styles.toggleActive]}
+                onPress={() => setShowVehicle(!showVehicle)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.toggleThumb, showVehicle && styles.toggleThumbActive]} />
+              </TouchableOpacity>
+            </View>
+
+            {showVehicle && (
+              <View style={styles.vehicleFields}>
+                <View style={styles.vehicleInputWrapper}>
+                  <TextInput
+                    style={styles.vehicleInput}
+                    placeholder="License Plate"
+                    placeholderTextColor={colors.textDisabled}
+                    value={vehiclePlate}
+                    onChangeText={setVehiclePlate}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+            )}
+          </GlassCard>
+
+          {/* Security Preview */}
+          <View style={styles.securityPreview}>
+            <View style={styles.securityHeader}>
+              <View style={styles.securityHeaderLeft}>
+                <Ionicons name="shield-checkmark" size={24} color={colors.teal} />
+                <Text style={styles.securityBrand}>Secure LuminaPass</Text>
+              </View>
+              <View style={styles.securityDot} />
+            </View>
+
+            <View style={styles.qrPlaceholder}>
+              <Ionicons name="qr-code-outline" size={80} color="rgba(15,23,42,0.15)" />
+              <Text style={styles.qrPlaceholderText}>Preview available on save</Text>
+            </View>
+
+            <View style={styles.hmacSection}>
+              <Text style={styles.hmacLabel}>Security Signature (HMAC)</Text>
+              <View style={styles.hmacCodeBox}>
+                <Text style={styles.hmacCode}>
+                  sha256:7f2e9a1b0c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f...
+                </Text>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Submit Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.submitButton, createMutation.isPending && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={isPending}
-          className={`rounded-lg p-4 items-center mt-2 mb-8 ${
-            isPending ? 'bg-blue-400' : 'bg-blue-600 active:opacity-80'
-          }`}
+          disabled={createMutation.isPending}
+          activeOpacity={0.9}
         >
-          <Text className="text-white font-semibold text-base">
-            {isPending ? 'Creando...' : 'Crear Invitacion'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {createMutation.isPending ? (
+            <ActivityIndicator color={colors.textOnDark} />
+          ) : (
+            <>
+              <Text style={styles.submitButtonText}>Generate Invitation</Text>
+              <Ionicons name="arrow-forward" size={20} color={colors.textOnDark} />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.xl,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  // Scroll
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: 180,
+    gap: spacing['3xl'],
+  },
+  // Section
+  section: {
+    gap: spacing.xl,
+  },
+  sectionLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  // Type Selector
+  typeGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  typeCard: {
+    flex: 1,
+    height: 80,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  typeCardActive: {
+    borderColor: 'rgba(37,99,235,0.2)',
+    backgroundColor: 'rgba(239,246,255,0.5)',
+  },
+  typeLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  typeLabelActive: {
+    color: colors.textSecondary,
+  },
+  // Input fields
+  fieldGroup: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginLeft: 4,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 56,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.textPrimary,
+    height: '100%',
+  },
+  // Date/Time
+  dateRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  dateField: {
+    flex: 1,
+    gap: spacing.md,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 44,
+  },
+  dateButtonText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  // Recurring
+  dayPillsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  dayPill: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  dayPillActive: {
+    backgroundColor: colors.dark,
+    borderColor: colors.dark,
+  },
+  dayPillText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textBody,
+  },
+  dayPillTextActive: {
+    color: colors.textOnDark,
+  },
+  timeRangeRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  timeInput: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 56,
+    justifyContent: 'center',
+  },
+  timeInputText: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  // Vehicle
+  vehicleCard: {
+    borderRadius: borderRadius['3xl'],
+    padding: spacing.cardPadding,
+  },
+  vehicleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  vehicleHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  vehicleIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vehicleTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  vehicleSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textCaption,
+  },
+  // Toggle
+  toggle: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.borderMedium,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleActive: {
+    backgroundColor: colors.primary,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  vehicleFields: {
+    marginTop: spacing.xl,
+    gap: spacing.lg,
+  },
+  vehicleInputWrapper: {
+    backgroundColor: 'rgba(248,250,252,0.5)',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 48,
+    justifyContent: 'center',
+  },
+  vehicleInput: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  // Security Preview
+  securityPreview: {
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius['4xl'],
+    padding: spacing['3xl'],
+    ...shadows.darkGlow,
+  },
+  securityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing['3xl'],
+  },
+  securityHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  securityBrand: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textOnDark,
+    letterSpacing: -0.3,
+  },
+  securityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.teal,
+  },
+  qrPlaceholder: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.xl,
+  },
+  qrPlaceholderText: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: spacing.md,
+  },
+  hmacSection: {
+    gap: spacing.xs,
+  },
+  hmacLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  hmacCodeBox: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+  },
+  hmacCode: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 11,
+    color: 'rgba(204,251,241,0.6)',
+  },
+  // Footer
+  footer: {
+    position: 'absolute',
+    bottom: spacing.bottomNavClearance,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.pagePaddingX,
+  },
+  submitButton: {
+    height: 64,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    ...shadows.darkGlow,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textOnDark,
+  },
+});

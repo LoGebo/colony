@@ -2,336 +2,537 @@ import { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   TextInput,
-  Pressable,
   ScrollView,
-  Alert,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
   Image,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useCreateTicket, useTicketCategories } from '@/hooks/useTickets';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useTicketCategories, useCreateTicket } from '@/hooks/useTickets';
 import { pickAndUploadImage } from '@/lib/upload';
-import { STORAGE_BUCKETS } from '@upoe/shared';
-import { supabase } from '@/lib/supabase';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
-const PRIORITY_OPTIONS: { value: Priority; label: string; color: string; activeColor: string }[] = [
-  { value: 'low', label: 'Baja', color: 'bg-gray-200', activeColor: 'bg-gray-600' },
-  { value: 'medium', label: 'Media', color: 'bg-blue-100', activeColor: 'bg-blue-600' },
-  { value: 'high', label: 'Alta', color: 'bg-orange-100', activeColor: 'bg-orange-500' },
-  { value: 'urgent', label: 'Urgente', color: 'bg-red-100', activeColor: 'bg-red-500' },
+const PRIORITIES: { key: Priority; label: string }[] = [
+  { key: 'low', label: 'Low' },
+  { key: 'medium', label: 'Med' },
+  { key: 'high', label: 'High' },
+  { key: 'urgent', label: 'Urgent' },
 ];
 
-const MAX_PHOTOS = 5;
+function getPriorityColors(priority: Priority, active: boolean) {
+  if (!active) {
+    return { bg: colors.surface, border: colors.border, text: colors.textCaption };
+  }
+  switch (priority) {
+    case 'low':
+      return { bg: colors.border, border: colors.borderMedium, text: colors.textBody };
+    case 'medium':
+      return { bg: colors.primaryLight, border: colors.primary, text: colors.primary };
+    case 'high':
+      return { bg: colors.orangeBg, border: colors.orange, text: colors.orange };
+    case 'urgent':
+      return { bg: colors.dangerBg, border: colors.danger, text: colors.danger };
+  }
+}
+
+function getCategoryIcon(icon: string | null): string {
+  if (!icon) return 'construct-outline';
+  const iconMap: Record<string, string> = {
+    droplet: 'water-outline',
+    zap: 'flash-outline',
+    layout: 'grid-outline',
+    thermometer: 'thermometer-outline',
+    wrench: 'construct-outline',
+    shield: 'shield-outline',
+    wifi: 'wifi-outline',
+    key: 'key-outline',
+    home: 'home-outline',
+    tree: 'leaf-outline',
+    'hard-hat': 'hammer-outline',
+    paintbrush: 'brush-outline',
+    bug: 'bug-outline',
+    car: 'car-outline',
+  };
+  return iconMap[icon] ?? 'construct-outline';
+}
 
 export default function CreateTicketScreen() {
   const router = useRouter();
   const { communityId } = useAuth();
-  const { mutate: createTicket, isPending } = useCreateTicket();
-  const { data: categories, isLoading: categoriesLoading } = useTicketCategories();
+  const { data: categories, isLoading: catLoading } = useTicketCategories();
+  const createMutation = useCreateTicket();
 
-  // Form state
-  const [categoryId, setCategoryId] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [location, setLocation] = useState('');
-  const [photoPaths, setPhotoPaths] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const canSubmit =
+    selectedCategoryId !== null &&
+    title.trim().length > 0 &&
+    description.trim().length > 0 &&
+    !createMutation.isPending;
 
-  const handlePickPhoto = useCallback(async () => {
-    if (!communityId) return;
-    if (photoPaths.length >= MAX_PHOTOS) {
-      Alert.alert('Limite', `Maximo ${MAX_PHOTOS} fotos por reporte`);
-      return;
-    }
-
+  const handleAddPhoto = useCallback(async () => {
+    if (!communityId || photos.length >= 3) return;
     setUploading(true);
     try {
-      const path = await pickAndUploadImage(
-        STORAGE_BUCKETS.TICKET_ATTACHMENTS,
-        communityId,
-        'tickets'
-      );
+      const path = await pickAndUploadImage('ticket-attachments', communityId, 'tickets');
       if (path) {
-        setPhotoPaths((prev) => [...prev, path]);
+        setPhotos((prev) => [...prev, path]);
       }
     } finally {
       setUploading(false);
     }
-  }, [communityId, photoPaths.length]);
+  }, [communityId, photos.length]);
 
-  const removePhoto = useCallback((index: number) => {
-    setPhotoPaths((prev) => prev.filter((_, i) => i !== index));
+  const handleRemovePhoto = useCallback((index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from(STORAGE_BUCKETS.TICKET_ATTACHMENTS)
-      .getPublicUrl(path);
-    return data.publicUrl;
-  };
+  const handleSubmit = async () => {
+    if (!canSubmit || !selectedCategoryId) return;
 
-  const validate = useCallback((): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!categoryId) {
-      newErrors.category = 'Selecciona una categoria';
-    }
-    if (!title.trim() || title.trim().length < 5) {
-      newErrors.title = 'El titulo debe tener al menos 5 caracteres';
-    }
-    if (!description.trim() || description.trim().length < 10) {
-      newErrors.description = 'La descripcion debe tener al menos 10 caracteres';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [categoryId, title, description]);
-
-  const handleSubmit = useCallback(() => {
-    if (!validate()) return;
-
-    createTicket(
-      {
+    try {
+      await createMutation.mutateAsync({
         title: title.trim(),
         description: description.trim(),
-        category_id: categoryId,
+        category_id: selectedCategoryId,
         priority,
         location: location.trim() || undefined,
-        photo_paths: photoPaths.length > 0 ? photoPaths : undefined,
-      },
-      {
-        onSuccess: () => {
-          router.back();
-        },
-        onError: (error) => {
-          Alert.alert('Error', error.message);
-        },
-      }
-    );
-  }, [title, description, categoryId, priority, location, photoPaths, validate, createTicket, router]);
+        photo_paths: photos.length > 0 ? photos : undefined,
+      });
+
+      Alert.alert('Report Created', 'Your maintenance request has been submitted.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        className="flex-1 bg-gray-50"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>New Report</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        {/* Header */}
-        <View className="flex-row items-center mb-6">
-          <Pressable onPress={() => router.back()} className="mr-3 active:opacity-70">
-            <Text className="text-blue-600 text-base">Cancelar</Text>
-          </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Nuevo Reporte</Text>
-        </View>
-
-        {/* Category picker */}
-        <Text className="text-sm font-medium text-gray-700 mb-2">Categoria *</Text>
-        {categoriesLoading ? (
-          <ActivityIndicator size="small" color="#2563eb" className="mb-4" />
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-1"
-            contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-          >
-            {(categories ?? []).map((cat) => {
-              const selected = categoryId === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => {
-                    setCategoryId(cat.id);
-                    setErrors((prev) => {
-                      const next = { ...prev };
-                      delete next.category;
-                      return next;
-                    });
-                  }}
-                  className={`rounded-full px-4 py-2 border ${
-                    selected
-                      ? 'bg-blue-600 border-blue-600'
-                      : 'bg-white border-gray-300'
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      selected ? 'text-white' : 'text-gray-700'
-                    }`}
-                  >
-                    {cat.icon ? `${cat.icon} ` : ''}{cat.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-        {errors.category ? (
-          <Text className="text-red-500 text-xs mb-3">{errors.category}</Text>
-        ) : (
-          <View className="mb-3" />
-        )}
-
-        {/* Title */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Titulo *</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-1 bg-white"
-          placeholder="Titulo breve del problema"
-          value={title}
-          onChangeText={(t) => {
-            setTitle(t);
-            if (errors.title) {
-              setErrors((prev) => {
-                const next = { ...prev };
-                delete next.title;
-                return next;
-              });
-            }
-          }}
-          autoCapitalize="sentences"
-          maxLength={200}
-        />
-        {errors.title ? (
-          <Text className="text-red-500 text-xs mb-3">{errors.title}</Text>
-        ) : (
-          <View className="mb-3" />
-        )}
-
-        {/* Description */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Descripcion *</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-1 bg-white"
-          placeholder="Describe el problema en detalle..."
-          value={description}
-          onChangeText={(t) => {
-            setDescription(t);
-            if (errors.description) {
-              setErrors((prev) => {
-                const next = { ...prev };
-                delete next.description;
-                return next;
-              });
-            }
-          }}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          style={{ minHeight: 100 }}
-        />
-        {errors.description ? (
-          <Text className="text-red-500 text-xs mb-3">{errors.description}</Text>
-        ) : (
-          <View className="mb-3" />
-        )}
-
-        {/* Priority */}
-        <Text className="text-sm font-medium text-gray-700 mb-2">Prioridad</Text>
-        <View className="flex-row gap-2 mb-4">
-          {PRIORITY_OPTIONS.map((opt) => {
-            const selected = priority === opt.value;
-            return (
-              <Pressable
-                key={opt.value}
-                onPress={() => setPriority(opt.value)}
-                className={`flex-1 rounded-lg py-2 items-center ${
-                  selected ? opt.activeColor : opt.color
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    selected ? 'text-white' : 'text-gray-700'
-                  }`}
-                >
-                  {opt.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Location */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Ubicacion (opcional)</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-          placeholder="Ubicacion (ej: Estacionamiento nivel 2)"
-          value={location}
-          onChangeText={setLocation}
-        />
-
-        {/* Photos */}
-        <Text className="text-sm font-medium text-gray-700 mb-2">
-          Fotos ({photoPaths.length}/{MAX_PHOTOS})
-        </Text>
-
-        {/* Photo previews */}
-        {photoPaths.length > 0 ? (
-          <View className="flex-row flex-wrap gap-2 mb-3">
-            {photoPaths.map((path, index) => (
-              <View key={path} className="relative">
-                <Image
-                  source={{ uri: getPublicUrl(path) }}
-                  className="w-20 h-20 rounded-lg"
-                  resizeMode="cover"
-                />
-                <Pressable
-                  onPress={() => removePhoto(index)}
-                  className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center"
-                >
-                  <Text className="text-white text-xs font-bold">X</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {photoPaths.length < MAX_PHOTOS ? (
-          <Pressable
-            onPress={handlePickPhoto}
-            disabled={uploading}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-4 items-center mb-6 active:opacity-80"
-          >
-            {uploading ? (
-              <ActivityIndicator size="small" color="#2563eb" />
-            ) : (
-              <>
-                <Text className="text-2xl mb-1">+</Text>
-                <Text className="text-gray-500 text-sm">Agregar foto</Text>
-              </>
-            )}
-          </Pressable>
-        ) : (
-          <View className="mb-6" />
-        )}
-
-        {/* Submit */}
-        <Pressable
-          onPress={handleSubmit}
-          disabled={isPending || uploading}
-          className={`rounded-lg p-4 items-center ${
-            isPending || uploading ? 'bg-blue-400' : 'bg-blue-600 active:opacity-80'
-          }`}
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {isPending ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <Text className="text-white font-semibold text-base">Enviar Reporte</Text>
-          )}
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Category Selector */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>CATEGORY</Text>
+            {catLoading ? (
+              <ActivityIndicator color={colors.primary} style={styles.catLoader} />
+            ) : (
+              <View style={styles.categoryGrid}>
+                {(categories ?? []).map((cat) => {
+                  const active = selectedCategoryId === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryCard,
+                        active && styles.categoryCardActive,
+                        active && cat.color ? { borderColor: cat.color } : {},
+                      ]}
+                      onPress={() => setSelectedCategoryId(cat.id)}
+                    >
+                      <View
+                        style={[
+                          styles.categoryIconBox,
+                          {
+                            backgroundColor: active
+                              ? (cat.color ? `${cat.color}20` : colors.primaryLight)
+                              : colors.border,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={getCategoryIcon(cat.icon) as any}
+                          size={20}
+                          color={active ? (cat.color ?? colors.primary) : colors.textCaption}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.categoryName,
+                          active && { color: cat.color ?? colors.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+
+          {/* Title */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>TITLE</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Brief summary of the issue"
+                placeholderTextColor={colors.textDisabled}
+                maxLength={120}
+              />
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>DESCRIPTION</Text>
+            <View style={styles.textAreaContainer}>
+              <TextInput
+                style={styles.textArea}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="What needs attention?"
+                placeholderTextColor={colors.textDisabled}
+                multiline
+                textAlignVertical="top"
+                maxLength={2000}
+              />
+            </View>
+          </View>
+
+          {/* Priority */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>PRIORITY</Text>
+            <View style={styles.priorityRow}>
+              {PRIORITIES.map((p) => {
+                const active = priority === p.key;
+                const pColors = getPriorityColors(p.key, active);
+                return (
+                  <TouchableOpacity
+                    key={p.key}
+                    style={[
+                      styles.priorityPill,
+                      { backgroundColor: pColors.bg, borderColor: pColors.border },
+                      active && { borderWidth: 2 },
+                    ]}
+                    onPress={() => setPriority(p.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityText,
+                        { color: pColors.text },
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Location */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>LOCATION (OPTIONAL)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="location-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. Building A, 2nd floor"
+                placeholderTextColor={colors.textDisabled}
+              />
+            </View>
+          </View>
+
+          {/* Photos */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>PHOTOS (UP TO 3)</Text>
+            <View style={styles.photosRow}>
+              {photos.map((_, index) => (
+                <View key={index} style={styles.photoThumb}>
+                  <Ionicons name="image-outline" size={24} color={colors.primary} />
+                  <TouchableOpacity
+                    style={styles.photoRemove}
+                    onPress={() => handleRemovePhoto(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {photos.length < 3 && (
+                <TouchableOpacity
+                  style={styles.addPhotoButton}
+                  onPress={handleAddPhoto}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <ActivityIndicator color={colors.primary} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="camera-outline" size={22} color={colors.textMuted} />
+                      <Text style={styles.addPhotoText}>Add Photo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+            >
+              {createMutation.isPending ? (
+                <ActivityIndicator color={colors.textOnDark} />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit Ticket</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  // Header
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  // Scroll
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.bottomNavClearance + 16,
+  },
+  // Fields
+  fieldGroup: {
+    marginBottom: spacing['3xl'],
+  },
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  // Category Grid
+  catLoader: {
+    paddingVertical: spacing['3xl'],
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.lg,
+  },
+  categoryCard: {
+    width: '30%',
+    flexGrow: 1,
+    minWidth: 90,
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  categoryCardActive: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  categoryIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  categoryName: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textBody,
+    textAlign: 'center',
+  },
+  // Inputs
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: spacing.inputHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  textAreaContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.xl,
+    minHeight: 128,
+  },
+  textArea: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    minHeight: 100,
+  },
+  // Priority
+  priorityRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  priorityPill: {
+    flex: 1,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  priorityText: {
+    fontFamily: fonts.black,
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  // Photos
+  photosRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.primaryLightAlt,
+    position: 'relative',
+  },
+  photoRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+  },
+  addPhotoButton: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  addPhotoText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.textMuted,
+  },
+  // Actions
+  actionsRow: {
+    marginTop: spacing.lg,
+  },
+  submitButton: {
+    height: spacing.buttonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.blueGlow,
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+});

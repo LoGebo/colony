@@ -1,293 +1,649 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
-  ScrollView,
-  Pressable,
+  TouchableOpacity,
   TextInput,
-  Image,
-  ActivityIndicator,
+  FlatList,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTicketDetail, useAddComment } from '@/hooks/useTickets';
-import { StatusBadge } from '@/components/ui/Badge';
-import { SectionCard } from '@/components/ui/Card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { formatRelative, formatDateTime } from '@/lib/dates';
-import { STORAGE_BUCKETS } from '@upoe/shared';
-import { supabase } from '@/lib/supabase';
+import { formatDate, formatRelative } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const STATUS_VARIANTS: Record<string, { bg: string; text: string; label: string }> = {
-  open: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Abierto' },
-  assigned: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Asignado' },
-  in_progress: { bg: 'bg-amber-100', text: 'text-amber-800', label: 'En progreso' },
-  pending_parts: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Esperando piezas' },
-  pending_resident: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Esperando residente' },
-  resolved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Resuelto' },
-  closed: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Cerrado' },
-  cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelado' },
-};
+function getStatusStyle(status: string): { bg: string; color: string; label: string } {
+  switch (status) {
+    case 'open':
+      return { bg: colors.primaryLight, color: colors.primary, label: 'Open' };
+    case 'in_progress':
+      return { bg: colors.warningBg, color: colors.warningText, label: 'In Progress' };
+    case 'resolved':
+      return { bg: colors.successBg, color: colors.successText, label: 'Resolved' };
+    case 'closed':
+      return { bg: colors.border, color: colors.textCaption, label: 'Closed' };
+    default:
+      return { bg: colors.border, color: colors.textCaption, label: status };
+  }
+}
 
-const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-  low: { label: 'Baja', color: 'bg-gray-100 text-gray-700' },
-  medium: { label: 'Media', color: 'bg-blue-100 text-blue-700' },
-  high: { label: 'Alta', color: 'bg-orange-100 text-orange-700' },
-  urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700' },
-};
+function getPriorityStyle(priority: string): { bg: string; color: string; label: string } {
+  switch (priority) {
+    case 'low':
+      return { bg: colors.border, color: colors.textCaption, label: 'Low' };
+    case 'medium':
+      return { bg: colors.warningBg, color: colors.warningText, label: 'Medium' };
+    case 'high':
+      return { bg: colors.orangeBg, color: colors.orange, label: 'High' };
+    case 'urgent':
+      return { bg: colors.dangerBg, color: colors.dangerText, label: 'Urgent' };
+    default:
+      return { bg: colors.border, color: colors.textCaption, label: priority };
+  }
+}
 
-const ROLE_LABELS: Record<string, string> = {
-  reporter: 'Residente',
-  admin: 'Administrador',
-  manager: 'Gerente',
-  maintenance: 'Mantenimiento',
-  system: 'Sistema',
-};
+function getCategoryIcon(icon: string | null): string {
+  if (!icon) return 'construct-outline';
+  const iconMap: Record<string, string> = {
+    droplet: 'water-outline',
+    zap: 'flash-outline',
+    layout: 'grid-outline',
+    thermometer: 'thermometer-outline',
+    wrench: 'construct-outline',
+    shield: 'shield-outline',
+    wifi: 'wifi-outline',
+    key: 'key-outline',
+    home: 'home-outline',
+  };
+  return iconMap[icon] ?? 'construct-outline';
+}
 
-type TicketComment = {
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'open': return 'Open';
+    case 'in_progress': return 'In Progress';
+    case 'resolved': return 'Resolved';
+    case 'closed': return 'Closed';
+    default: return status;
+  }
+}
+
+interface TicketComment {
   id: string;
-  content: string | null;
+  content: string;
   author_id: string;
   author_role: string;
   is_system: boolean;
   is_internal: boolean;
   photo_urls: string[] | null;
   created_at: string;
-  status_from?: string | null;
-  status_to?: string | null;
-};
+  status_from: string | null;
+  status_to: string | null;
+}
 
 export default function TicketDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: ticket, isLoading, error } = useTicketDetail(id ?? '');
-  const { mutate: addComment, isPending: isAddingComment } = useAddComment();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: ticket, isLoading } = useTicketDetail(id ?? '');
+  const addCommentMutation = useAddComment();
 
   const [commentText, setCommentText] = useState('');
+  const inputRef = useRef<TextInput>(null);
 
-  const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage
-      .from(STORAGE_BUCKETS.TICKET_ATTACHMENTS)
-      .getPublicUrl(path);
-    return data.publicUrl;
-  };
+  const comments = useMemo(() => {
+    if (!ticket?.ticket_comments) return [];
+    const allComments = ticket.ticket_comments as TicketComment[];
+    // Filter out internal comments for resident view
+    return allComments
+      .filter((c) => !c.is_internal)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [ticket]);
 
-  const handleAddComment = useCallback(() => {
-    if (!commentText.trim() || !id) return;
+  const handleSendComment = useCallback(async () => {
+    if (!commentText.trim() || !id || addCommentMutation.isPending) return;
 
-    addComment(
-      { ticket_id: id, content: commentText.trim() },
-      {
-        onSuccess: () => {
-          setCommentText('');
-        },
-      }
+    try {
+      await addCommentMutation.mutateAsync({
+        ticket_id: id,
+        content: commentText.trim(),
+      });
+      setCommentText('');
+    } catch (error: any) {
+      // Silent fail - user can retry
+    }
+  }, [commentText, id, addCommentMutation]);
+
+  if (isLoading || !ticket) {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Loading...</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <ActivityIndicator color={colors.primary} style={styles.mainLoader} />
+      </View>
     );
-  }, [commentText, id, addComment]);
-
-  if (isLoading) {
-    return <LoadingSpinner message="Cargando ticket..." />;
   }
 
-  if (error || !ticket) {
-    return <EmptyState message="Ticket no encontrado" />;
-  }
+  const category = ticket.ticket_categories as { name: string; icon: string | null; color: string | null } | null;
+  const statusStyle = getStatusStyle(ticket.status);
+  const priorityStyle = getPriorityStyle(ticket.priority);
 
-  const category = ticket.ticket_categories as {
-    name: string;
-    icon: string | null;
-    color: string | null;
-  } | null;
+  const renderHeader = () => (
+    <View>
+      {/* Status + Priority Badges */}
+      <View style={styles.badgeRow}>
+        <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
+          <Text style={[styles.badgeText, { color: statusStyle.color }]}>{statusStyle.label}</Text>
+        </View>
+        <View style={[styles.badge, { backgroundColor: priorityStyle.bg }]}>
+          <Text style={[styles.badgeText, { color: priorityStyle.color }]}>
+            {priorityStyle.label} Priority
+          </Text>
+        </View>
+      </View>
 
-  const comments = (
-    (ticket.ticket_comments ?? []) as TicketComment[]
-  )
-    .filter((c) => !c.is_internal)
-    .sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
+      {/* Category Tag */}
+      {category && (
+        <View style={styles.categoryTag}>
+          <View
+            style={[
+              styles.categoryTagIcon,
+              { backgroundColor: category.color ? `${category.color}15` : colors.primaryLight },
+            ]}
+          >
+            <Ionicons
+              name={getCategoryIcon(category.icon) as any}
+              size={14}
+              color={category.color ?? colors.primary}
+            />
+          </View>
+          <Text style={styles.categoryTagText}>{category.name}</Text>
+        </View>
+      )}
 
-  const priorityInfo = PRIORITY_LABELS[ticket.priority] ?? {
-    label: ticket.priority,
-    color: 'bg-gray-100 text-gray-700',
-  };
+      {/* Description */}
+      <View style={styles.descriptionSection}>
+        <Text style={styles.sectionTitle}>DESCRIPTION</Text>
+        <GlassCard style={styles.descriptionCard}>
+          <Text style={styles.descriptionText}>{ticket.description}</Text>
+        </GlassCard>
+      </View>
 
-  const canComment =
-    ticket.status !== 'closed' && ticket.status !== 'cancelled';
+      {/* Created Date */}
+      <View style={styles.metaRow}>
+        <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+        <Text style={styles.metaText}>Created {formatDate(ticket.created_at)}</Text>
+      </View>
 
-  return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View className="flex-1 bg-gray-50">
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: canComment ? 80 : 32 }}
-        >
-          {/* Header */}
-          <View className="px-4 pt-4 pb-2">
-            <Pressable onPress={() => router.back()} className="mb-3 active:opacity-70">
-              <Text className="text-blue-600 text-base">Volver</Text>
-            </Pressable>
-            <Text className="text-xl font-bold text-gray-900 mb-2">{ticket.title}</Text>
+      {/* Timeline Header */}
+      <View style={styles.timelineHeader}>
+        <Text style={styles.sectionTitle}>ACTIVITY</Text>
+        <Text style={styles.commentCount}>{comments.length} entries</Text>
+      </View>
+    </View>
+  );
 
-            {/* Status + Priority + Category badges */}
-            <View className="flex-row items-center flex-wrap gap-2 mb-4">
-              <StatusBadge status={ticket.status} variants={STATUS_VARIANTS} />
-              <View className={`rounded-full px-2 py-0.5 ${priorityInfo.color.split(' ')[0]}`}>
-                <Text className={`text-xs font-medium ${priorityInfo.color.split(' ')[1]}`}>
-                  {priorityInfo.label}
+  const renderComment = ({ item }: { item: TicketComment }) => {
+    // Status change event
+    if (item.status_from && item.status_to) {
+      return (
+        <View style={styles.statusChange}>
+          <View style={styles.statusChangeDot} />
+          <View style={styles.statusChangeContent}>
+            <View style={styles.statusChangeRow}>
+              <View style={[styles.statusFromTo, { backgroundColor: getStatusStyle(item.status_from).bg }]}>
+                <Text style={[styles.statusFromToText, { color: getStatusStyle(item.status_from).color }]}>
+                  {getStatusLabel(item.status_from)}
                 </Text>
               </View>
-              {category ? (
-                <View className="bg-gray-100 rounded-full px-2 py-0.5">
-                  <Text className="text-xs text-gray-700 font-medium">
-                    {category.icon ? `${category.icon} ` : ''}{category.name}
-                  </Text>
-                </View>
-              ) : null}
+              <Ionicons name="arrow-forward" size={12} color={colors.textCaption} />
+              <View style={[styles.statusFromTo, { backgroundColor: getStatusStyle(item.status_to).bg }]}>
+                <Text style={[styles.statusFromToText, { color: getStatusStyle(item.status_to).color }]}>
+                  {getStatusLabel(item.status_to)}
+                </Text>
+              </View>
             </View>
+            <Text style={styles.statusChangeDate}>{formatRelative(item.created_at)}</Text>
           </View>
+        </View>
+      );
+    }
 
-          {/* SLA Info */}
-          {(ticket.response_due_at || ticket.resolution_due_at) ? (
-            <View className="px-4 mb-3">
-              <SectionCard>
-                {ticket.response_due_at ? (
-                  <View className="flex-row justify-between py-1">
-                    <Text className="text-sm text-gray-500">Respuesta esperada</Text>
-                    <Text
-                      className={`text-sm font-medium ${
-                        ticket.response_breached ? 'text-red-600' : 'text-gray-900'
-                      }`}
-                    >
-                      {formatDateTime(ticket.response_due_at)}
-                      {ticket.response_breached ? ' (vencido)' : ''}
-                    </Text>
-                  </View>
-                ) : null}
-                {ticket.resolution_due_at ? (
-                  <View className="flex-row justify-between py-1">
-                    <Text className="text-sm text-gray-500">Resolucion esperada</Text>
-                    <Text
-                      className={`text-sm font-medium ${
-                        ticket.resolution_breached ? 'text-red-600' : 'text-gray-900'
-                      }`}
-                    >
-                      {formatDateTime(ticket.resolution_due_at)}
-                      {ticket.resolution_breached ? ' (vencido)' : ''}
-                    </Text>
-                  </View>
-                ) : null}
-              </SectionCard>
+    // System message
+    if (item.is_system) {
+      return (
+        <View style={styles.systemMessage}>
+          <View style={styles.systemDot} />
+          <View style={styles.systemContent}>
+            <Text style={styles.systemText}>{item.content}</Text>
+            <Text style={styles.systemDate}>{formatRelative(item.created_at)}</Text>
+          </View>
+        </View>
+      );
+    }
+
+    // User comment
+    return (
+      <View style={styles.commentItem}>
+        <View style={styles.commentAvatar}>
+          <Ionicons
+            name={item.author_role === 'reporter' ? 'person-outline' : 'build-outline'}
+            size={16}
+            color={item.author_role === 'reporter' ? colors.primary : colors.teal}
+          />
+        </View>
+        <View style={styles.commentBubble}>
+          <View style={styles.commentBubbleHeader}>
+            <Text style={styles.commentRole}>
+              {item.author_role === 'reporter' ? 'You' : 'Staff'}
+            </Text>
+            <Text style={styles.commentDate}>{formatRelative(item.created_at)}</Text>
+          </View>
+          <Text style={styles.commentContent}>{item.content}</Text>
+          {item.photo_urls && item.photo_urls.length > 0 && (
+            <View style={styles.commentPhotos}>
+              <Ionicons name="images-outline" size={14} color={colors.primary} />
+              <Text style={styles.commentPhotoCount}>
+                {item.photo_urls.length} photo{item.photo_urls.length > 1 ? 's' : ''} attached
+              </Text>
             </View>
-          ) : null}
-
-          {/* Description */}
-          <View className="px-4 mb-3">
-            <SectionCard>
-              <Text className="text-sm font-medium text-gray-700 mb-1">Descripcion</Text>
-              <Text className="text-sm text-gray-600 leading-5">{ticket.description}</Text>
-              {ticket.location ? (
-                <View className="mt-2 pt-2 border-t border-gray-100">
-                  <Text className="text-xs text-gray-500">Ubicacion: {ticket.location}</Text>
-                </View>
-              ) : null}
-            </SectionCard>
-          </View>
-
-          {/* Timeline / Comments */}
-          <View className="px-4 mb-3">
-            <Text className="text-base font-semibold text-gray-900 mb-2">Historial</Text>
-
-            {comments.length === 0 ? (
-              <Text className="text-sm text-gray-400 italic">Sin comentarios aun</Text>
-            ) : (
-              comments.map((comment) => (
-                <View key={comment.id} className="mb-3">
-                  {comment.is_system ? (
-                    // System comment
-                    <View className="bg-gray-100 rounded-lg p-3">
-                      <Text className="text-sm text-gray-500 italic">
-                        {comment.content ?? 'Accion del sistema'}
-                      </Text>
-                      <Text className="text-xs text-gray-400 mt-1">
-                        {formatRelative(comment.created_at)}
-                      </Text>
-                    </View>
-                  ) : (
-                    // User comment
-                    <View className="bg-white rounded-lg p-3 shadow-sm">
-                      <View className="flex-row items-center justify-between mb-1">
-                        <Text className="text-xs font-medium text-blue-600">
-                          {ROLE_LABELS[comment.author_role] ?? comment.author_role}
-                        </Text>
-                        <Text className="text-xs text-gray-400">
-                          {formatRelative(comment.created_at)}
-                        </Text>
-                      </View>
-                      {comment.content ? (
-                        <Text className="text-sm text-gray-700 leading-5">
-                          {comment.content}
-                        </Text>
-                      ) : null}
-
-                      {/* Photo thumbnails */}
-                      {comment.photo_urls && comment.photo_urls.length > 0 ? (
-                        <View className="flex-row flex-wrap gap-2 mt-2">
-                          {comment.photo_urls.map((url, idx) => (
-                            <Image
-                              key={`${comment.id}-photo-${idx}`}
-                              source={{ uri: getPublicUrl(url) }}
-                              className="w-16 h-16 rounded-md"
-                              resizeMode="cover"
-                            />
-                          ))}
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
-
-        {/* Add comment form - fixed at bottom */}
-        {canComment ? (
-          <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
-            <View className="flex-row items-center gap-2">
-              <TextInput
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-sm"
-                placeholder="Escribe un comentario..."
-                value={commentText}
-                onChangeText={setCommentText}
-                multiline
-                maxLength={1000}
-              />
-              <Pressable
-                onPress={handleAddComment}
-                disabled={isAddingComment || !commentText.trim()}
-                className={`rounded-lg px-4 py-2 ${
-                  isAddingComment || !commentText.trim()
-                    ? 'bg-gray-300'
-                    : 'bg-blue-600 active:opacity-80'
-                }`}
-              >
-                {isAddingComment ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text className="text-white font-semibold text-sm">Enviar</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
+          )}
+        </View>
       </View>
-    </KeyboardAvoidingView>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {ticket.title}
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        {/* Comments Timeline */}
+        <FlatList
+          data={comments}
+          keyExtractor={(item) => item.id}
+          renderItem={renderComment}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyTimeline}>
+              <Ionicons name="chatbubbles-outline" size={32} color={colors.textDisabled} />
+              <Text style={styles.emptyTimelineText}>No activity yet</Text>
+            </View>
+          }
+        />
+
+        {/* Comment Input */}
+        <View style={styles.inputBar}>
+          <View style={styles.commentInputContainer}>
+            <TextInput
+              ref={inputRef}
+              style={styles.commentInput}
+              value={commentText}
+              onChangeText={setCommentText}
+              placeholder="Add a comment..."
+              placeholderTextColor={colors.textDisabled}
+              multiline
+              maxLength={1000}
+            />
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!commentText.trim() || addCommentMutation.isPending) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSendComment}
+            disabled={!commentText.trim() || addCommentMutation.isPending}
+          >
+            {addCommentMutation.isPending ? (
+              <ActivityIndicator color={colors.textOnDark} size="small" />
+            ) : (
+              <Ionicons name="send" size={18} color={colors.textOnDark} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  // Header
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    marginHorizontal: spacing.lg,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  mainLoader: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  // Content
+  listContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  // Badges
+  badgeRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  badge: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    textTransform: 'uppercase',
+  },
+  // Category
+  categoryTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing['3xl'],
+  },
+  categoryTagIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryTagText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textBody,
+  },
+  // Description
+  descriptionSection: {
+    marginBottom: spacing['3xl'],
+  },
+  sectionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  descriptionCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+  },
+  descriptionText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textBody,
+    lineHeight: 22,
+  },
+  // Meta
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing['3xl'],
+  },
+  metaText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+  },
+  // Timeline
+  timelineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: spacing.xl,
+  },
+  commentCount: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textCaption,
+    marginBottom: spacing.md,
+  },
+  // Status Change
+  statusChange: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  statusChangeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.borderMedium,
+    marginTop: 6,
+  },
+  statusChangeContent: {
+    flex: 1,
+  },
+  statusChangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  statusFromTo: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: borderRadius.sm,
+  },
+  statusFromToText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  statusChangeDate: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: colors.textCaption,
+  },
+  // System Message
+  systemMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  systemDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.border,
+    marginTop: 6,
+  },
+  systemContent: {
+    flex: 1,
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+  },
+  systemText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
+  systemDate: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: colors.textCaption,
+    marginTop: spacing.xs,
+  },
+  // User Comment
+  commentItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  commentBubble: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+  },
+  commentBubbleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  commentRole: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  commentDate: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: colors.textCaption,
+  },
+  commentContent: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textBody,
+    lineHeight: 20,
+  },
+  commentPhotos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  commentPhotoCount: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  // Empty Timeline
+  emptyTimeline: {
+    alignItems: 'center',
+    paddingVertical: spacing['4xl'],
+    gap: spacing.md,
+  },
+  emptyTimelineText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  // Input Bar
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingVertical: spacing.lg,
+    paddingBottom: spacing.safeAreaBottom + spacing.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  commentInputContainer: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 100,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    justifyContent: 'center',
+  },
+  commentInput: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    maxHeight: 80,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  sendButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+  },
+});
