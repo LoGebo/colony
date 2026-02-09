@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
+import { PanicButton } from '@/components/guard/PanicButton';
 
 export default function GuardLayout() {
   return (
@@ -64,7 +65,8 @@ export default function GuardLayout() {
           }}
         />
       </Tabs>
-      {/* <PanicButton /> will be added by plan 14-04 */}
+      {/* Persistent panic button - floats above all tab content */}
+      <PanicButton />
     </View>
   );
 }
