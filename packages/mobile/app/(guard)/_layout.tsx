@@ -1,8 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
 import { PanicButton } from '@/components/guard/PanicButton';
+import { useUnreadCount } from '@/hooks/useNotifications';
 
 export default function GuardLayout() {
+  const { data: unreadCount } = useUnreadCount();
+
   return (
     <View style={{ flex: 1 }}>
       <Tabs
@@ -64,11 +67,14 @@ export default function GuardLayout() {
             href: null,
           }}
         />
-        {/* Hidden notification screen - accessed via router.push */}
         <Tabs.Screen
           name="notifications"
           options={{
-            href: null,
+            tabBarLabel: 'Alertas',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ color, fontSize: 20 }}>{'🔔'}</Text>
+            ),
+            tabBarBadge: unreadCount || undefined,
           }}
         />
       </Tabs>

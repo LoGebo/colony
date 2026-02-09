@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { useUnreadCount } from '@/hooks/useNotifications';
 
 export default function ResidentLayout() {
+  const { data: unreadCount } = useUnreadCount();
+
   return (
     <Tabs
       screenOptions={{
@@ -45,11 +48,12 @@ export default function ResidentLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'☰'}</Text>,
         }}
       />
-      {/* Hidden notification screen - accessed via router.push */}
       <Tabs.Screen
         name="notifications"
         options={{
-          href: null,
+          tabBarLabel: 'Alertas',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'🔔'}</Text>,
+          tabBarBadge: unreadCount || undefined,
         }}
       />
     </Tabs>
