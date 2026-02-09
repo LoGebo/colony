@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 15 of 16 (Admin Governance & Analytics)
-Plan: 2 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-08 -- Completed 15-02-PLAN.md (Governance Management UI)
+Last activity: 2026-02-08 -- Completed 15-04-PLAN.md (Emergency Management & Device Inventory)
 
-Progress: [█████████░] 86% (30/35 v2.0 plans)
+Progress: [█████████░] 89% (31/35 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████████░] 86% (30/35 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 30
-- Average duration: 6.2 min
-- Total execution time: ~186 min
+- Total plans completed: 31
+- Average duration: 6.5 min
+- Total execution time: ~231 min
 
 ## Accumulated Context
 
@@ -104,6 +104,11 @@ New v2.0 decisions:
 - Inline attendance/agreement forms in assemblies (toggle visibility, no modals)
 - Real-time quorum via calculate_assembly_quorum RPC for coefficient-weighted calculation
 - agreement_number as number type (not string) with auto-increment from max
+- Manual TypeScript interfaces for tables not in database.types.ts (access_devices, access_device_types, access_device_assignments)
+- Cast table queries as 'never' and results as 'unknown as TypeRow' for type safety with missing tables
+- RPC get_evacuation_priority_list for floor-prioritized evacuation list
+- Device lifecycle state machine: Assign creates assignment + updates status, Return updates assignment + resets status
+- queryKeys bracket notation for hyphenated keys (queryKeys['emergency-contacts'] not queryKeys.emergencyContacts)
 
 ### Pending Todos
 
@@ -118,5 +123,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-08
-Stopped at: Completed 15-02-PLAN.md (Governance Management UI)
+Stopped at: Completed 15-04-PLAN.md (Emergency Management & Device Inventory)
 Resume file: None
