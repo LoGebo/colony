@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 15 of 16 (Admin Governance & Analytics)
-Plan: 1 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-09 -- Completed 15-01-PLAN.md (Navigation & Query Keys Foundation)
+Last activity: 2026-02-08 -- Completed 15-03-PLAN.md (Violations Management)
 
-Progress: [████████░░] 83% (29/35 v2.0 plans)
+Progress: [████████░░] 86% (30/35 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [████████░░] 83% (29/35 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 27
+- Total plans completed: 30
 - Average duration: 6.1 min
-- Total execution time: ~165 min
+- Total execution time: ~183 min
 
 ## Accumulated Context
 
@@ -95,6 +95,8 @@ New v2.0 decisions:
 - Marketplace photo uploads to community-assets bucket with marketplace/ category prefix
 - Fire-and-forget RPCs for view_count and inquiry_count (no await)
 - Alphabetized mergeQueryKeys entries for maintainability (was insertion-order)
+- Inline sanction/appeal forms in violations detail page (not modals) for faster workflow
+- Photo URLs as text inputs in violations create (file upload infrastructure deferred)
 
 ### Pending Todos
 
@@ -108,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-09
-Stopped at: Completed 15-01-PLAN.md (Navigation & Query Keys Foundation)
+Last session: 2026-02-08
+Stopped at: Completed 15-03-PLAN.md (Violations Management)
 Resume file: None
