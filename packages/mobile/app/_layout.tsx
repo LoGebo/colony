@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SessionProvider, useSession } from '@/providers/SessionProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { SYSTEM_ROLES } from '@upoe/shared';
+import { usePushRegistration } from '@/hooks/useNotifications';
 
 // Keep splash screen visible until we determine auth state
 SplashScreen.preventAutoHideAsync();
@@ -13,6 +14,9 @@ SplashScreen.preventAutoHideAsync();
 function RootNavigator() {
   const { session, isLoading } = useSession();
   const role = session?.user?.app_metadata?.role as string | undefined;
+
+  // Initialize push notifications on authenticated launch
+  usePushRegistration();
 
   useEffect(() => {
     if (!isLoading) {
