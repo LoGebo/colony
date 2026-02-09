@@ -36,6 +36,8 @@ export const amenities = createQueryKeys('amenities', {
 
 export const notifications = createQueryKeys('notifications', {
   all: null,
+  list: (userId: string) => [{ userId }],
+  preferences: (residentId: string) => [{ residentId }],
   unread: (userId: string) => [{ userId }],
 });
 
