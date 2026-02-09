@@ -99,19 +99,19 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 11. Guard — Patrol & Incidents
 
-- [ ] **GPATR-01**: Guard can view active patrol route with checkpoint sequence
-- [ ] **GPATR-02**: Guard can scan NFC checkpoint tags during patrol
-- [ ] **GPATR-03**: Guard can see patrol progress (scanned vs remaining checkpoints)
-- [ ] **GINC-01**: Guard can create incident report with type, severity, description, and photos/video
-- [ ] **GINC-02**: Guard can view incident timeline and add follow-up comments
-- [ ] **GINC-03**: Guard can leave shift handover notes for incoming guard
+- [x] **GPATR-01**: Guard can view active patrol route with checkpoint sequence
+- [x] **GPATR-02**: Guard can scan NFC checkpoint tags during patrol
+- [x] **GPATR-03**: Guard can see patrol progress (scanned vs remaining checkpoints)
+- [x] **GINC-01**: Guard can create incident report with type, severity, description, and photos/video
+- [x] **GINC-02**: Guard can view incident timeline and add follow-up comments
+- [x] **GINC-03**: Guard can leave shift handover notes for incoming guard
 
 ### 12. Guard — Emergency & Safety
 
-- [ ] **GEMRG-01**: Guard has persistent emergency panic button accessible from any screen
-- [ ] **GEMRG-02**: Panic button triggers alert to admin, other guards, and generates incident record
-- [ ] **GEMRG-03**: Guard can select emergency type (panic, fire, medical, intrusion)
-- [ ] **GEMRG-04**: Guard can verify service providers against authorized schedules
+- [x] **GEMRG-01**: Guard has persistent emergency panic button accessible from any screen
+- [x] **GEMRG-02**: Panic button triggers alert to admin, other guards, and generates incident record
+- [x] **GEMRG-03**: Guard can select emergency type (panic, fire, medical, intrusion)
+- [x] **GEMRG-04**: Guard can verify service providers against authorized schedules
 
 ### 13. Admin Dashboard — Financial
 
@@ -170,31 +170,31 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 19. Admin Dashboard — Marketplace Moderation
 
-- [ ] **AMRKT-01**: Admin can view moderation queue of new/reported listings
-- [ ] **AMRKT-02**: Admin can approve, reject, or remove listings
-- [ ] **AMRKT-03**: Admin can manage marketplace categories
+- [x] **AMRKT-01**: Admin can view moderation queue of new/reported listings
+- [x] **AMRKT-02**: Admin can approve, reject, or remove listings
+- [x] **AMRKT-03**: Admin can manage marketplace categories
 
 ### 20. Admin Dashboard — Parking Management
 
-- [ ] **APARK-01**: Admin can manage parking spot inventory (type, location, assigned unit)
-- [ ] **APARK-02**: Admin can assign/unassign parking spots to units
-- [ ] **APARK-03**: Admin can view visitor parking reservations
-- [ ] **APARK-04**: Admin can view and manage parking violations
+- [x] **APARK-01**: Admin can manage parking spot inventory (type, location, assigned unit)
+- [x] **APARK-02**: Admin can assign/unassign parking spots to units
+- [x] **APARK-03**: Admin can view visitor parking reservations
+- [x] **APARK-04**: Admin can view and manage parking violations
 
 ### 21. Admin Dashboard — Provider Management
 
-- [ ] **APROV-01**: Admin can manage provider companies (contact, specialties, status)
-- [ ] **APROV-02**: Admin can manage provider documentation (insurance, certifications, expiry tracking)
-- [ ] **APROV-03**: Admin can manage provider personnel (authorized employees with photos)
-- [ ] **APROV-04**: Admin can configure provider access schedules (allowed days/hours)
-- [ ] **APROV-05**: Admin can create and track work orders
+- [x] **APROV-01**: Admin can manage provider companies (contact, specialties, status)
+- [x] **APROV-02**: Admin can manage provider documentation (insurance, certifications, expiry tracking)
+- [x] **APROV-03**: Admin can manage provider personnel (authorized employees with photos)
+- [x] **APROV-04**: Admin can configure provider access schedules (allowed days/hours)
+- [x] **APROV-05**: Admin can create and track work orders
 
 ### 22. Admin Dashboard — Move-in/Move-out
 
-- [ ] **AMOVE-01**: Admin can create and manage move requests (type, date, moving company)
-- [ ] **AMOVE-02**: Admin can track pre-move validation checklist (debt-free, keys, vehicles)
-- [ ] **AMOVE-03**: Admin can manage damage deposits (collection, deductions, refund)
-- [ ] **AMOVE-04**: Admin can sign off move completion
+- [x] **AMOVE-01**: Admin can create and manage move requests (type, date, moving company)
+- [x] **AMOVE-02**: Admin can track pre-move validation checklist (debt-free, keys, vehicles)
+- [x] **AMOVE-03**: Admin can manage damage deposits (collection, deductions, refund)
+- [x] **AMOVE-04**: Admin can sign off move completion
 
 ### 23. Admin Dashboard — Keys & Devices
 
@@ -368,32 +368,32 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | RMRKT-02 | Phase 13 | Complete |
 | RMRKT-03 | Phase 13 | Complete |
 | RMRKT-04 | Phase 13 | Complete |
-| GPATR-01 | Phase 14 | Pending |
-| GPATR-02 | Phase 14 | Pending |
-| GPATR-03 | Phase 14 | Pending |
-| GINC-01 | Phase 14 | Pending |
-| GINC-02 | Phase 14 | Pending |
-| GINC-03 | Phase 14 | Pending |
-| GEMRG-01 | Phase 14 | Pending |
-| GEMRG-02 | Phase 14 | Pending |
-| GEMRG-03 | Phase 14 | Pending |
-| GEMRG-04 | Phase 14 | Pending |
-| APROV-01 | Phase 14 | Pending |
-| APROV-02 | Phase 14 | Pending |
-| APROV-03 | Phase 14 | Pending |
-| APROV-04 | Phase 14 | Pending |
-| APROV-05 | Phase 14 | Pending |
-| APARK-01 | Phase 14 | Pending |
-| APARK-02 | Phase 14 | Pending |
-| APARK-03 | Phase 14 | Pending |
-| APARK-04 | Phase 14 | Pending |
-| AMOVE-01 | Phase 14 | Pending |
-| AMOVE-02 | Phase 14 | Pending |
-| AMOVE-03 | Phase 14 | Pending |
-| AMOVE-04 | Phase 14 | Pending |
-| AMRKT-01 | Phase 14 | Pending |
-| AMRKT-02 | Phase 14 | Pending |
-| AMRKT-03 | Phase 14 | Pending |
+| GPATR-01 | Phase 14 | Complete |
+| GPATR-02 | Phase 14 | Complete |
+| GPATR-03 | Phase 14 | Complete |
+| GINC-01 | Phase 14 | Complete |
+| GINC-02 | Phase 14 | Complete |
+| GINC-03 | Phase 14 | Complete |
+| GEMRG-01 | Phase 14 | Complete |
+| GEMRG-02 | Phase 14 | Complete |
+| GEMRG-03 | Phase 14 | Complete |
+| GEMRG-04 | Phase 14 | Complete |
+| APROV-01 | Phase 14 | Complete |
+| APROV-02 | Phase 14 | Complete |
+| APROV-03 | Phase 14 | Complete |
+| APROV-04 | Phase 14 | Complete |
+| APROV-05 | Phase 14 | Complete |
+| APARK-01 | Phase 14 | Complete |
+| APARK-02 | Phase 14 | Complete |
+| APARK-03 | Phase 14 | Complete |
+| APARK-04 | Phase 14 | Complete |
+| AMOVE-01 | Phase 14 | Complete |
+| AMOVE-02 | Phase 14 | Complete |
+| AMOVE-03 | Phase 14 | Complete |
+| AMOVE-04 | Phase 14 | Complete |
+| AMRKT-01 | Phase 14 | Complete |
+| AMRKT-02 | Phase 14 | Complete |
+| AMRKT-03 | Phase 14 | Complete |
 | AGOV-01 | Phase 15 | Pending |
 | AGOV-02 | Phase 15 | Pending |
 | AGOV-03 | Phase 15 | Pending |

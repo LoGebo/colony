@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Admin Dashboard Financial Core** - Financial KPIs, payment approval, charge generation, resident/unit management
 - [x] **Phase 12: Admin Dashboard Operations** - Maintenance tickets, announcements, access logs, documents, amenity management
 - [x] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
-- [ ] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
+- [x] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
 - [ ] **Phase 15: Admin Governance & Analytics** - Elections, assemblies, surveys, violations, emergency info, keys/devices, guard metrics, audit trail
 - [ ] **Phase 16: Push Notifications & Real-time Polish** - Push registration, notification delivery, real-time subscriptions, notification preferences
 
@@ -150,11 +150,11 @@ Plans:
 
 Plans:
 - [x] 14-01-PLAN.md -- Foundation: migrations (shift_handovers, provider_work_orders), native deps (NFC, GPS, haptics), query key factories, guard tab + admin sidebar updates
-- [ ] 14-02-PLAN.md -- Guard patrol: route display, NFC checkpoint scanning, GPS validation, progress tracking
-- [ ] 14-03-PLAN.md -- Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
-- [ ] 14-04-PLAN.md -- Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
-- [ ] 14-05-PLAN.md -- Admin providers and work orders: company CRUD, documentation tracking, personnel, access schedules, work orders
-- [ ] 14-06-PLAN.md -- Admin parking, moves, marketplace moderation: parking inventory, move workflow, deposit management, moderation queue
+- [x] 14-02-PLAN.md -- Guard patrol: route display, NFC checkpoint scanning, GPS validation, progress tracking
+- [x] 14-03-PLAN.md -- Guard incidents and handover: incident reports with media, timeline, follow-ups, shift handover notes
+- [x] 14-04-PLAN.md -- Guard emergency: persistent panic button, emergency type selection, alert dispatch, provider verification
+- [x] 14-05-PLAN.md -- Admin providers and work orders: company CRUD, documentation tracking, personnel, access schedules, work orders
+- [x] 14-06-PLAN.md -- Admin parking, moves, marketplace moderation: parking inventory, move workflow, deposit management, moderation queue
 
 ### Phase 15: Admin Governance & Analytics
 **Goal**: Administrators can manage community governance (elections, assemblies, surveys), track violations, access emergency information, manage keys/devices, view guard performance, and review audit trails
@@ -210,12 +210,12 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 11. Admin Dashboard Financial Core | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 12. Admin Dashboard Operations | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
-| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 1/6 | In progress | - |
+| 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 6/6 | Complete | 2026-02-08 |
 | 15. Admin Governance & Analytics | v2.0 | 0/4 | Not started | - |
 | 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 23/35 plans
+**v2.0 Total:** 28/35 plans
 
 ---
 *Roadmap created: 2026-01-29*
