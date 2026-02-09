@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 16 of 16 (Push Notifications & Real-time Polish)
-Plan: 0 of 3 in current phase
-Status: Not started
-Last activity: 2026-02-08 -- Completed Phase 15 (Admin Governance & Analytics) -- all 5 plans
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-09 -- Completed 16-01-PLAN.md
 
-Progress: [█████████░] 92% (33/36 v2.0 plans)
+Progress: [█████████░] 94% (34/36 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████████░] 92% (33/36 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 31
-- Average duration: 6.5 min
-- Total execution time: ~231 min
+- Total plans completed: 34
+- Average duration: 6.1 min
+- Total execution time: ~236 min
 
 ## Accumulated Context
 
@@ -109,6 +109,11 @@ New v2.0 decisions:
 - RPC get_evacuation_priority_list for floor-prioritized evacuation list
 - Device lifecycle state machine: Assign creates assignment + updates status, Return updates assignment + resets status
 - queryKeys bracket notation for hyphenated keys (queryKeys['emergency-contacts'] not queryKeys.emergencyContacts)
+- Singleton NotificationService pattern for push notification management (prevents duplicate listeners)
+- Android notification channels created before permission request (required for Android 8+)
+- Type-based foreground notification priority (emergency=MAX+sound, visitor=HIGH+sound, default=banner-only)
+- Select-then-update pattern for push_tokens storage (unique constraints unclear from types)
+- Fire-and-forget mark_notification_read on tap (user already navigated, don't block UX)
 
 ### Pending Todos
 
@@ -119,9 +124,10 @@ None.
 - Database migrations 20260208123300, 20260208123301, and 20260208210500 need to be applied to live Supabase instance before resident/admin features work
 - Migrations 20260208220000 (shift_handovers) and 20260208220100 (provider_work_orders) need to be applied before handover and work order features work
 - NFC testing requires EAS Build development client (not Expo Go)
+- Push notification testing requires physical device (emulators/simulators don't support FCM/APNs)
 
 ## Session Continuity
 
-Last session: 2026-02-08
-Stopped at: Completed 15-04-PLAN.md (Emergency Management & Device Inventory)
+Last session: 2026-02-09
+Stopped at: Completed 16-01-PLAN.md (Push Notification Infrastructure)
 Resume file: None
