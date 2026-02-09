@@ -1,283 +1,498 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
-  Pressable,
-  Alert,
+  TouchableOpacity,
   ScrollView,
+  StyleSheet,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { STORAGE_BUCKETS } from '@upoe/shared';
-import { useAuth } from '@/hooks/useAuth';
-import { useManualCheckIn, useBlacklistCheck } from '@/hooks/useGateOps';
-import { BlacklistAlert } from '@/components/guard/BlacklistAlert';
-import { pickAndUploadImage } from '@/lib/upload';
+import { Ionicons } from '@expo/vector-icons';
+import { useManualCheckIn } from '@/hooks/useGateOps';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-type Direction = 'entry' | 'exit';
+const PERSON_TYPES = [
+  { key: 'visitor', label: 'Visitor', icon: 'person-outline' as const },
+  { key: 'provider', label: 'Provider', icon: 'construct-outline' as const },
+  { key: 'delivery', label: 'Delivery', icon: 'cube-outline' as const },
+  { key: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const },
+];
 
 export default function ManualCheckInScreen() {
   const router = useRouter();
-  const { communityId } = useAuth();
   const manualCheckIn = useManualCheckIn();
 
-  // Form state
-  const [visitorName, setVisitorName] = useState('');
-  const [personDocument, setPersonDocument] = useState('');
+  const [personName, setPersonName] = useState('');
+  const [personType, setPersonType] = useState('visitor');
   const [vehiclePlate, setVehiclePlate] = useState('');
-  const [direction, setDirection] = useState<Direction>('entry');
+  const [direction, setDirection] = useState<'entry' | 'exit'>('entry');
   const [guardNotes, setGuardNotes] = useState('');
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
-  // Debounced values for blacklist check
-  const [debouncedName, setDebouncedName] = useState('');
-  const [debouncedPlate, setDebouncedPlate] = useState('');
+  const canSubmit = personName.trim().length > 0 && !manualCheckIn.isPending;
 
-  // Debounce visitor name
-  useEffect(() => {
-    if (visitorName.length < 3) {
-      setDebouncedName('');
-      return;
-    }
-    const timer = setTimeout(() => setDebouncedName(visitorName), 500);
-    return () => clearTimeout(timer);
-  }, [visitorName]);
-
-  // Debounce vehicle plate
-  useEffect(() => {
-    if (vehiclePlate.length < 3) {
-      setDebouncedPlate('');
-      return;
-    }
-    const normalized = vehiclePlate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    const timer = setTimeout(() => setDebouncedPlate(normalized), 500);
-    return () => clearTimeout(timer);
-  }, [vehiclePlate]);
-
-  // Blacklist check
-  const blacklistCheck = useBlacklistCheck({
-    communityId: communityId ?? '',
-    personName: debouncedName || undefined,
-    plateNormalized: debouncedPlate || undefined,
-  });
-
-  const handleTakePhoto = useCallback(async () => {
-    if (!communityId) return;
-    const path = await pickAndUploadImage(
-      STORAGE_BUCKETS.INCIDENT_EVIDENCE,
-      communityId,
-      'visitor-photos'
-    );
-    if (path) {
-      setPhotoUrl(path);
-    }
-  }, [communityId]);
-
-  const handleSubmit = useCallback(() => {
-    if (!visitorName.trim()) {
-      Alert.alert('Error', 'El nombre del visitante es requerido');
-      return;
-    }
-
-    const plateNormalized = vehiclePlate
-      ? vehiclePlate.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
-      : undefined;
-
-    manualCheckIn.mutate(
-      {
-        person_name: visitorName.trim(),
-        person_type: 'visitor',
-        person_document: personDocument.trim() || undefined,
-        vehicle_plate: plateNormalized,
-        plate_detected: vehiclePlate.trim() || undefined,
-        direction,
-        method: 'manual',
-        decision: blacklistCheck.data?.is_blocked ? 'denied' : 'allowed',
-        photo_url: photoUrl ?? undefined,
-        guard_notes: guardNotes.trim() || undefined,
-      },
-      {
-        onSuccess: () => {
-          Alert.alert('Registrado', 'Acceso registrado exitosamente', [
-            { text: 'OK', onPress: () => router.back() },
-          ]);
-        },
-        onError: (error) => {
-          Alert.alert('Error', error.message);
-        },
+  const handleSubmit = useCallback(
+    (decision: 'allowed' | 'denied') => {
+      if (!personName.trim()) {
+        Alert.alert('Required', 'Please enter the visitor name.');
+        return;
       }
-    );
-  }, [
-    visitorName,
-    personDocument,
-    vehiclePlate,
-    direction,
-    guardNotes,
-    photoUrl,
-    blacklistCheck.data,
-    manualCheckIn,
-    router,
-  ]);
+
+      manualCheckIn.mutate(
+        {
+          person_name: personName.trim(),
+          person_type: personType,
+          vehicle_plate: vehiclePlate.trim() || undefined,
+          direction,
+          method: 'manual',
+          decision,
+          guard_notes: guardNotes.trim() || undefined,
+        },
+        {
+          onSuccess: () => {
+            Alert.alert(
+              decision === 'allowed' ? 'Entry Logged' : 'Entry Denied',
+              `${personName} has been ${decision === 'allowed' ? 'granted access' : 'denied entry'}.`,
+              [{ text: 'OK', onPress: () => router.replace('/(guard)') }],
+            );
+          },
+          onError: (err) => {
+            Alert.alert('Error', err.message);
+          },
+        },
+      );
+    },
+    [manualCheckIn, personName, personType, vehiclePlate, direction, guardNotes, router],
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <View style={styles.container}>
+      <AmbientBackground />
+
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView className="flex-1 p-5" keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header */}
-          <View className="flex-row items-center justify-between mb-6">
-            <Pressable onPress={() => router.back()}>
-              <Text className="text-blue-600 text-base">Cancelar</Text>
-            </Pressable>
-            <Text className="text-lg font-bold text-gray-900">
-              Registro Manual
-            </Text>
-            <View style={{ width: 60 }} />
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <Ionicons name="chevron-back" size={22} color={colors.textBody} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Manual Entry</Text>
+              <View style={styles.headerSpacer} />
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerHeading}>Visitor Registration</Text>
+              <Text style={styles.headerSubtitle}>
+                Create an ad-hoc access record for walk-ins.
+              </Text>
+            </View>
           </View>
 
-          {/* Blacklist Alert */}
-          {blacklistCheck.data?.is_blocked ? (
-            <BlacklistAlert blacklistResult={blacklistCheck.data} />
-          ) : null}
-
-          {/* Direction Toggle */}
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Direccion
-          </Text>
-          <View className="flex-row gap-2 mb-5">
-            <Pressable
-              onPress={() => setDirection('entry')}
-              className={`flex-1 rounded-lg py-3 items-center ${
-                direction === 'entry'
-                  ? 'bg-blue-600'
-                  : 'bg-gray-100'
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  direction === 'entry' ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                Entrada
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setDirection('exit')}
-              className={`flex-1 rounded-lg py-3 items-center ${
-                direction === 'exit'
-                  ? 'bg-blue-600'
-                  : 'bg-gray-100'
-              }`}
-            >
-              <Text
-                className={`font-semibold ${
-                  direction === 'exit' ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                Salida
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Visitor Name */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Nombre del visitante *
-          </Text>
-          <TextInput
-            className="bg-white border border-gray-200 rounded-lg px-4 py-3 mb-4 text-gray-900"
-            placeholder="Nombre completo"
-            value={visitorName}
-            onChangeText={setVisitorName}
-            autoCapitalize="words"
-          />
-
-          {/* Document */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Documento de identidad
-          </Text>
-          <TextInput
-            className="bg-white border border-gray-200 rounded-lg px-4 py-3 mb-4 text-gray-900"
-            placeholder="INE, pasaporte, etc."
-            value={personDocument}
-            onChangeText={setPersonDocument}
-            autoCapitalize="characters"
-          />
-
-          {/* Vehicle Plate */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Placa del vehiculo
-          </Text>
-          <TextInput
-            className="bg-white border border-gray-200 rounded-lg px-4 py-3 mb-4 text-gray-900"
-            placeholder="ABC-123-A"
-            value={vehiclePlate}
-            onChangeText={setVehiclePlate}
-            autoCapitalize="characters"
-          />
-
-          {/* Guard Notes */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Notas del guardia
-          </Text>
-          <TextInput
-            className="bg-white border border-gray-200 rounded-lg px-4 py-3 mb-4 text-gray-900"
-            placeholder="Observaciones adicionales..."
-            value={guardNotes}
-            onChangeText={setGuardNotes}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            style={{ minHeight: 80 }}
-          />
-
-          {/* Photo */}
-          <Pressable
-            onPress={handleTakePhoto}
-            className="bg-gray-100 border border-dashed border-gray-300 rounded-lg py-4 items-center mb-4 active:opacity-80"
-          >
-            <Text className="text-gray-600 text-sm">
-              {photoUrl ? 'Cambiar foto' : 'Tomar foto del visitante'}
-            </Text>
-          </Pressable>
-
-          {photoUrl ? (
-            <View className="mb-4 items-center">
-              <View className="bg-green-100 rounded-lg px-3 py-2">
-                <Text className="text-green-800 text-sm">
-                  Foto capturada correctamente
-                </Text>
+          {/* Form Fields */}
+          <View style={styles.formSection}>
+            {/* Full Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>FULL NAME</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="person-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Visitor's legal name"
+                  placeholderTextColor={colors.textDisabled}
+                  value={personName}
+                  onChangeText={setPersonName}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
               </View>
             </View>
-          ) : null}
 
-          {/* Submit */}
-          <Pressable
-            onPress={handleSubmit}
-            disabled={manualCheckIn.isPending || !visitorName.trim()}
-            className={`rounded-xl py-4 items-center mb-8 ${
-              manualCheckIn.isPending || !visitorName.trim()
-                ? 'bg-gray-300'
-                : blacklistCheck.data?.is_blocked
-                  ? 'bg-red-600 active:opacity-80'
-                  : 'bg-green-600 active:opacity-80'
-            }`}
-          >
-            <Text className="text-white font-bold text-base">
-              {manualCheckIn.isPending
-                ? 'Registrando...'
-                : blacklistCheck.data?.is_blocked
-                  ? `Registrar ${direction === 'entry' ? 'Entrada' : 'Salida'} (BLOQUEADO)`
-                  : `Registrar ${direction === 'entry' ? 'Entrada' : 'Salida'}`}
-            </Text>
-          </Pressable>
+            {/* Person Type Selector */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>VISITOR TYPE</Text>
+              <View style={styles.typeGrid}>
+                {PERSON_TYPES.map((type) => {
+                  const isActive = personType === type.key;
+                  return (
+                    <TouchableOpacity
+                      key={type.key}
+                      style={[styles.typeChip, isActive && styles.typeChipActive]}
+                      onPress={() => setPersonType(type.key)}
+                    >
+                      <Ionicons
+                        name={type.icon}
+                        size={16}
+                        color={isActive ? colors.primary : colors.textCaption}
+                      />
+                      <Text style={[styles.typeChipText, isActive && styles.typeChipTextActive]}>
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Vehicle Plate */}
+            <View style={styles.fieldGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.fieldLabel}>VEHICLE PLATE</Text>
+                <View style={styles.optionalBadge}>
+                  <Text style={styles.optionalText}>OPTIONAL</Text>
+                </View>
+              </View>
+              <View style={styles.inputRow}>
+                <Ionicons name="car-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="License Plate (e.g. ABC-123)"
+                  placeholderTextColor={colors.textDisabled}
+                  value={vehiclePlate}
+                  onChangeText={setVehiclePlate}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            {/* Direction Toggle */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>DIRECTION</Text>
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity
+                  style={[styles.toggleOption, direction === 'entry' && styles.toggleOptionActive]}
+                  onPress={() => setDirection('entry')}
+                >
+                  <Ionicons
+                    name="log-in-outline"
+                    size={18}
+                    color={direction === 'entry' ? colors.primary : colors.textCaption}
+                  />
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      direction === 'entry' && styles.toggleTextActive,
+                    ]}
+                  >
+                    Entry
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.toggleOption, direction === 'exit' && styles.toggleOptionActive]}
+                  onPress={() => setDirection('exit')}
+                >
+                  <Ionicons
+                    name="log-out-outline"
+                    size={18}
+                    color={direction === 'exit' ? colors.primary : colors.textCaption}
+                  />
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      direction === 'exit' && styles.toggleTextActive,
+                    ]}
+                  >
+                    Exit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Guard Notes */}
+            <View style={styles.fieldGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.fieldLabel}>GUARD NOTES</Text>
+                <View style={styles.optionalBadge}>
+                  <Text style={styles.optionalText}>OPTIONAL</Text>
+                </View>
+              </View>
+              <View style={styles.textAreaContainer}>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Additional observations or notes..."
+                  placeholderTextColor={colors.textDisabled}
+                  value={guardNotes}
+                  onChangeText={setGuardNotes}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Submit Buttons */}
+          <View style={styles.submitSection}>
+            <TouchableOpacity
+              style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+              onPress={() => handleSubmit('allowed')}
+              disabled={!canSubmit}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.submitButtonText}>Complete Check-in</Text>
+              <Ionicons name="checkmark-circle-outline" size={22} color={colors.textOnDark} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.denyButton, !canSubmit && styles.denyButtonDisabled]}
+              onPress={() => handleSubmit('denied')}
+              disabled={!canSubmit}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.denyButtonText}>Deny Entry</Text>
+              <Ionicons name="close-circle-outline" size={22} color={colors.danger} />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    zIndex: 10,
+  },
+  scrollContent: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.bottomNavClearance,
+  },
+
+  // Header
+  header: {
+    marginBottom: spacing['4xl'],
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing['3xl'],
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  headerInfo: {},
+  headerHeading: {
+    fontFamily: fonts.black,
+    fontSize: 24,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+
+  // Form
+  formSection: {
+    gap: spacing['3xl'],
+    marginBottom: spacing['4xl'],
+  },
+  fieldGroup: {},
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  optionalBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 2,
+    backgroundColor: colors.borderMedium,
+    borderRadius: borderRadius.full,
+  },
+  optionalText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+    height: spacing.inputHeight,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: colors.textPrimary,
+    height: '100%',
+  },
+
+  // Type Grid
+  typeGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  typeChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  typeChipActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  typeChipText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textCaption,
+  },
+  typeChipTextActive: {
+    color: colors.primary,
+  },
+
+  // Toggle
+  toggleContainer: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  toggleOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.smallButtonHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  toggleOptionActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  toggleText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textCaption,
+  },
+  toggleTextActive: {
+    color: colors.primary,
+  },
+
+  // Text Area
+  textAreaContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.xl,
+    minHeight: 100,
+  },
+  textArea: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 20,
+  },
+
+  // Submit
+  submitSection: {
+    gap: spacing.lg,
+    paddingBottom: spacing['3xl'],
+  },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    height: spacing.buttonHeight,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.xl,
+    ...shadows.xl,
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textOnDark,
+  },
+  denyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    height: spacing.buttonHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.dangerBg,
+  },
+  denyButtonDisabled: {
+    opacity: 0.5,
+  },
+  denyButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.danger,
+  },
+});
