@@ -1,85 +1,84 @@
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
-import { PanicButton } from '@/components/guard/PanicButton';
-import { useUnreadCount } from '@/hooks/useNotifications';
+import { StyleSheet, View, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fonts, shadows } from '@/theme';
+
+type TabIconName =
+  | 'shield'
+  | 'shield-outline'
+  | 'alert-circle'
+  | 'alert-circle-outline'
+  | 'navigate'
+  | 'navigate-outline'
+  | 'ellipsis-horizontal'
+  | 'ellipsis-horizontal-outline';
+
+function TabBarIcon({ name, color }: { name: TabIconName; color: string }) {
+  return <Ionicons name={name} size={24} color={color} />;
+}
 
 export default function GuardLayout() {
-  const { data: unreadCount } = useUnreadCount();
-
   return (
-    <View style={{ flex: 1 }}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: '#2563eb',
-          tabBarInactiveTintColor: '#9ca3af',
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textCaption,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarStyle: styles.tabBar,
+        tabBarBackground: () => (
+          <BlurView intensity={15} tint="light" style={StyleSheet.absoluteFill}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.glassTabBar }]} />
+          </BlurView>
+        ),
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'GATE',
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name={focused ? 'shield' : 'shield-outline'} color={color} />
+          ),
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            tabBarLabel: 'Caseta',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'🛡️'}</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="directory"
-          options={{
-            tabBarLabel: 'Directorio',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'🔍'}</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="packages"
-          options={{
-            tabBarLabel: 'Paquetes',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'📦'}</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="patrol"
-          options={{
-            tabBarLabel: 'Ronda',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'📍'}</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="incidents"
-          options={{
-            tabBarLabel: 'Incidentes',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'⚠️'}</Text>
-            ),
-          }}
-        />
-        {/* Hide gate stack from tabs -- accessed via router.push from index */}
-        <Tabs.Screen
-          name="gate"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            tabBarLabel: 'Alertas',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ color, fontSize: 20 }}>{'🔔'}</Text>
-            ),
-            tabBarBadge: unreadCount || undefined,
-          }}
-        />
-      </Tabs>
-      {/* Persistent panic button - floats above all tab content */}
-      <PanicButton />
-    </View>
+      />
+      <Tabs.Screen
+        name="gate"
+        options={{
+          title: 'INCIDENTS',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+        }}
+      />
+    </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    borderTopWidth: 0,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+    height: Platform.OS === 'ios' ? 88 : 68,
+    ...shadows.navShadow,
+    backgroundColor: 'transparent',
+    elevation: 0,
+  },
+  tabLabel: {
+    fontFamily: fonts.black,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+});
