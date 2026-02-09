@@ -147,19 +147,19 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 16. Admin Dashboard — Governance
 
-- [ ] **AGOV-01**: Admin can create elections with options and voting rules
-- [ ] **AGOV-02**: Admin can open/close voting and view real-time results with quorum tracking
-- [ ] **AGOV-03**: Admin can manage assemblies (schedule, track attendance with coefficient-weighted quorum)
-- [ ] **AGOV-04**: Admin can create surveys and view responses
-- [ ] **AGOV-05**: Admin can record assembly agreements and action items
+- [x] **AGOV-01**: Admin can create elections with options and voting rules
+- [x] **AGOV-02**: Admin can open/close voting and view real-time results with quorum tracking
+- [x] **AGOV-03**: Admin can manage assemblies (schedule, track attendance with coefficient-weighted quorum)
+- [x] **AGOV-04**: Admin can create surveys and view responses
+- [x] **AGOV-05**: Admin can record assembly agreements and action items
 
 ### 17. Admin Dashboard — Analytics & Configuration
 
 - [x] **ACONF-01**: Admin can configure community settings (name, branding, hours, rules)
 - [x] **ACONF-02**: Admin can manage feature flags per community
-- [ ] **ACONF-03**: Admin can view guard performance metrics (patrol completion, response times)
-- [ ] **ACONF-04**: Admin can view audit trail of administrative actions
-- [ ] **ACONF-05**: Admin can perform bulk charge generation and bulk notification sending
+- [x] **ACONF-03**: Admin can view guard performance metrics (patrol completion, response times)
+- [x] **ACONF-04**: Admin can view audit trail of administrative actions
+- [x] **ACONF-05**: Admin can perform bulk charge generation and bulk notification sending
 
 ### 18. Resident — Marketplace
 
@@ -198,20 +198,20 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 23. Admin Dashboard — Keys & Devices
 
-- [ ] **AKEY-01**: Admin can manage access device inventory (tags, remotes, keys, cards)
-- [ ] **AKEY-02**: Admin can assign and track device assignments to units/residents
-- [ ] **AKEY-03**: Admin can process device returns, transfers, and lost reports
-- [ ] **AKEY-04**: Admin can track device replacement fees
+- [x] **AKEY-01**: Admin can manage access device inventory (tags, remotes, keys, cards)
+- [x] **AKEY-02**: Admin can assign and track device assignments to units/residents
+- [x] **AKEY-03**: Admin can process device returns, transfers, and lost reports
+- [x] **AKEY-04**: Admin can track device replacement fees
 
 ### 24. Admin Dashboard — Violations & Emergency
 
-- [ ] **AVIOL-01**: Admin can create and manage violation records with evidence
-- [ ] **AVIOL-02**: Admin can issue warnings and sanctions (verbal, written, fine, suspension)
-- [ ] **AVIOL-03**: Admin can manage violation appeals and resolutions
-- [ ] **AVIOL-04**: Admin can view violation history with repeat offender tracking
-- [ ] **AEMRG-01**: Admin can manage emergency contacts per resident
-- [ ] **AEMRG-02**: Admin can view medical conditions and accessibility needs (privacy-controlled)
-- [ ] **AEMRG-03**: Admin can generate evacuation priority list
+- [x] **AVIOL-01**: Admin can create and manage violation records with evidence
+- [x] **AVIOL-02**: Admin can issue warnings and sanctions (verbal, written, fine, suspension)
+- [x] **AVIOL-03**: Admin can manage violation appeals and resolutions
+- [x] **AVIOL-04**: Admin can view violation history with repeat offender tracking
+- [x] **AEMRG-01**: Admin can manage emergency contacts per resident
+- [x] **AEMRG-02**: Admin can view medical conditions and accessibility needs (privacy-controlled)
+- [x] **AEMRG-03**: Admin can generate evacuation priority list
 
 ### 25. Push Notifications & Real-time
 
@@ -394,25 +394,25 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | AMRKT-01 | Phase 14 | Complete |
 | AMRKT-02 | Phase 14 | Complete |
 | AMRKT-03 | Phase 14 | Complete |
-| AGOV-01 | Phase 15 | Pending |
-| AGOV-02 | Phase 15 | Pending |
-| AGOV-03 | Phase 15 | Pending |
-| AGOV-04 | Phase 15 | Pending |
-| AGOV-05 | Phase 15 | Pending |
-| ACONF-03 | Phase 15 | Pending |
-| ACONF-04 | Phase 15 | Pending |
-| ACONF-05 | Phase 15 | Pending |
-| AVIOL-01 | Phase 15 | Pending |
-| AVIOL-02 | Phase 15 | Pending |
-| AVIOL-03 | Phase 15 | Pending |
-| AVIOL-04 | Phase 15 | Pending |
-| AEMRG-01 | Phase 15 | Pending |
-| AEMRG-02 | Phase 15 | Pending |
-| AEMRG-03 | Phase 15 | Pending |
-| AKEY-01 | Phase 15 | Pending |
-| AKEY-02 | Phase 15 | Pending |
-| AKEY-03 | Phase 15 | Pending |
-| AKEY-04 | Phase 15 | Pending |
+| AGOV-01 | Phase 15 | Complete |
+| AGOV-02 | Phase 15 | Complete |
+| AGOV-03 | Phase 15 | Complete |
+| AGOV-04 | Phase 15 | Complete |
+| AGOV-05 | Phase 15 | Complete |
+| ACONF-03 | Phase 15 | Complete |
+| ACONF-04 | Phase 15 | Complete |
+| ACONF-05 | Phase 15 | Complete |
+| AVIOL-01 | Phase 15 | Complete |
+| AVIOL-02 | Phase 15 | Complete |
+| AVIOL-03 | Phase 15 | Complete |
+| AVIOL-04 | Phase 15 | Complete |
+| AEMRG-01 | Phase 15 | Complete |
+| AEMRG-02 | Phase 15 | Complete |
+| AEMRG-03 | Phase 15 | Complete |
+| AKEY-01 | Phase 15 | Complete |
+| AKEY-02 | Phase 15 | Complete |
+| AKEY-03 | Phase 15 | Complete |
+| AKEY-04 | Phase 15 | Complete |
 | PUSH-01 | Phase 16 | Pending |
 | PUSH-02 | Phase 16 | Pending |
 | PUSH-03 | Phase 16 | Pending |
