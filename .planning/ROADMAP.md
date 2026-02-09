@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Advanced Resident Features** - Social wall, amenity reservations, documents, profile, marketplace
 - [x] **Phase 14: Guard Advanced + Admin Providers/Parking/Moves** - Patrol, incidents, handover, provider/parking/move management, marketplace moderation
 - [x] **Phase 15: Admin Governance & Analytics** - Elections, assemblies, surveys, violations, emergency info, keys/devices, guard metrics, audit trail
-- [ ] **Phase 16: Push Notifications & Real-time Polish** - Push registration, notification delivery, real-time subscriptions, notification preferences
+- [x] **Phase 16: Push Notifications & Real-time Polish** - Push registration, notification delivery, real-time subscriptions, notification preferences
 
 ## Phase Details
 
@@ -187,9 +187,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 16-01-PLAN.md - Push notification infrastructure: FCM/APNs registration, token management, send-push edge function integration
-- [ ] 16-02-PLAN.md - Notification delivery: event-driven push for all modules (visitors, payments, maintenance, announcements, packages)
-- [ ] 16-03-PLAN.md - Real-time subscriptions and preferences: Supabase Realtime for visitor/guard queues, notification preference management
+- [x] 16-01-PLAN.md - Push notification infrastructure: FCM/APNs registration, token management, send-push edge function integration
+- [x] 16-02-PLAN.md - Notification delivery: in-app notification UI, notification bell with badge, notification list screen
+- [x] 16-03-PLAN.md - Real-time subscriptions and preferences: Supabase Realtime for visitor/guard queues, notification preference management
 
 ## Progress
 
@@ -213,10 +213,10 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
 | 13. Advanced Resident Features | v2.0 | 4/4 | Complete | 2026-02-08 |
 | 14. Guard Advanced + Admin Providers/Parking/Moves | v2.0 | 6/6 | Complete | 2026-02-08 |
 | 15. Admin Governance & Analytics | v2.0 | 5/5 | Complete | 2026-02-08 |
-| 16. Push Notifications & Real-time Polish | v2.0 | 0/3 | Not started | - |
+| 16. Push Notifications & Real-time Polish | v2.0 | 3/3 | Complete | 2026-02-08 |
 
 **v1.0 Total:** 38/38 plans -- COMPLETE
-**v2.0 Total:** 33/36 plans
+**v2.0 Total:** 36/36 plans -- COMPLETE
 
 ---
 *Roadmap created: 2026-01-29*

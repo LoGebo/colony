@@ -33,7 +33,7 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 - [x] **RVIS-03**: System generates QR code for each invitation
 - [x] **RVIS-04**: Resident can share QR invitation via WhatsApp
 - [x] **RVIS-05**: Resident sees list of active/pending visitors with real-time status updates
-- [ ] **RVIS-06**: Resident receives push notification when visitor arrives at gate
+- [x] **RVIS-06**: Resident receives push notification when visitor arrives at gate
 - [x] **RVIS-07**: Resident can cancel a pending invitation
 - [x] **RVIS-08**: Resident can view visitor history
 
@@ -43,20 +43,20 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 - [x] **RPAY-02**: Resident can view payment history with dates and amounts
 - [x] **RPAY-03**: Resident can upload payment proof (photo of bank transfer receipt)
 - [x] **RPAY-04**: Resident can see payment proof status (pending, approved, rejected)
-- [ ] **RPAY-05**: Resident receives push notification when payment is approved or rejected
+- [x] **RPAY-05**: Resident receives push notification when payment is approved or rejected
 
 ### 5. Resident — Maintenance
 
 - [x] **RMAINT-01**: Resident can submit maintenance request with category, description, and photos
 - [x] **RMAINT-02**: Resident can view status timeline of their tickets
-- [ ] **RMAINT-03**: Resident receives push notification on ticket status changes
+- [x] **RMAINT-03**: Resident receives push notification on ticket status changes
 - [x] **RMAINT-04**: Resident can add comments to their tickets
 
 ### 6. Resident — Communication
 
 - [x] **RCOMM-01**: Resident can view announcements feed sorted by date
 - [x] **RCOMM-02**: Resident can mark announcements as read
-- [ ] **RCOMM-03**: Resident receives push notification for new high-priority announcements
+- [x] **RCOMM-03**: Resident receives push notification for new high-priority announcements
 - [x] **RCOMM-04**: Resident can view and post on community social wall
 - [x] **RCOMM-05**: Resident can react to and comment on social wall posts
 - [x] **RCOMM-06**: Resident can participate in surveys and vote on community decisions
@@ -215,11 +215,11 @@ Requirements for React Native (Expo) mobile app + Next.js admin dashboard. Each 
 
 ### 25. Push Notifications & Real-time
 
-- [ ] **PUSH-01**: Mobile app registers for push notifications (FCM/APNs) on login
-- [ ] **PUSH-02**: User receives push for: visitor arrived, payment status, maintenance updates, announcements, packages
-- [ ] **PUSH-03**: Real-time updates for visitor status (gate entry/exit) via Supabase Realtime
-- [ ] **PUSH-04**: Real-time updates for guard expected visitors queue
-- [ ] **PUSH-05**: User can manage notification preferences
+- [x] **PUSH-01**: Mobile app registers for push notifications (FCM/APNs) on login
+- [x] **PUSH-02**: User receives push for: visitor arrived, payment status, maintenance updates, announcements, packages
+- [x] **PUSH-03**: Real-time updates for visitor status (gate entry/exit) via Supabase Realtime
+- [x] **PUSH-04**: Real-time updates for guard expected visitors queue
+- [x] **PUSH-05**: User can manage notification preferences
 
 ### 26. Shared Infrastructure
 
@@ -297,14 +297,14 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | RVIS-03 | Phase 10 | Complete |
 | RVIS-04 | Phase 10 | Complete |
 | RVIS-05 | Phase 10 | Complete |
-| RVIS-06 | Phase 16 | Pending |
+| RVIS-06 | Phase 16 | Complete |
 | RVIS-07 | Phase 10 | Complete |
 | RVIS-08 | Phase 10 | Complete |
 | RPAY-01 | Phase 10 | Complete |
 | RPAY-02 | Phase 10 | Complete |
 | RPAY-03 | Phase 10 | Complete |
 | RPAY-04 | Phase 10 | Complete |
-| RPAY-05 | Phase 16 | Pending |
+| RPAY-05 | Phase 16 | Complete |
 | GGATE-01 | Phase 10 | Complete |
 | GGATE-02 | Phase 10 | Complete |
 | GGATE-03 | Phase 10 | Complete |
@@ -345,11 +345,11 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | AOPS-10 | Phase 12 | Complete |
 | RMAINT-01 | Phase 12 | Complete |
 | RMAINT-02 | Phase 12 | Complete |
-| RMAINT-03 | Phase 16 | Pending |
+| RMAINT-03 | Phase 16 | Complete |
 | RMAINT-04 | Phase 12 | Complete |
 | RCOMM-01 | Phase 12 | Complete |
 | RCOMM-02 | Phase 12 | Complete |
-| RCOMM-03 | Phase 16 | Pending |
+| RCOMM-03 | Phase 16 | Complete |
 | RCOMM-04 | Phase 13 | Complete |
 | RCOMM-05 | Phase 13 | Complete |
 | RCOMM-06 | Phase 13 | Complete |
@@ -413,11 +413,11 @@ Updated during roadmap creation. Phase numbers continue from v1.0 (phases 1-8).
 | AKEY-02 | Phase 15 | Complete |
 | AKEY-03 | Phase 15 | Complete |
 | AKEY-04 | Phase 15 | Complete |
-| PUSH-01 | Phase 16 | Pending |
-| PUSH-02 | Phase 16 | Pending |
-| PUSH-03 | Phase 16 | Pending |
-| PUSH-04 | Phase 16 | Pending |
-| PUSH-05 | Phase 16 | Pending |
+| PUSH-01 | Phase 16 | Complete |
+| PUSH-02 | Phase 16 | Complete |
+| PUSH-03 | Phase 16 | Complete |
+| PUSH-04 | Phase 16 | Complete |
+| PUSH-05 | Phase 16 | Complete |
 
 **Coverage:**
 - v1 requirements: 145 total
