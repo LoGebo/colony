@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-07)
 ## Current Position
 
 Phase: 16 of 16 (Push Notifications & Real-time Polish)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-09 -- Completed 16-01-PLAN.md
+Last activity: 2026-02-08 -- Completed 16-02-PLAN.md
 
-Progress: [█████████░] 94% (34/36 v2.0 plans)
+Progress: [█████████░] 97% (35/36 v2.0 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,9 @@ Progress: [█████████░] 94% (34/36 v2.0 plans)
 - Total execution time: ~236 min
 
 **v2.0 Velocity:**
-- Total plans completed: 34
-- Average duration: 6.1 min
-- Total execution time: ~236 min
+- Total plans completed: 35
+- Average duration: 6.2 min
+- Total execution time: ~248 min
 
 ## Accumulated Context
 
@@ -114,6 +114,9 @@ New v2.0 decisions:
 - Type-based foreground notification priority (emergency=MAX+sound, visitor=HIGH+sound, default=banner-only)
 - Select-then-update pattern for push_tokens storage (unique constraints unclear from types)
 - Fire-and-forget mark_notification_read on tap (user already navigated, don't block UX)
+- Type-based icon mapping for 19 notification types (ticket, sla, message, document, announcement, payment, visitor, package, emergency)
+- Spanish locale (date-fns/locale/es) for relative timestamps in notification list
+- Hidden Tabs.Screen with href: null for navigation-only routes (notifications accessible via router.push)
 
 ### Pending Todos
 
@@ -128,6 +131,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-09
-Stopped at: Completed 16-01-PLAN.md (Push Notification Infrastructure)
+Last session: 2026-02-08
+Stopped at: Completed 16-02-PLAN.md (In-App Notification UI)
 Resume file: None
