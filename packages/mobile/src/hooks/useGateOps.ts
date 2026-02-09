@@ -6,6 +6,7 @@ import {
 import { queryKeys } from '@upoe/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 // ---------- useGuardAccessPoint ----------
 
@@ -261,4 +262,62 @@ export function useTodayAccessLogs() {
     },
     enabled: !!communityId,
   });
+}
+
+// ---------- useExpectedVisitorsRealtime ----------
+
+/**
+ * Fetches expected visitors for guards with real-time updates.
+ * Shows approved/pending invitations for today that haven't been cancelled.
+ * Includes real-time subscriptions to invitations and access_logs tables.
+ */
+export function useExpectedVisitorsRealtime() {
+  const { communityId } = useAuth();
+
+  const query = useQuery({
+    queryKey: [...queryKeys.visitors.active(communityId!).queryKey, 'guard-queue'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invitations')
+        .select('*, units(unit_number), residents!invitations_created_by_resident_id_fkey(first_name, paternal_surname)')
+        .eq('community_id', communityId!)
+        .in('status', ['approved', 'pending'])
+        .is('cancelled_at', null)
+        .is('deleted_at', null)
+        .gte('valid_until', new Date().toISOString())
+        .lte('valid_from', new Date().toISOString())
+        .order('valid_from', { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!communityId,
+    refetchInterval: 60_000, // Fallback polling every 60s
+  });
+
+  // Real-time: new invitations or status changes
+  useRealtimeSubscription({
+    channelName: `guard-visitor-queue-${communityId}`,
+    table: 'invitations',
+    event: '*',
+    queryKeys: [
+      [...queryKeys.visitors.active(communityId!).queryKey, 'guard-queue'],
+      queryKeys.visitors._def,
+    ],
+    enabled: !!communityId,
+  });
+
+  // Real-time: access log entries (someone checked in/out)
+  useRealtimeSubscription({
+    channelName: `guard-access-logs-${communityId}`,
+    table: 'access_logs',
+    event: 'INSERT',
+    queryKeys: [
+      [...queryKeys.visitors.active(communityId!).queryKey, 'guard-queue'],
+      queryKeys.accessLogs._def,
+    ],
+    enabled: !!communityId,
+  });
+
+  return query;
 }

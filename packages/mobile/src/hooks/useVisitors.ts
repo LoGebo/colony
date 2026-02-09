@@ -7,6 +7,7 @@ import {
 import { queryKeys } from '@upoe/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 // ---------- useActiveInvitations ----------
 
@@ -32,6 +33,45 @@ export function useActiveInvitations() {
     },
     enabled: !!residentId && !!communityId,
   });
+}
+
+// ---------- useActiveInvitationsRealtime ----------
+
+/**
+ * Real-time variant of useActiveInvitations.
+ * Subscribes to invitations table changes and access_logs inserts
+ * to automatically update the visitor list without manual refreshing.
+ */
+export function useActiveInvitationsRealtime() {
+  const { residentId, communityId } = useAuth();
+  const query = useActiveInvitations();
+
+  // Subscribe to invitation changes (status updates, new invitations)
+  useRealtimeSubscription({
+    channelName: `invitations-${residentId}`,
+    table: 'invitations',
+    event: '*',
+    filter: `created_by_resident_id=eq.${residentId}`,
+    queryKeys: [
+      queryKeys.visitors.active(communityId!).queryKey,
+      queryKeys.visitors._def,
+    ],
+    enabled: !!residentId && !!communityId,
+  });
+
+  // Subscribe to access_logs for check-in/check-out events
+  useRealtimeSubscription({
+    channelName: `access-logs-${communityId}`,
+    table: 'access_logs',
+    event: 'INSERT',
+    queryKeys: [
+      queryKeys.visitors.active(communityId!).queryKey,
+      queryKeys.visitors._def,
+    ],
+    enabled: !!communityId,
+  });
+
+  return query;
 }
 
 // ---------- useInvitationDetail ----------

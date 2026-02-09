@@ -64,6 +64,13 @@ export default function GuardLayout() {
             href: null,
           }}
         />
+        {/* Hidden notification screen - accessed via router.push */}
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
       {/* Persistent panic button - floats above all tab content */}
       <PanicButton />

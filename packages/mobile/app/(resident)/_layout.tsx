@@ -45,6 +45,13 @@ export default function ResidentLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>{'☰'}</Text>,
         }}
       />
+      {/* Hidden notification screen - accessed via router.push */}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
