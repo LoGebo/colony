@@ -2,10 +2,10 @@ import { Stack } from 'expo-router';
 
 export default function PackagesLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ title: 'Paquetes' }} />
-      <Stack.Screen name="log" options={{ title: 'Registrar Paquete' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Detalle Paquete' }} />
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
+      <Stack.Screen name="log" />
     </Stack>
   );
 }

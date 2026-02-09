@@ -1,323 +1,659 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Pressable,
+  TouchableOpacity,
   ScrollView,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
+  TextInput,
+  StyleSheet,
   Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useRecentHandovers,
   useCreateHandover,
   useAcknowledgeHandover,
 } from '@/hooks/useHandovers';
-import { HandoverNoteCard } from '@/components/guard/HandoverNoteCard';
+import { formatRelative, formatDateTime } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const PRIORITY_OPTIONS = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'important', label: 'Importante' },
-  { value: 'urgent', label: 'Urgente' },
+type Priority = 'low' | 'normal' | 'high' | 'urgent';
+
+const PRIORITIES: { key: Priority; label: string }[] = [
+  { key: 'low', label: 'Low' },
+  { key: 'normal', label: 'Normal' },
+  { key: 'high', label: 'High' },
+  { key: 'urgent', label: 'Urgent' },
 ];
 
-interface PendingItem {
-  description: string;
-  completed: boolean;
+function getPriorityStyle(priority: string) {
+  switch (priority) {
+    case 'urgent':
+      return { bg: colors.dangerBg, color: colors.dangerText, label: 'Urgent' };
+    case 'high':
+      return { bg: colors.orangeBg, color: colors.orange, label: 'High' };
+    case 'normal':
+      return { bg: colors.primaryLight, color: colors.primary, label: 'Normal' };
+    case 'low':
+    default:
+      return { bg: colors.border, color: colors.textCaption, label: 'Low' };
+  }
 }
 
 export default function HandoverScreen() {
-  const { communityId, guardId } = useAuth();
   const router = useRouter();
+  const { communityId, guardId } = useAuth();
+  const { data: handovers, isLoading } = useRecentHandovers(communityId);
+  const createMutation = useCreateHandover();
+  const acknowledgeMutation = useAcknowledgeHandover();
 
-  const {
-    data: handovers,
-    isLoading,
-    error,
-    refetch,
-    isRefetching,
-  } = useRecentHandovers(communityId);
-
-  const createHandover = useCreateHandover();
-  const acknowledgeHandover = useAcknowledgeHandover();
-
+  const [showForm, setShowForm] = useState(false);
   const [notes, setNotes] = useState('');
-  const [priority, setPriority] = useState('normal');
-  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-  const [newItemDescription, setNewItemDescription] = useState('');
+  const [priority, setPriority] = useState<Priority>('normal');
+  const [pendingItem, setPendingItem] = useState('');
+  const [pendingItems, setPendingItems] = useState<
+    Array<{ description: string; completed: boolean }>
+  >([]);
 
-  const handleAddPendingItem = () => {
-    if (!newItemDescription.trim()) return;
+  const canSubmit = notes.trim().length > 0 && !createMutation.isPending;
 
-    setPendingItems((prev) => [
-      ...prev,
-      { description: newItemDescription.trim(), completed: false },
-    ]);
-    setNewItemDescription('');
-  };
+  const handleAddPendingItem = useCallback(() => {
+    if (!pendingItem.trim()) return;
+    setPendingItems((prev) => [...prev, { description: pendingItem.trim(), completed: false }]);
+    setPendingItem('');
+  }, [pendingItem]);
 
-  const handleRemovePendingItem = (index: number) => {
+  const handleRemovePendingItem = useCallback((index: number) => {
     setPendingItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const handleCreateHandover = async () => {
-    if (!notes.trim()) {
-      Alert.alert('Error', 'Las notas son requeridas');
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
 
     try {
-      await createHandover.mutateAsync({
+      await createMutation.mutateAsync({
         notes: notes.trim(),
         priority,
-        pending_items: pendingItems,
+        pending_items: pendingItems.length > 0 ? pendingItems : undefined,
       });
 
-      // Reset form
-      setNotes('');
-      setPriority('normal');
-      setPendingItems([]);
-
-      Alert.alert('Éxito', 'Nota de turno guardada correctamente');
-    } catch (err) {
-      Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Error al guardar nota'
-      );
+      Alert.alert('Handover Created', 'Your shift handover notes have been submitted.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setShowForm(false);
+            setNotes('');
+            setPriority('normal');
+            setPendingItems([]);
+          },
+        },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
     }
   };
 
-  const handleAcknowledge = async (handoverId: string) => {
-    try {
-      await acknowledgeHandover.mutateAsync(handoverId);
-    } catch (err) {
-      Alert.alert(
-        'Error',
-        err instanceof Error ? err.message : 'Error al confirmar lectura'
-      );
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View className="flex-1 bg-gray-50 items-center justify-center px-6">
-        <Text className="text-red-600 text-center mb-4">
-          Error al cargar notas: {error.message}
-        </Text>
-        <Pressable
-          onPress={() => refetch()}
-          className="bg-blue-600 rounded-lg px-6 py-3"
-        >
-          <Text className="text-white font-semibold">Reintentar</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  const handleAcknowledge = useCallback(
+    async (handoverId: string) => {
+      try {
+        await acknowledgeMutation.mutateAsync(handoverId);
+      } catch (error: any) {
+        Alert.alert('Error', error?.message ?? 'Failed to acknowledge handover.');
+      }
+    },
+    [acknowledgeMutation],
+  );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={styles.container}>
+      <AmbientBackground />
+
       {/* Header */}
-      <View className="bg-white px-4 pt-14 pb-4 shadow-sm">
-        <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
-            <Text className="text-blue-600 text-2xl">←</Text>
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-2xl font-bold text-gray-900">
-              Notas de Turno
-            </Text>
-            <Text className="text-sm text-gray-500 mt-1">
-              Comunicación entre guardias
-            </Text>
-          </View>
-        </View>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Shift Handover</Text>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setShowForm(!showForm)}
+        >
+          <Ionicons
+            name={showForm ? 'close' : 'add'}
+            size={22}
+            color={colors.textOnDark}
+          />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerClassName="p-4"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor="#2563eb"
-          />
-        }
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        {/* Create form */}
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-base font-bold text-gray-900 mb-3">
-            Crear Nota
-          </Text>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Create Form */}
+          {showForm && (
+            <GlassCard variant="dense" style={styles.formCard}>
+              <Text style={styles.formTitle}>New Handover Note</Text>
 
-          {/* Notes input */}
-          <View className="mb-3">
-            <Text className="text-sm font-medium text-gray-700 mb-1">
-              Notas *
-            </Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Información importante para el siguiente turno..."
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            />
-          </View>
+              {/* Notes */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>NOTES</Text>
+                <View style={styles.textAreaContainer}>
+                  <TextInput
+                    style={styles.textArea}
+                    value={notes}
+                    onChangeText={setNotes}
+                    placeholder="Describe shift events, observations, and instructions..."
+                    placeholderTextColor={colors.textDisabled}
+                    multiline
+                    textAlignVertical="top"
+                    maxLength={2000}
+                  />
+                </View>
+              </View>
 
-          {/* Priority selector */}
-          <View className="mb-3">
-            <Text className="text-sm font-medium text-gray-700 mb-1">
-              Prioridad
-            </Text>
-            <View className="flex-row gap-2">
-              {PRIORITY_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setPriority(option.value)}
-                  className={`flex-1 border rounded-lg py-2 items-center ${
-                    priority === option.value
-                      ? 'bg-blue-100 border-blue-400'
-                      : 'bg-white border-gray-300'
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${
-                      priority === option.value
-                        ? 'text-blue-700 font-semibold'
-                        : 'text-gray-700'
-                    }`}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+              {/* Priority */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>PRIORITY</Text>
+                <View style={styles.priorityRow}>
+                  {PRIORITIES.map((p) => {
+                    const active = priority === p.key;
+                    const style = getPriorityStyle(p.key);
+                    return (
+                      <TouchableOpacity
+                        key={p.key}
+                        style={[
+                          styles.priorityPill,
+                          active && {
+                            backgroundColor: style.bg,
+                            borderColor: style.color,
+                            borderWidth: 2,
+                          },
+                        ]}
+                        onPress={() => setPriority(p.key)}
+                      >
+                        <Text
+                          style={[
+                            styles.priorityText,
+                            active && { color: style.color },
+                          ]}
+                        >
+                          {p.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
 
-          {/* Pending items */}
-          <View className="mb-3">
-            <Text className="text-sm font-medium text-gray-700 mb-1">
-              Pendientes
-            </Text>
-
-            {pendingItems.length > 0 ? (
-              <View className="mb-2">
-                {pendingItems.map((item, index) => (
-                  <View
-                    key={index}
-                    className="flex-row items-center bg-gray-50 rounded-lg px-3 py-2 mb-1"
-                  >
-                    <Text className="flex-1 text-sm text-gray-700">
-                      {item.description}
-                    </Text>
-                    <Pressable onPress={() => handleRemovePendingItem(index)}>
-                      <Text className="text-red-600 text-lg px-2">×</Text>
-                    </Pressable>
+              {/* Pending Items */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>PENDING ITEMS</Text>
+                {pendingItems.map((item, idx) => (
+                  <View key={idx} style={styles.pendingItemRow}>
+                    <Ionicons name="ellipse-outline" size={16} color={colors.textCaption} />
+                    <Text style={styles.pendingItemText}>{item.description}</Text>
+                    <TouchableOpacity onPress={() => handleRemovePendingItem(idx)}>
+                      <Ionicons name="close-circle" size={20} color={colors.danger} />
+                    </TouchableOpacity>
                   </View>
                 ))}
+                <View style={styles.addItemRow}>
+                  <TextInput
+                    style={styles.addItemInput}
+                    value={pendingItem}
+                    onChangeText={setPendingItem}
+                    placeholder="Add pending item..."
+                    placeholderTextColor={colors.textDisabled}
+                    onSubmitEditing={handleAddPendingItem}
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity
+                    onPress={handleAddPendingItem}
+                    disabled={!pendingItem.trim()}
+                  >
+                    <Ionicons
+                      name="add-circle"
+                      size={28}
+                      color={pendingItem.trim() ? colors.primary : colors.textDisabled}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
-            ) : null}
 
-            <View className="flex-row gap-2">
-              <TextInput
-                value={newItemDescription}
-                onChangeText={setNewItemDescription}
-                placeholder="Nuevo pendiente..."
-                className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                onSubmitEditing={handleAddPendingItem}
-              />
-              <Pressable
-                onPress={handleAddPendingItem}
-                disabled={!newItemDescription.trim()}
-                className={`rounded-lg px-4 py-2 items-center justify-center ${
-                  !newItemDescription.trim()
-                    ? 'bg-gray-300'
-                    : 'bg-blue-600 active:bg-blue-700'
-                }`}
+              {/* Submit */}
+              <TouchableOpacity
+                style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={!canSubmit}
               >
-                <Text className="text-white font-semibold text-sm">+</Text>
-              </Pressable>
+                {createMutation.isPending ? (
+                  <ActivityIndicator color={colors.textOnDark} />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit Handover</Text>
+                )}
+              </TouchableOpacity>
+            </GlassCard>
+          )}
+
+          {/* Recent Handovers */}
+          <Text style={styles.listSectionLabel}>RECENT HANDOVERS</Text>
+
+          {isLoading ? (
+            <ActivityIndicator color={colors.primary} style={styles.loader} />
+          ) : (handovers ?? []).length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={40} color={colors.textDisabled} />
+              <Text style={styles.emptyText}>No handover notes yet</Text>
             </View>
-          </View>
-
-          {/* Submit button */}
-          <Pressable
-            onPress={handleCreateHandover}
-            disabled={createHandover.isPending || !notes.trim()}
-            className={`rounded-lg py-2.5 items-center ${
-              createHandover.isPending || !notes.trim()
-                ? 'bg-gray-300'
-                : 'bg-blue-600 active:bg-blue-700'
-            }`}
-          >
-            {createHandover.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text className="text-white font-semibold">Guardar Nota</Text>
-            )}
-          </Pressable>
-
-          {createHandover.isError ? (
-            <Text className="text-red-600 text-xs mt-2 text-center">
-              {createHandover.error?.message ?? 'Error al guardar nota'}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Recent handovers */}
-        <View>
-          <Text className="text-base font-bold text-gray-900 mb-2 px-1">
-            Notas Recientes
-          </Text>
-
-          {handovers && handovers.length > 0 ? (
-            handovers.map((handover) => {
-              const guard = handover.guards as
-                | { first_name: string; last_name: string }
-                | undefined;
-              const guardName = guard
-                ? `${guard.first_name} ${guard.last_name}`
-                : 'Guardia';
+          ) : (
+            (handovers ?? []).map((handover: any) => {
+              const pStyle = getPriorityStyle(handover.priority ?? 'normal');
+              const guardName =
+                handover.guards?.full_name ?? 'Unknown Guard';
+              const items = (handover.pending_items ?? []) as Array<{
+                description: string;
+                completed: boolean;
+              }>;
+              const isAcknowledged = !!handover.acknowledged_at;
+              const isOwnHandover = handover.guard_id === guardId;
 
               return (
-                <HandoverNoteCard
-                  key={handover.id}
-                  guardName={guardName}
-                  notes={handover.notes}
-                  priority={handover.priority}
-                  pendingItems={
-                    (handover.pending_items as PendingItem[]) ?? []
-                  }
-                  createdAt={handover.created_at}
-                  acknowledged={!!handover.acknowledged_at}
-                  onAcknowledge={
-                    !handover.acknowledged_at
-                      ? () => handleAcknowledge(handover.id)
-                      : undefined
-                  }
-                />
+                <GlassCard key={handover.id} style={styles.handoverCard}>
+                  <View style={styles.handoverHeader}>
+                    <View style={styles.handoverHeaderLeft}>
+                      <View style={styles.guardAvatar}>
+                        <Ionicons name="person" size={18} color={colors.textOnDark} />
+                      </View>
+                      <View>
+                        <Text style={styles.guardName}>{guardName}</Text>
+                        <Text style={styles.handoverTime}>
+                          {formatRelative(handover.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.priorityBadge, { backgroundColor: pStyle.bg }]}>
+                      <Text style={[styles.priorityBadgeText, { color: pStyle.color }]}>
+                        {pStyle.label}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.handoverNotes} numberOfLines={4}>
+                    {handover.notes}
+                  </Text>
+
+                  {items.length > 0 && (
+                    <View style={styles.pendingSection}>
+                      <Text style={styles.pendingSectionLabel}>
+                        {items.length} pending item{items.length !== 1 ? 's' : ''}
+                      </Text>
+                      {items.slice(0, 3).map((item, idx) => (
+                        <View key={idx} style={styles.pendingItemPreview}>
+                          <Ionicons
+                            name={item.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={14}
+                            color={item.completed ? colors.success : colors.textCaption}
+                          />
+                          <Text style={styles.pendingItemPreviewText} numberOfLines={1}>
+                            {item.description}
+                          </Text>
+                        </View>
+                      ))}
+                      {items.length > 3 && (
+                        <Text style={styles.moreItems}>
+                          +{items.length - 3} more
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {handover.shift_started_at && (
+                    <Text style={styles.shiftTime}>
+                      Shift: {formatDateTime(handover.shift_started_at)}
+                      {handover.shift_ended_at
+                        ? ` - ${formatDateTime(handover.shift_ended_at)}`
+                        : ' (ongoing)'}
+                    </Text>
+                  )}
+
+                  {!isAcknowledged && !isOwnHandover && (
+                    <TouchableOpacity
+                      style={styles.acknowledgeButton}
+                      onPress={() => handleAcknowledge(handover.id)}
+                      disabled={acknowledgeMutation.isPending}
+                    >
+                      {acknowledgeMutation.isPending ? (
+                        <ActivityIndicator color={colors.textOnDark} size="small" />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="checkmark-circle-outline"
+                            size={18}
+                            color={colors.textOnDark}
+                          />
+                          <Text style={styles.acknowledgeButtonText}>Acknowledge</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+
+                  {isAcknowledged && (
+                    <View style={styles.acknowledgedBadge}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.successText} />
+                      <Text style={styles.acknowledgedText}>Acknowledged</Text>
+                    </View>
+                  )}
+                </GlassCard>
               );
             })
-          ) : (
-            <View className="items-center justify-center py-8">
-              <Text className="text-gray-400">No hay notas recientes</Text>
-            </View>
           )}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  createButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.lg,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.bottomNavClearance + 16,
+    gap: spacing.xl,
+  },
+  formCard: {
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['2xl'],
+  },
+  formTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    marginBottom: spacing.xl,
+  },
+  fieldGroup: {
+    marginBottom: spacing.xl,
+  },
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  textAreaContainer: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.xl,
+    minHeight: 120,
+  },
+  textArea: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    minHeight: 80,
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  priorityPill: {
+    flex: 1,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  priorityText: {
+    fontFamily: fonts.black,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    color: colors.textCaption,
+  },
+  pendingItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pendingItemText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textBody,
+  },
+  addItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  addItemInput: {
+    flex: 1,
+    height: 44,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textPrimary,
+  },
+  submitButton: {
+    height: spacing.buttonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.darkGlow,
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+  listSectionLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  loader: {
+    paddingVertical: spacing['5xl'],
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing['5xl'],
+    gap: spacing.lg,
+  },
+  emptyText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  handoverCard: {
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['2xl'],
+  },
+  handoverHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  handoverHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  guardAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guardName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  handoverTime: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textCaption,
+  },
+  priorityBadge: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  priorityBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  handoverNotes: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textBody,
+    lineHeight: 20,
+    marginBottom: spacing.lg,
+  },
+  pendingSection: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  pendingSectionLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  pendingItemPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  pendingItemPreviewText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textBody,
+    flex: 1,
+  },
+  moreItems: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textCaption,
+    marginTop: spacing.xs,
+  },
+  shiftTime: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textCaption,
+    marginBottom: spacing.lg,
+  },
+  acknowledgeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.smallButtonHeight,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.dark,
+    ...shadows.md,
+  },
+  acknowledgeButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textOnDark,
+    textTransform: 'uppercase',
+  },
+  acknowledgedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  acknowledgedText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.successText,
+  },
+});

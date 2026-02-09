@@ -1,38 +1,66 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Pressable,
+  TouchableOpacity,
   FlatList,
+  TextInput,
+  StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useResidentSearch, useUnitSearch, useBlacklistCheck } from '@/hooks/useDirectory';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { Ionicons } from '@expo/vector-icons';
+import { useResidentSearch } from '@/hooks/useDirectory';
+import { useTodayAccessLogs } from '@/hooks/useGateOps';
+import { formatTime, formatRelative } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-type SearchMode = 'name' | 'unit';
+type ActiveTab = 'residents' | 'logs';
 
-// ---------- BlacklistAlert (inline since 10-04 runs in parallel) ----------
-
-function BlacklistAlert({ reason, protocol }: { reason: string; protocol: string }) {
-  return (
-    <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-      <Text className="text-red-800 font-bold text-base mb-1">
-        Alerta de Lista Negra
-      </Text>
-      <Text className="text-red-700 text-sm">{reason}</Text>
-      {protocol ? (
-        <Text className="text-red-600 text-xs mt-1">Protocolo: {protocol}</Text>
-      ) : null}
-    </View>
-  );
+function getDirectionStyle(direction: string) {
+  switch (direction) {
+    case 'entry':
+      return { bg: colors.primaryLight, color: colors.primary, icon: 'log-in-outline' as const, label: 'Entry' };
+    case 'exit':
+      return { bg: colors.border, color: colors.textCaption, icon: 'log-out-outline' as const, label: 'Exit' };
+    default:
+      return { bg: colors.border, color: colors.textCaption, icon: 'swap-horizontal-outline' as const, label: direction };
+  }
 }
 
-// ---------- Resident result item ----------
+function getDecisionStyle(decision: string) {
+  switch (decision) {
+    case 'allowed':
+      return { bg: colors.successBg, color: colors.successText, label: 'Allowed' };
+    case 'denied':
+      return { bg: colors.dangerBg, color: colors.dangerText, label: 'Denied' };
+    case 'blocked':
+      return { bg: colors.dangerBg, color: colors.dangerText, label: 'Blocked' };
+    default:
+      return { bg: colors.warningBg, color: colors.warningText, label: decision };
+  }
+}
 
-interface ResidentResult {
+function getMethodIcon(method: string) {
+  switch (method) {
+    case 'qr_code':
+      return 'qr-code-outline';
+    case 'nfc':
+      return 'wifi-outline';
+    case 'manual':
+      return 'person-outline';
+    case 'lpr':
+      return 'car-outline';
+    case 'biometric':
+      return 'finger-print-outline';
+    default:
+      return 'shield-outline';
+  }
+}
+
+interface ResidentItem {
   id: string;
   first_name: string;
   paternal_surname: string;
@@ -45,235 +73,435 @@ interface ResidentResult {
   }>;
 }
 
-const ResidentRow = React.memo(function ResidentRow({ item }: { item: ResidentResult }) {
-  const fullName = [item.first_name, item.paternal_surname, item.maternal_surname]
-    .filter(Boolean)
-    .join(' ');
-
-  const unitLabels = item.occupancies
-    .map((o) => o.units?.unit_number)
-    .filter(Boolean)
-    .join(', ');
-
-  return (
-    <View className="bg-white rounded-xl p-4 mb-2 shadow-sm">
-      <Text className="text-base font-medium text-gray-900">{fullName}</Text>
-      {item.phone ? (
-        <Text className="text-sm text-gray-500 mt-0.5">{item.phone}</Text>
-      ) : null}
-      {unitLabels ? (
-        <View className="flex-row mt-1">
-          <View className="bg-gray-100 rounded-md px-2 py-0.5">
-            <Text className="text-xs font-medium text-gray-700">{unitLabels}</Text>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-});
-
-// ---------- Unit result item ----------
-
-interface UnitResult {
+interface AccessLogItem {
   id: string;
-  unit_number: string;
-  building: string | null;
-  floor_number: number | null;
-  occupancies: Array<{
-    resident_id: string;
-    residents: {
-      id: string;
-      first_name: string;
-      paternal_surname: string;
-      phone: string | null;
-    } | null;
-  }>;
+  person_name: string;
+  person_type: string;
+  direction: string;
+  method: string;
+  decision: string;
+  logged_at: string;
+  plate_number: string | null;
+  guard_notes: string | null;
 }
 
-const UnitRow = React.memo(function UnitRow({ item }: { item: UnitResult }) {
-  return (
-    <View className="bg-white rounded-xl p-4 mb-2 shadow-sm">
-      <View className="flex-row items-center mb-1">
-        <Text className="text-base font-semibold text-gray-900">
-          {item.unit_number}
-        </Text>
-        {item.building ? (
-          <Text className="text-sm text-gray-500 ml-2">{item.building}</Text>
-        ) : null}
-      </View>
-      {item.occupancies.length > 0 ? (
-        item.occupancies.map((occ) =>
-          occ.residents ? (
-            <View key={occ.resident_id} className="ml-2 mt-1">
-              <Text className="text-sm text-gray-700">
-                {occ.residents.first_name} {occ.residents.paternal_surname}
-              </Text>
-              {occ.residents.phone ? (
-                <Text className="text-xs text-gray-500">{occ.residents.phone}</Text>
-              ) : null}
+export default function DirectoryIndexScreen() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('residents');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const { data: residents, isLoading: residentsLoading } = useResidentSearch(searchQuery);
+  const { data: accessLogs, isLoading: logsLoading } = useTodayAccessLogs();
+
+  const renderResident = useCallback(
+    ({ item }: { item: ResidentItem }) => {
+      const primaryOccupancy = item.occupancies?.[0];
+      const unit = primaryOccupancy?.units;
+
+      return (
+        <GlassCard style={styles.residentCard}>
+          <View style={styles.residentRow}>
+            <View style={styles.residentAvatar}>
+              <Ionicons name="person" size={20} color={colors.textOnDark} />
             </View>
-          ) : null
+            <View style={styles.residentInfo}>
+              <Text style={styles.residentName}>
+                {item.first_name} {item.paternal_surname}
+                {item.maternal_surname ? ` ${item.maternal_surname}` : ''}
+              </Text>
+              {unit && (
+                <Text style={styles.residentUnit}>
+                  {unit.unit_number}
+                  {unit.building ? ` - ${unit.building}` : ''}
+                </Text>
+              )}
+              {item.phone && (
+                <View style={styles.phoneRow}>
+                  <Ionicons name="call-outline" size={12} color={colors.primary} />
+                  <Text style={styles.phoneText}>{item.phone}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </GlassCard>
+      );
+    },
+    [],
+  );
+
+  const renderAccessLog = useCallback(
+    ({ item }: { item: AccessLogItem }) => {
+      const direction = getDirectionStyle(item.direction);
+      const decision = getDecisionStyle(item.decision);
+      const isDenied = item.decision === 'denied' || item.decision === 'blocked';
+
+      return (
+        <GlassCard style={{ ...styles.logCard, ...(isDenied ? styles.logCardDenied : {}) }}>
+          <View style={styles.logRow}>
+            <View style={[styles.logIcon, { backgroundColor: direction.bg }]}>
+              <Ionicons name={direction.icon} size={24} color={direction.color} />
+            </View>
+            <View style={styles.logInfo}>
+              <View style={styles.logHeader}>
+                <Text style={styles.logName}>{item.person_name}</Text>
+                <View style={styles.logTimeBadge}>
+                  <Text style={styles.logTimeText}>
+                    {formatTime(item.logged_at)}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.logType}>
+                {item.person_type ? `${item.person_type.charAt(0).toUpperCase()}${item.person_type.slice(1)}` : ''}
+                {item.plate_number ? ` - ${item.plate_number}` : ''}
+              </Text>
+              <View style={styles.logMethodRow}>
+                <Ionicons
+                  name={getMethodIcon(item.method) as any}
+                  size={12}
+                  color={colors.primary}
+                />
+                <Text style={styles.logMethodText}>
+                  {item.method?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) ?? 'Unknown'}
+                </Text>
+              </View>
+            </View>
+            {isDenied && (
+              <View style={[styles.decisionBadge, { backgroundColor: decision.bg }]}>
+                <Text style={[styles.decisionBadgeText, { color: decision.color }]}>
+                  {decision.label}
+                </Text>
+              </View>
+            )}
+          </View>
+        </GlassCard>
+      );
+    },
+    [],
+  );
+
+  return (
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Access Logs</Text>
+        <TouchableOpacity
+          style={styles.vehicleButton}
+          onPress={() => router.push('/(guard)/directory/vehicles')}
+        >
+          <Ionicons name="car-outline" size={20} color={colors.textBody} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={18} color={colors.textCaption} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search visitor, unit, or guard..."
+            placeholderTextColor={colors.textCaption}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textCaption} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Tab Switcher */}
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'residents' && styles.tabPillActive]}
+          onPress={() => setActiveTab('residents')}
+        >
+          <Text style={[styles.tabText, activeTab === 'residents' && styles.tabTextActive]}>
+            Residents
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabPill, activeTab === 'logs' && styles.tabPillActive]}
+          onPress={() => setActiveTab('logs')}
+        >
+          <Text style={[styles.tabText, activeTab === 'logs' && styles.tabTextActive]}>
+            Today's Logs
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      {activeTab === 'residents' ? (
+        searchQuery.length < 2 ? (
+          <View style={styles.promptState}>
+            <Ionicons name="search" size={40} color={colors.textDisabled} />
+            <Text style={styles.promptText}>
+              Enter at least 2 characters to search residents
+            </Text>
+          </View>
+        ) : residentsLoading ? (
+          <ActivityIndicator color={colors.primary} style={styles.mainLoader} />
+        ) : (
+          <FlatList
+            data={(residents ?? []) as ResidentItem[]}
+            keyExtractor={(item) => item.id}
+            renderItem={renderResident}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="people-outline" size={40} color={colors.textDisabled} />
+                <Text style={styles.emptyText}>No residents found</Text>
+              </View>
+            }
+          />
         )
+      ) : logsLoading ? (
+        <ActivityIndicator color={colors.primary} style={styles.mainLoader} />
       ) : (
-        <Text className="text-sm text-gray-400 ml-2 mt-1">Sin residentes</Text>
+        <FlatList
+          data={(accessLogs ?? []) as AccessLogItem[]}
+          keyExtractor={(item) => item.id}
+          renderItem={renderAccessLog}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={40} color={colors.textDisabled} />
+              <Text style={styles.emptyText}>No access logs today</Text>
+            </View>
+          }
+        />
       )}
     </View>
   );
-});
-
-// ---------- Screen ----------
-
-export default function DirectoryScreen() {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<SearchMode>('name');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-
-  // Debounce 500ms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Search hooks (only one will be enabled at a time)
-  const residentSearch = useResidentSearch(
-    searchMode === 'name' ? debouncedQuery : ''
-  );
-  const unitSearch = useUnitSearch(
-    searchMode === 'unit' ? debouncedQuery : ''
-  );
-
-  // Blacklist check on debounced query (name mode only)
-  const blacklistCheck = useBlacklistCheck({
-    personName: searchMode === 'name' && debouncedQuery.length >= 2 ? debouncedQuery : undefined,
-  });
-
-  const isLoading =
-    searchMode === 'name' ? residentSearch.isFetching : unitSearch.isFetching;
-
-  const placeholder =
-    searchMode === 'name' ? 'Buscar por nombre...' : 'Buscar por unidad...';
-
-  const emptyMessage =
-    searchMode === 'name'
-      ? 'Ingresa al menos 2 caracteres para buscar'
-      : 'Ingresa un numero de unidad';
-
-  const handleModeChange = useCallback((mode: SearchMode) => {
-    setSearchMode(mode);
-    setSearchQuery('');
-    setDebouncedQuery('');
-  }, []);
-
-  return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-1 p-5">
-        {/* Header */}
-        <Text className="text-2xl font-bold text-gray-900 mb-4">Directorio</Text>
-
-        {/* Vehicle search link */}
-        <Pressable
-          onPress={() => router.push('/(guard)/directory/vehicles')}
-          className="bg-blue-50 rounded-xl p-3 mb-4 active:opacity-80"
-        >
-          <Text className="text-blue-600 font-medium text-center">
-            Buscar vehiculo por placa
-          </Text>
-        </Pressable>
-
-        {/* Mode toggle */}
-        <View className="flex-row bg-gray-200 rounded-xl p-1 mb-4">
-          <Pressable
-            onPress={() => handleModeChange('name')}
-            className={`flex-1 py-2 rounded-lg items-center ${
-              searchMode === 'name' ? 'bg-white shadow-sm' : ''
-            }`}
-          >
-            <Text
-              className={`font-medium ${
-                searchMode === 'name' ? 'text-blue-600' : 'text-gray-500'
-              }`}
-            >
-              Por nombre
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => handleModeChange('unit')}
-            className={`flex-1 py-2 rounded-lg items-center ${
-              searchMode === 'unit' ? 'bg-white shadow-sm' : ''
-            }`}
-          >
-            <Text
-              className={`font-medium ${
-                searchMode === 'unit' ? 'text-blue-600' : 'text-gray-500'
-              }`}
-            >
-              Por unidad
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Search bar */}
-        <TextInput
-          className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
-          placeholder={placeholder}
-          placeholderTextColor="#9ca3af"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        {/* Blacklist alert */}
-        {blacklistCheck.data?.is_blocked ? (
-          <BlacklistAlert
-            reason={blacklistCheck.data.reason}
-            protocol={blacklistCheck.data.protocol}
-          />
-        ) : null}
-
-        {/* Loading indicator */}
-        {isLoading ? (
-          <View className="items-center py-4">
-            <ActivityIndicator color="#2563eb" />
-          </View>
-        ) : null}
-
-        {/* Results */}
-        {searchMode === 'name' ? (
-          <FlatList
-            data={(residentSearch.data ?? []) as ResidentResult[]}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ResidentRow item={item} />}
-            ListEmptyComponent={
-              !isLoading && debouncedQuery.length < 2 ? (
-                <EmptyState message={emptyMessage} />
-              ) : !isLoading && residentSearch.data?.length === 0 ? (
-                <EmptyState message="Sin resultados" />
-              ) : null
-            }
-            contentContainerStyle={{ paddingBottom: 20 }}
-            keyboardShouldPersistTaps="handled"
-          />
-        ) : (
-          <FlatList
-            data={(unitSearch.data ?? []) as UnitResult[]}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <UnitRow item={item} />}
-            ListEmptyComponent={
-              !isLoading && debouncedQuery.length < 1 ? (
-                <EmptyState message={emptyMessage} />
-              ) : !isLoading && unitSearch.data?.length === 0 ? (
-                <EmptyState message="Sin resultados" />
-              ) : null
-            }
-            contentContainerStyle={{ paddingBottom: 20 }}
-            keyboardShouldPersistTaps="handled"
-          />
-        )}
-      </View>
-    </SafeAreaView>
-  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  vehicleButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  searchContainer: {
+    paddingHorizontal: spacing.pagePaddingX,
+    marginBottom: spacing.xl,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.pagePaddingX,
+    marginBottom: spacing.xl,
+  },
+  tabPill: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  tabPillActive: {
+    backgroundColor: colors.dark,
+    borderColor: colors.dark,
+  },
+  tabText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  tabTextActive: {
+    color: colors.textOnDark,
+  },
+  listContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.bottomNavClearance + 16,
+    gap: spacing.lg,
+  },
+  residentCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+  },
+  residentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  residentAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  residentInfo: {
+    flex: 1,
+  },
+  residentName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  residentUnit: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    marginTop: 2,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  phoneText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.primary,
+  },
+  logCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius['3xl'],
+  },
+  logCardDenied: {
+    opacity: 0.7,
+  },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  logIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logInfo: {
+    flex: 1,
+  },
+  logHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  logName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  logTimeBadge: {
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    marginLeft: spacing.md,
+  },
+  logTimeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+  },
+  logType: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    marginTop: 2,
+  },
+  logMethodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  logMethodText: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    color: colors.primary,
+  },
+  decisionBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  decisionBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  promptState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingBottom: spacing.bottomNavClearance,
+  },
+  promptText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing['4xl'],
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing['5xl'],
+    gap: spacing.lg,
+  },
+  emptyText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  mainLoader: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+});

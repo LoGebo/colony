@@ -2,276 +2,438 @@ import { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  FlatList,
-  Pressable,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
   ActivityIndicator,
   Alert,
-  RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import {
   usePatrolLogDetail,
   usePatrolCheckpoints,
   useAbandonPatrol,
 } from '@/hooks/usePatrol';
-import { PatrolProgress } from '@/components/guard/PatrolProgress';
-import { CheckpointCard } from '@/components/guard/CheckpointCard';
-import { formatRelative } from '@/lib/dates';
+import { formatTime } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-export default function ActivePatrolScreen() {
+export default function PatrolDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { communityId } = useAuth();
-  const router = useRouter();
-
-  const {
-    data: patrolDetail,
-    isLoading: detailLoading,
-    refetch,
-    isRefetching,
-  } = usePatrolLogDetail(id);
-
+  const { data, isLoading } = usePatrolLogDetail(id);
   const { data: allCheckpoints } = usePatrolCheckpoints(communityId);
   const abandonPatrol = useAbandonPatrol();
 
-  const log = patrolDetail?.log;
-  const checkpointLogs = patrolDetail?.checkpoint_logs ?? [];
-
-  // Build ordered checkpoint list matching route sequence
-  // We need the route's checkpoint_sequence to order them. Since we fetch it
-  // indirectly via the log's route_id, we use the checkpoint_logs' sequence_order
-  // and fill in unscanned checkpoints from allCheckpoints.
-  const scannedCheckpointIds = useMemo(
-    () => new Set(checkpointLogs.map((cl) => cl.checkpoint_id)),
-    [checkpointLogs]
-  );
-
-  const checkpointsMap = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        description: string | null;
-        nfc_serial: string | null;
-        location_description: string | null;
-      }
-    >();
-    for (const cp of allCheckpoints ?? []) {
-      map.set(cp.id, cp);
-    }
+  const checkpointMap = useMemo(() => {
+    const map: Record<string, { name: string; description: string | null }> = {};
+    (allCheckpoints ?? []).forEach((cp: any) => {
+      map[cp.id] = { name: cp.name, description: cp.description };
+    });
     return map;
   }, [allCheckpoints]);
 
-  // Build the display list: all checkpoints from checkpoint_logs + unscanned ones
-  const displayCheckpoints = useMemo(() => {
-    if (!allCheckpoints) return [];
-
-    // Create entries for scanned checkpoints from checkpoint_logs
-    const scannedEntries = checkpointLogs.map((cl) => {
-      const cp = checkpointsMap.get(cl.checkpoint_id);
-      return {
-        checkpointId: cl.checkpoint_id,
-        name: cp?.name ?? 'Punto desconocido',
-        description: cp?.description ?? cp?.location_description ?? undefined,
-        scanned: true,
-        scannedAt: cl.scanned_at,
-        gpsWithinTolerance: cl.gps_within_tolerance,
-        sequenceOrder: cl.sequence_order,
-      };
-    });
-
-    // Add unscanned checkpoints (ones in allCheckpoints for this community not yet scanned)
-    // Since we don't have the route's checkpoint_sequence here directly,
-    // we show scanned first (ordered by scan time) then unscanned from community checkpoints
-    const unscannedEntries = allCheckpoints
-      .filter((cp) => !scannedCheckpointIds.has(cp.id))
-      .map((cp, idx) => ({
-        checkpointId: cp.id,
-        name: cp.name,
-        description: cp.description ?? cp.location_description ?? undefined,
-        scanned: false,
-        scannedAt: undefined,
-        gpsWithinTolerance: undefined as boolean | null | undefined,
-        sequenceOrder: scannedEntries.length + idx,
-      }));
-
-    return [...scannedEntries, ...unscannedEntries];
-  }, [allCheckpoints, checkpointLogs, checkpointsMap, scannedCheckpointIds]);
-
-  // Find the next unscanned checkpoint
-  const nextUnscanned = useMemo(
-    () => displayCheckpoints.find((cp) => !cp.scanned),
-    [displayCheckpoints]
-  );
-
-  const handleScan = useCallback(() => {
-    if (!id || !nextUnscanned) return;
-
-    router.push({
-      pathname: '/patrol/scan',
-      params: {
-        patrolLogId: id,
-        expectedCheckpointId: nextUnscanned.checkpointId,
-        sequenceOrder: String(nextUnscanned.sequenceOrder),
-      },
-    });
-  }, [id, nextUnscanned, router]);
+  const visitedIds = useMemo(() => {
+    if (!data) return new Set<string>();
+    return new Set(data.checkpoint_logs.map((cl: any) => cl.checkpoint_id));
+  }, [data]);
 
   const handleAbandon = useCallback(() => {
     if (!id) return;
-
     Alert.alert(
-      'Abandonar Ronda',
-      'Esta seguro que desea abandonar esta ronda? Esta accion no se puede deshacer.',
+      'Abandon Patrol',
+      'Are you sure you want to abandon this patrol? Progress will be lost.',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Abandonar',
+          text: 'Abandon',
           style: 'destructive',
           onPress: async () => {
             try {
               await abandonPatrol.mutateAsync(id);
               router.back();
-            } catch {
-              // Error surfaced via mutation state
+            } catch (error: any) {
+              Alert.alert('Error', error?.message ?? 'Failed to abandon patrol.');
             }
           },
         },
-      ]
+      ],
     );
   }, [id, abandonPatrol, router]);
 
-  if (detailLoading) {
+  if (isLoading || !data) {
     return (
-      <View className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Patrol</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <ActivityIndicator color={colors.primary} style={styles.loader} />
       </View>
     );
   }
 
-  if (!log) {
-    return (
-      <View className="flex-1 bg-gray-50 items-center justify-center px-6">
-        <Text className="text-gray-500 text-center">
-          Registro de ronda no encontrado
-        </Text>
-        <Pressable
-          onPress={() => router.back()}
-          className="mt-4 bg-blue-600 rounded-lg px-6 py-3"
-        >
-          <Text className="text-white font-semibold">Volver</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  const isCompleted = log.status === 'completed';
+  const { log, checkpoint_logs } = data;
+  const total = log.checkpoints_total ?? 0;
+  const visited = log.checkpoints_visited ?? 0;
+  const progressPercent = total > 0 ? (visited / total) * 100 : 0;
+  const isComplete = log.status === 'completed';
   const isAbandoned = log.status === 'abandoned';
   const isActive = log.status === 'in_progress';
 
-  return (
-    <View className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-4 pt-14 pb-4 shadow-sm">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-2xl font-bold text-gray-900">
-              Ronda Activa
-            </Text>
-            <Text className="text-sm text-gray-500 mt-0.5">
-              Iniciada {formatRelative(log.started_at)}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => router.back()}
-            className="bg-gray-100 rounded-lg px-3 py-2"
-          >
-            <Text className="text-gray-700 font-medium">Volver</Text>
-          </Pressable>
-        </View>
+  // Build ordered checkpoint list from route
+  const routeCheckpointIds = (log as any).checkpoint_sequence ?? [];
 
-        {/* Progress bar */}
-        <View className="mt-4">
-          <PatrolProgress
-            checkpointsVisited={log.checkpoints_visited ?? 0}
-            checkpointsTotal={log.checkpoints_total ?? 0}
-            status={log.status ?? 'in_progress'}
-          />
-        </View>
+  return (
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {isComplete ? 'Patrol Complete' : isAbandoned ? 'Patrol Abandoned' : 'Active Patrol'}
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* Completion banner */}
-      {isCompleted && log.completed_at ? (
-        <View className="bg-green-50 border-l-4 border-green-600 mx-4 mt-4 p-4 rounded-r-lg">
-          <Text className="text-green-800 font-semibold">
-            Ronda completada
-          </Text>
-          <Text className="text-green-600 text-sm mt-1">
-            Finalizada {formatRelative(log.completed_at)}
-          </Text>
-        </View>
-      ) : null}
-
-      {/* Checkpoint list */}
-      <FlatList
-        data={displayCheckpoints}
-        keyExtractor={(item) => item.checkpointId}
-        contentContainerClassName="p-4"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={['#2563eb']}
-          />
-        }
-        renderItem={({ item }) => (
-          <CheckpointCard
-            name={item.name}
-            description={item.description}
-            scanned={item.scanned}
-            scannedAt={item.scannedAt}
-            gpsWithinTolerance={item.gpsWithinTolerance}
-          />
-        )}
-        ListFooterComponent={
-          <View className="pb-6">
-            {/* Scan next button */}
-            {isActive && nextUnscanned ? (
-              <Pressable
-                onPress={handleScan}
-                className="bg-blue-600 rounded-xl py-4 items-center mt-2 active:bg-blue-700"
-              >
-                <Text className="text-white font-bold text-base">
-                  Escanear Siguiente
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {/* Abandon button */}
-            {isActive ? (
-              <Pressable
-                onPress={handleAbandon}
-                disabled={abandonPatrol.isPending}
-                className="bg-red-50 border border-red-200 rounded-xl py-3 items-center mt-3 active:bg-red-100"
-              >
-                <Text className="text-red-700 font-semibold">
-                  {abandonPatrol.isPending
-                    ? 'Abandonando...'
-                    : 'Abandonar Ronda'}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {/* Abandon error */}
-            {abandonPatrol.isError ? (
-              <Text className="text-red-600 text-xs mt-2 text-center">
-                {abandonPatrol.error?.message ?? 'Error al abandonar ronda'}
-              </Text>
-            ) : null}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Progress Card */}
+        <GlassCard variant="dense" style={styles.progressCard}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressLabel}>PROGRESS</Text>
+            <Text style={styles.progressCount}>
+              {visited} / {total}
+            </Text>
           </View>
-        }
-      />
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: `${progressPercent}%`,
+                  backgroundColor: isComplete
+                    ? colors.success
+                    : isAbandoned
+                      ? colors.danger
+                      : colors.primary,
+                },
+              ]}
+            />
+          </View>
+          {isComplete && (
+            <View style={styles.completeBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.successText} />
+              <Text style={styles.completeBadgeText}>Patrol completed successfully</Text>
+            </View>
+          )}
+          {isAbandoned && (
+            <View style={styles.abandonedBadge}>
+              <Ionicons name="close-circle" size={16} color={colors.dangerText} />
+              <Text style={styles.abandonedBadgeText}>Patrol was abandoned</Text>
+            </View>
+          )}
+        </GlassCard>
+
+        {/* Checkpoint List */}
+        <Text style={styles.sectionLabel}>CHECKPOINTS</Text>
+        <View style={styles.checkpointList}>
+          {(allCheckpoints ?? []).map((cp: any, idx: number) => {
+            const isVisited = visitedIds.has(cp.id);
+            const checkpointLog = checkpoint_logs.find(
+              (cl: any) => cl.checkpoint_id === cp.id,
+            );
+
+            return (
+              <View
+                key={cp.id}
+                style={[
+                  styles.checkpointItem,
+                  idx < (allCheckpoints ?? []).length - 1 && styles.checkpointItemBorder,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.checkpointDot,
+                    isVisited
+                      ? styles.checkpointDotVisited
+                      : styles.checkpointDotPending,
+                  ]}
+                >
+                  {isVisited ? (
+                    <Ionicons name="checkmark" size={14} color={colors.textOnDark} />
+                  ) : (
+                    <Text style={styles.checkpointDotNumber}>{idx + 1}</Text>
+                  )}
+                </View>
+                <View style={styles.checkpointInfo}>
+                  <Text
+                    style={[
+                      styles.checkpointName,
+                      isVisited && styles.checkpointNameVisited,
+                    ]}
+                  >
+                    {cp.name}
+                  </Text>
+                  {cp.description && (
+                    <Text style={styles.checkpointDescription} numberOfLines={1}>
+                      {cp.description}
+                    </Text>
+                  )}
+                  {checkpointLog && (
+                    <Text style={styles.checkpointTime}>
+                      Scanned at {formatTime(checkpointLog.scanned_at)}
+                    </Text>
+                  )}
+                </View>
+                {isVisited && (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Actions */}
+        {isActive && (
+          <View style={styles.actionsGroup}>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => router.push('/(guard)/patrol/scan')}
+            >
+              <Ionicons name="scan" size={22} color={colors.textOnDark} />
+              <Text style={styles.scanButtonText}>Scan Checkpoint</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.abandonButton}
+              onPress={handleAbandon}
+              disabled={abandonPatrol.isPending}
+            >
+              {abandonPatrol.isPending ? (
+                <ActivityIndicator color={colors.dangerText} size="small" />
+              ) : (
+                <Text style={styles.abandonButtonText}>Abandon Patrol</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.bottomNavClearance + 16,
+    gap: spacing['3xl'],
+  },
+  progressCard: {
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['2xl'],
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  progressLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  progressCount: {
+    fontFamily: fonts.black,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  progressBarBg: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  completeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    backgroundColor: colors.successBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  completeBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.successText,
+  },
+  abandonedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    backgroundColor: colors.dangerBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  abandonedBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.dangerText,
+  },
+  sectionLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  checkpointList: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    overflow: 'hidden',
+  },
+  checkpointItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.xl,
+    gap: spacing.xl,
+  },
+  checkpointItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  checkpointDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkpointDotVisited: {
+    backgroundColor: colors.success,
+  },
+  checkpointDotPending: {
+    backgroundColor: colors.border,
+  },
+  checkpointDotNumber: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textCaption,
+  },
+  checkpointInfo: {
+    flex: 1,
+  },
+  checkpointName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  checkpointNameVisited: {
+    color: colors.successText,
+  },
+  checkpointDescription: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    marginTop: 2,
+  },
+  checkpointTime: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.primary,
+    marginTop: 4,
+  },
+  actionsGroup: {
+    gap: spacing.xl,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    height: spacing.buttonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary,
+    ...shadows.blueGlow,
+  },
+  scanButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+  abandonButton: {
+    height: spacing.smallButtonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.dangerBgLight,
+    borderWidth: 1,
+    borderColor: colors.dangerBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  abandonButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.dangerText,
+  },
+});

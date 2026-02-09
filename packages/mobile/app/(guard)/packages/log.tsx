@@ -1,365 +1,429 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   TextInput,
-  Pressable,
   ScrollView,
-  Alert,
-  Image,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Switch,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { STORAGE_BUCKETS } from '@upoe/shared';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { useUnitSearch } from '@/hooks/useDirectory';
 import { useLogPackage } from '@/hooks/usePackages';
-import { pickAndUploadImage } from '@/lib/upload';
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@upoe/shared';
+import { useUnitSearch } from '@/hooks/useDirectory';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-type PackageCarrier = Database['public']['Enums']['package_carrier'];
-
-const CARRIERS: { value: PackageCarrier; label: string }[] = [
-  { value: 'fedex', label: 'FedEx' },
-  { value: 'dhl', label: 'DHL' },
-  { value: 'ups', label: 'UPS' },
-  { value: 'estafeta', label: 'Estafeta' },
-  { value: 'redpack', label: 'Redpack' },
-  { value: 'mercado_libre', label: 'ML' },
-  { value: 'amazon', label: 'Amazon' },
-  { value: 'correos_mexico', label: 'Correos' },
-  { value: 'other', label: 'Otro' },
+const CARRIERS = [
+  'Amazon',
+  'FedEx',
+  'UPS',
+  'DHL',
+  'USPS',
+  'Mercado Libre',
+  'Other',
 ];
-
-interface UnitOption {
-  id: string;
-  unit_number: string;
-  building: string | null;
-  occupancies: Array<{
-    resident_id: string;
-    residents: {
-      id: string;
-      first_name: string;
-      paternal_surname: string;
-      phone: string | null;
-    } | null;
-  }>;
-}
 
 export default function LogPackageScreen() {
   const router = useRouter();
   const { communityId } = useAuth();
   const logPackage = useLogPackage();
 
-  // Form state
-  const [carrier, setCarrier] = useState<PackageCarrier | null>(null);
-  const [carrierOther, setCarrierOther] = useState('');
+  const [carrier, setCarrier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [recipientUnitId, setRecipientUnitId] = useState('');
   const [recipientName, setRecipientName] = useState('');
-  const [description, setDescription] = useState('');
-  const [packageCount, setPackageCount] = useState('1');
-  const [isOversized, setIsOversized] = useState(false);
-  const [labelPhotoUrl, setLabelPhotoUrl] = useState<string | null>(null);
-
-  // Unit search
   const [unitQuery, setUnitQuery] = useState('');
-  const [debouncedUnitQuery, setDebouncedUnitQuery] = useState('');
-  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [selectedUnitLabel, setSelectedUnitLabel] = useState('');
+  const [description, setDescription] = useState('');
 
-  // Debounce unit search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedUnitQuery(unitQuery);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [unitQuery]);
+  const { data: unitResults } = useUnitSearch(unitQuery);
 
-  const unitSearch = useUnitSearch(debouncedUnitQuery);
+  const canSubmit =
+    carrier.length > 0 &&
+    recipientName.trim().length > 0 &&
+    selectedUnitId !== null &&
+    !logPackage.isPending;
 
-  const handleSelectUnit = useCallback((unit: UnitOption) => {
-    setRecipientUnitId(unit.id);
-    setSelectedUnitLabel(unit.unit_number);
-    setUnitQuery(unit.unit_number);
-    setShowUnitDropdown(false);
-
-    // Auto-fill recipient name from first resident
-    const firstResident = unit.occupancies?.[0]?.residents;
-    if (firstResident) {
-      setRecipientName(
-        `${firstResident.first_name} ${firstResident.paternal_surname}`
+  const handleSelectUnit = useCallback(
+    (unit: { id: string; unit_number: string; building: string | null }) => {
+      setSelectedUnitId(unit.id);
+      setSelectedUnitLabel(
+        `${unit.unit_number}${unit.building ? ` - ${unit.building}` : ''}`,
       );
-    }
-  }, []);
+      setUnitQuery('');
+    },
+    [],
+  );
 
-  const handleTakePhoto = useCallback(async () => {
-    if (!communityId) return;
-    const path = await pickAndUploadImage(
-      STORAGE_BUCKETS.DOCUMENT_FILES,
-      communityId,
-      'package-labels'
-    );
-    if (path) {
-      setLabelPhotoUrl(path);
-    }
-  }, [communityId]);
+  const handleSubmit = async () => {
+    if (!canSubmit || !selectedUnitId) return;
 
-  const handleSubmit = useCallback(() => {
-    if (!carrier) {
-      Alert.alert('Error', 'Selecciona una paqueteria');
-      return;
-    }
-    if (!recipientUnitId) {
-      Alert.alert('Error', 'Selecciona una unidad');
-      return;
-    }
-    if (!recipientName.trim()) {
-      Alert.alert('Error', 'Ingresa el nombre del destinatario');
-      return;
-    }
-
-    logPackage.mutate(
-      {
-        carrier,
-        carrier_other: carrier === 'other' ? carrierOther : undefined,
-        tracking_number: trackingNumber || undefined,
-        recipient_unit_id: recipientUnitId,
+    try {
+      await logPackage.mutateAsync({
+        carrier: carrier.toLowerCase() as any,
+        tracking_number: trackingNumber.trim() || undefined,
+        recipient_unit_id: selectedUnitId,
         recipient_name: recipientName.trim(),
-        description: description || undefined,
-        package_count: parseInt(packageCount, 10) || 1,
-        is_oversized: isOversized,
-        label_photo_url: labelPhotoUrl ?? undefined,
-      },
-      {
-        onSuccess: () => {
-          Alert.alert('Registrado', 'Paquete registrado exitosamente');
-          router.back();
-        },
-        onError: (error) => {
-          Alert.alert('Error', error.message);
-        },
-      }
-    );
-  }, [
-    carrier,
-    carrierOther,
-    trackingNumber,
-    recipientUnitId,
-    recipientName,
-    description,
-    packageCount,
-    isOversized,
-    labelPhotoUrl,
-    logPackage,
-    router,
-  ]);
+        description: description.trim() || undefined,
+      });
 
-  // Build photo thumbnail URL
-  const photoThumbUri = labelPhotoUrl
-    ? supabase.storage
-        .from(STORAGE_BUCKETS.DOCUMENT_FILES)
-        .getPublicUrl(labelPhotoUrl).data.publicUrl
-    : null;
+      Alert.alert('Package Logged', 'The package has been registered successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+    }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <View style={styles.container}>
+      <AmbientBackground />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Log Package</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <KeyboardAvoidingView
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        keyboardVerticalOffset={0}
       >
         <ScrollView
-          className="flex-1 p-5"
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 40 }}
         >
-          <Text className="text-2xl font-bold text-gray-900 mb-6">
-            Registrar Paquete
-          </Text>
-
-          {/* Carrier picker */}
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Paqueteria *
-          </Text>
-          <View className="flex-row flex-wrap gap-2 mb-4">
-            {CARRIERS.map((c) => (
-              <Pressable
-                key={c.value}
-                onPress={() => setCarrier(c.value)}
-                className={`rounded-lg px-3 py-2 ${
-                  carrier === c.value
-                    ? 'bg-blue-600'
-                    : 'bg-gray-100'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    carrier === c.value ? 'text-white' : 'text-gray-700'
-                  }`}
-                >
-                  {c.label}
-                </Text>
-              </Pressable>
-            ))}
+          {/* Carrier Selector */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>CARRIER</Text>
+            <View style={styles.carrierGrid}>
+              {CARRIERS.map((c) => {
+                const active = carrier === c;
+                return (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.carrierPill, active && styles.carrierPillActive]}
+                    onPress={() => setCarrier(c)}
+                  >
+                    <Text
+                      style={[styles.carrierText, active && styles.carrierTextActive]}
+                    >
+                      {c}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          {/* Carrier other */}
-          {carrier === 'other' ? (
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-1">
-                Nombre de paqueteria
-              </Text>
+          {/* Tracking Number */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>TRACKING NUMBER (OPTIONAL)</Text>
+            <View style={styles.inputContainer}>
               <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900"
-                placeholder="Nombre..."
-                placeholderTextColor="#9ca3af"
-                value={carrierOther}
-                onChangeText={setCarrierOther}
+                style={styles.input}
+                value={trackingNumber}
+                onChangeText={setTrackingNumber}
+                placeholder="Enter tracking number"
+                placeholderTextColor={colors.textDisabled}
+                autoCapitalize="characters"
               />
             </View>
-          ) : null}
-
-          {/* Tracking number */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Numero de rastreo (opcional)
-          </Text>
-          <TextInput
-            className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
-            placeholder="Tracking..."
-            placeholderTextColor="#9ca3af"
-            value={trackingNumber}
-            onChangeText={setTrackingNumber}
-            autoCapitalize="characters"
-          />
-
-          {/* Unit search */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Unidad destino *
-          </Text>
-          <View className="relative mb-4">
-            <TextInput
-              className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900"
-              placeholder="Buscar unidad..."
-              placeholderTextColor="#9ca3af"
-              value={unitQuery}
-              onChangeText={(text) => {
-                setUnitQuery(text);
-                setShowUnitDropdown(true);
-                if (text !== selectedUnitLabel) {
-                  setRecipientUnitId('');
-                }
-              }}
-              onFocus={() => setShowUnitDropdown(true)}
-            />
-            {showUnitDropdown &&
-              unitSearch.data &&
-              unitSearch.data.length > 0 &&
-              !recipientUnitId ? (
-              <View className="bg-white rounded-xl shadow-md mt-1 max-h-48 overflow-hidden border border-gray-200">
-                {(unitSearch.data as UnitOption[]).map((unit) => (
-                  <Pressable
-                    key={unit.id}
-                    onPress={() => handleSelectUnit(unit)}
-                    className="px-4 py-3 border-b border-gray-100 active:bg-gray-50"
-                  >
-                    <Text className="text-base text-gray-900">
-                      {unit.unit_number}
-                      {unit.building ? ` - ${unit.building}` : ''}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
           </View>
 
-          {/* Recipient name */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Nombre del destinatario *
-          </Text>
-          <TextInput
-            className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
-            placeholder="Nombre completo..."
-            placeholderTextColor="#9ca3af"
-            value={recipientName}
-            onChangeText={setRecipientName}
-          />
+          {/* Recipient Name */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>RECIPIENT NAME</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={colors.textCaption}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={recipientName}
+                onChangeText={setRecipientName}
+                placeholder="Name on the package"
+                placeholderTextColor={colors.textDisabled}
+              />
+            </View>
+          </View>
+
+          {/* Unit Search */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>UNIT</Text>
+            {selectedUnitId ? (
+              <View style={styles.selectedUnitRow}>
+                <View style={styles.selectedUnitBadge}>
+                  <Ionicons name="home" size={16} color={colors.primary} />
+                  <Text style={styles.selectedUnitText}>{selectedUnitLabel}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedUnitId(null);
+                    setSelectedUnitLabel('');
+                  }}
+                >
+                  <Ionicons name="close-circle" size={24} color={colors.textCaption} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.inputContainer}>
+                  <Ionicons
+                    name="search-outline"
+                    size={20}
+                    color={colors.textCaption}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={unitQuery}
+                    onChangeText={setUnitQuery}
+                    placeholder="Search by unit number..."
+                    placeholderTextColor={colors.textDisabled}
+                  />
+                </View>
+                {(unitResults ?? []).length > 0 && unitQuery.length > 0 && (
+                  <View style={styles.unitResults}>
+                    {(unitResults ?? []).slice(0, 5).map((unit: any) => (
+                      <TouchableOpacity
+                        key={unit.id}
+                        style={styles.unitResultItem}
+                        onPress={() => handleSelectUnit(unit)}
+                      >
+                        <Ionicons name="home-outline" size={16} color={colors.primary} />
+                        <Text style={styles.unitResultText}>
+                          {unit.unit_number}
+                          {unit.building ? ` - ${unit.building}` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </View>
 
           {/* Description */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Descripcion (opcional)
-          </Text>
-          <TextInput
-            className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
-            placeholder="Descripcion del paquete..."
-            placeholderTextColor="#9ca3af"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={2}
-          />
-
-          {/* Package count */}
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Cantidad de paquetes
-          </Text>
-          <TextInput
-            className="bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
-            placeholder="1"
-            placeholderTextColor="#9ca3af"
-            value={packageCount}
-            onChangeText={setPackageCount}
-            keyboardType="number-pad"
-          />
-
-          {/* Oversized toggle */}
-          <View className="flex-row items-center justify-between bg-gray-100 rounded-xl px-4 py-3 mb-4">
-            <Text className="text-base text-gray-900">Sobredimensionado</Text>
-            <Switch
-              value={isOversized}
-              onValueChange={setIsOversized}
-              trackColor={{ false: '#d1d5db', true: '#93c5fd' }}
-              thumbColor={isOversized ? '#2563eb' : '#f3f4f6'}
-            />
-          </View>
-
-          {/* Label photo */}
-          <Pressable
-            onPress={handleTakePhoto}
-            className="bg-gray-100 rounded-xl px-4 py-3 mb-4 items-center active:opacity-80"
-          >
-            <Text className="text-blue-600 font-medium">
-              {labelPhotoUrl ? 'Cambiar foto de etiqueta' : 'Foto de etiqueta'}
-            </Text>
-          </Pressable>
-
-          {photoThumbUri ? (
-            <View className="mb-4 items-center">
-              <Image
-                source={{ uri: photoThumbUri }}
-                className="w-48 h-48 rounded-xl"
-                resizeMode="cover"
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>DESCRIPTION (OPTIONAL)</Text>
+            <View style={styles.textAreaContainer}>
+              <TextInput
+                style={styles.textArea}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Package details, size, condition..."
+                placeholderTextColor={colors.textDisabled}
+                multiline
+                textAlignVertical="top"
+                maxLength={500}
               />
             </View>
-          ) : null}
+          </View>
 
           {/* Submit */}
-          <Pressable
+          <TouchableOpacity
+            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={logPackage.isPending}
-            className={`rounded-xl py-4 items-center ${
-              logPackage.isPending ? 'bg-blue-400' : 'bg-blue-600 active:opacity-80'
-            }`}
+            disabled={!canSubmit}
           >
-            <Text className="text-white font-bold text-base">
-              {logPackage.isPending ? 'Registrando...' : 'Registrar Paquete'}
-            </Text>
-          </Pressable>
+            {logPackage.isPending ? (
+              <ActivityIndicator color={colors.textOnDark} />
+            ) : (
+              <Text style={styles.submitButtonText}>Log Package</Text>
+            )}
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.bottomNavClearance + 16,
+  },
+  fieldGroup: {
+    marginBottom: spacing['3xl'],
+  },
+  fieldLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: spacing.md,
+  },
+  carrierGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  carrierPill: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  carrierPillActive: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  carrierText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textBody,
+  },
+  carrierTextActive: {
+    color: colors.primary,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: spacing.inputHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  selectedUnitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: spacing.inputHeight,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+  },
+  selectedUnitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  selectedUnitText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  unitResults: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    overflow: 'hidden',
+  },
+  unitResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  unitResultText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  textAreaContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.xl,
+    minHeight: 100,
+  },
+  textArea: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    minHeight: 80,
+  },
+  submitButton: {
+    height: spacing.buttonHeight,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.blueGlow,
+  },
+  submitButtonDisabled: {
+    backgroundColor: colors.textDisabled,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+});
