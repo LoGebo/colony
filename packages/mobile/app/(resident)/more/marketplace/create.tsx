@@ -34,7 +34,7 @@ export default function CreateListingScreen() {
   const { communityId } = useAuth();
   const createListing = useCreateListing();
 
-  const [category, setCategory] = useState('for_sale');
+  const [category, setCategory] = useState('sale');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -42,9 +42,20 @@ export default function CreateListingScreen() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === 'web') {
+      window.alert(message);
+      onOk?.();
+    } else if (onOk) {
+      Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleAddImage = async () => {
     if (imageUrls.length >= 4) {
-      Alert.alert('Limit', 'Maximum 4 images allowed.');
+      showAlert('Limit', 'Maximum 4 images allowed.');
       return;
     }
     try {
@@ -52,7 +63,7 @@ export default function CreateListingScreen() {
       const url = await pickAndUploadImage('chat-media', communityId!, 'marketplace');
       if (url) setImageUrls((prev) => [...prev, url]);
     } catch {
-      Alert.alert('Error', 'Failed to upload image.');
+      showAlert('Error', 'Failed to upload image.');
     } finally {
       setUploading(false);
     }
@@ -60,11 +71,11 @@ export default function CreateListingScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert('Required', 'Please enter a title.');
+      showAlert('Required', 'Please enter a title.');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Required', 'Please enter a description.');
+      showAlert('Required', 'Please enter a description.');
       return;
     }
     try {
@@ -76,11 +87,9 @@ export default function CreateListingScreen() {
         price_negotiable: negotiable,
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
       });
-      Alert.alert('Success', 'Your listing has been submitted for review.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showAlert('Success', 'Your listing has been submitted for review.', () => router.back());
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to create listing.');
+      showAlert('Error', err.message ?? 'Failed to create listing.');
     }
   };
 

@@ -134,15 +134,18 @@ export function useCreateReservation() {
       amenity_id: string;
       start_time: string; // ISO timestamp
       end_time: string; // ISO timestamp
-      notes?: string;
+      notes?: string | null;
     }) => {
+      if (!unitId) throw new Error('No unit found for current resident. Please contact your administrator.');
+      if (!residentId) throw new Error('Resident profile not found. Please sign in again.');
+
       const { data, error } = await supabase.rpc('create_reservation', {
         p_amenity_id: input.amenity_id,
-        p_unit_id: unitId!,
-        p_resident_id: residentId!,
+        p_unit_id: unitId,
+        p_resident_id: residentId,
         p_start_time: input.start_time,
         p_end_time: input.end_time,
-        p_notes: input.notes ?? undefined,
+        p_notes: input.notes || undefined,
       });
 
       if (error) throw error;
@@ -202,7 +205,7 @@ export function useCancelReservation() {
           status: 'cancelled' as never,
           cancelled_at: new Date().toISOString(),
           cancelled_by: user!.id,
-          cancellation_reason: reason ?? undefined,
+          cancellation_reason: reason ?? null,
         })
         .eq('id', reservationId);
 

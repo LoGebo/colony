@@ -31,19 +31,30 @@ export default function CreateVehicleScreen() {
 
   const isValid = plateNumber.trim().length > 0 && plateState.trim().length > 0;
 
+  const showAlert = (title: string, message: string, onOk?: () => void) => {
+    if (Platform.OS === 'web') {
+      window.alert(message);
+      onOk?.();
+    } else if (onOk) {
+      Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!plateNumber.trim()) {
-      Alert.alert('Required', 'Please enter the plate number.');
+      showAlert('Required', 'Please enter the plate number.');
       return;
     }
     if (!plateState.trim()) {
-      Alert.alert('Required', 'Please enter the plate state.');
+      showAlert('Required', 'Please enter the plate state.');
       return;
     }
 
     const yearNum = year.trim() ? parseInt(year.trim(), 10) : undefined;
     if (year.trim() && (isNaN(yearNum!) || yearNum! < 1900 || yearNum! > 2100)) {
-      Alert.alert('Invalid', 'Please enter a valid year (1900-2100).');
+      showAlert('Invalid', 'Please enter a valid year (1900-2100).');
       return;
     }
 
@@ -57,11 +68,9 @@ export default function CreateVehicleScreen() {
         year: yearNum,
       });
 
-      Alert.alert('Success', 'Vehicle added successfully.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      showAlert('Success', 'Vehicle added successfully.', () => router.back());
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to add vehicle.');
+      showAlert('Error', err?.message ?? 'Failed to add vehicle.');
     }
   };
 

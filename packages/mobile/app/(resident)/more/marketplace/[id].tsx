@@ -9,6 +9,7 @@ import {
   Image,
   Dimensions,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,37 +60,50 @@ export default function MarketplaceDetailScreen() {
   const images: string[] = listing.image_urls ?? [];
 
   const handleMarkSold = () => {
-    Alert.alert('Mark as Sold', 'This will remove the listing from the marketplace.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Mark Sold',
-        onPress: () => {
-          markAsSoldMutation.mutate(undefined, {
-            onSuccess: () => router.back(),
-          });
-        },
-      },
-    ]);
+    const doMarkSold = () => {
+      markAsSoldMutation.mutate(undefined, {
+        onSuccess: () => router.back(),
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('This will remove the listing from the marketplace. Mark as sold?')) {
+        doMarkSold();
+      }
+    } else {
+      Alert.alert('Mark as Sold', 'This will remove the listing from the marketplace.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark Sold', onPress: doMarkSold },
+      ]);
+    }
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Listing', 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteMutation.mutate(id!, {
-            onSuccess: () => router.back(),
-          });
-        },
-      },
-    ]);
+    const doDelete = () => {
+      deleteMutation.mutate(id!, {
+        onSuccess: () => router.back(),
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this listing? This action cannot be undone.')) {
+        doDelete();
+      }
+    } else {
+      Alert.alert('Delete Listing', 'This action cannot be undone.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   const handleContact = () => {
     if (!resident?.phone) {
-      Alert.alert('No Phone', 'The seller has not shared their phone number.');
+      if (Platform.OS === 'web') {
+        window.alert('The seller has not shared their phone number.');
+      } else {
+        Alert.alert('No Phone', 'The seller has not shared their phone number.');
+      }
       return;
     }
     handleContactSeller(resident.phone, listing.title, listing.id);

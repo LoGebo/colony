@@ -16,21 +16,23 @@ import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const CATEGORIES = ['All', 'regulation', 'contract', 'notice', 'policy'] as const;
+const CATEGORIES = ['All', 'legal', 'assembly', 'financial', 'operational', 'communication'] as const;
 
 const CATEGORY_LABELS: Record<string, string> = {
   All: 'All Files',
-  regulation: 'Regulation',
-  contract: 'Contract',
-  notice: 'Notice',
-  policy: 'Policy',
+  legal: 'Legal',
+  assembly: 'Assembly',
+  financial: 'Financial',
+  operational: 'Operational',
+  communication: 'Communication',
 };
 
 const CATEGORY_ICON_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; bg: string; color: string }> = {
-  regulation: { icon: 'shield-checkmark-outline', bg: colors.primaryLightAlt, color: colors.primary },
-  contract: { icon: 'document-text-outline', bg: colors.warningBg, color: colors.warningText },
-  notice: { icon: 'megaphone-outline', bg: colors.tealLight, color: colors.tealDark },
-  policy: { icon: 'book-outline', bg: '#FCE7F3', color: '#DB2777' },
+  legal: { icon: 'shield-checkmark-outline', bg: colors.primaryLightAlt, color: colors.primary },
+  assembly: { icon: 'people-outline', bg: colors.warningBg, color: colors.warningText },
+  financial: { icon: 'stats-chart-outline', bg: colors.tealLight, color: colors.tealDark },
+  operational: { icon: 'construct-outline', bg: '#FCE7F3', color: '#DB2777' },
+  communication: { icon: 'megaphone-outline', bg: '#E0E7FF', color: colors.indigo },
 };
 
 const DEFAULT_ICON_CONFIG = { icon: 'document-outline' as keyof typeof Ionicons.glyphMap, bg: colors.border, color: colors.textMuted };

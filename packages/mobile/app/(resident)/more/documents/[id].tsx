@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,16 +27,19 @@ function formatFileSize(bytes: number | null | undefined): string {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  regulation: 'Regulation',
-  contract: 'Contract',
-  notice: 'Notice',
-  policy: 'Policy',
+  legal: 'Legal',
+  assembly: 'Assembly',
+  financial: 'Financial',
+  operational: 'Operational',
+  communication: 'Communication',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  published: { label: 'Published', bg: colors.successBg, color: colors.successText },
-  draft: { label: 'Draft', bg: colors.warningBg, color: colors.warningText },
+  active: { label: 'Active', bg: colors.successBg, color: colors.successText },
+  inactive: { label: 'Inactive', bg: colors.border, color: colors.textCaption },
+  pending: { label: 'Pending', bg: colors.warningBg, color: colors.warningText },
   archived: { label: 'Archived', bg: colors.border, color: colors.textCaption },
+  suspended: { label: 'Suspended', bg: colors.dangerBg, color: colors.dangerText },
 };
 
 export default function DocumentDetailScreen() {
@@ -50,23 +54,22 @@ export default function DocumentDetailScreen() {
   const handleSign = () => {
     if (!document || !document.latestVersion) return;
 
-    Alert.alert(
-      'Sign Document',
-      consentText,
-      [
+    const doSign = () => {
+      signMutation.mutate({
+        document_id: document.id,
+        document_version_id: document.latestVersion!.id,
+        consent_text: consentText,
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(consentText)) doSign();
+    } else {
+      Alert.alert('Sign Document', consentText, [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign',
-          onPress: () => {
-            signMutation.mutate({
-              document_id: document.id,
-              document_version_id: document.latestVersion!.id,
-              consent_text: consentText,
-            });
-          },
-        },
-      ]
-    );
+        { text: 'Sign', onPress: doSign },
+      ]);
+    }
   };
 
   const handleDownload = async () => {

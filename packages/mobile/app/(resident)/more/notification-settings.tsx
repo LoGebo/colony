@@ -8,6 +8,7 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,9 +84,18 @@ export default function NotificationSettingsScreen() {
     try {
       await updatePrefs.mutateAsync(localPrefs);
       setDirty(false);
-      Alert.alert('Saved', 'Notification preferences updated.');
+      if (Platform.OS === 'web') {
+        window.alert('Notification preferences updated.');
+      } else {
+        Alert.alert('Saved', 'Notification preferences updated.');
+      }
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to save preferences.');
+      const msg = err.message ?? 'Failed to save preferences.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 

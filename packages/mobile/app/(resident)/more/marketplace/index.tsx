@@ -40,8 +40,10 @@ const CATEGORY_BADGE_CONFIG: Record<string, { bg: string; color: string }> = {
 
 const MODERATION_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   pending: { label: 'Pending', bg: colors.warningBg, color: colors.warningText },
+  in_review: { label: 'In Review', bg: colors.warningBg, color: colors.warningText },
   approved: { label: 'Active', bg: colors.successBg, color: colors.successText },
   rejected: { label: 'Rejected', bg: colors.dangerBg, color: colors.dangerText },
+  flagged: { label: 'Flagged', bg: colors.dangerBg, color: colors.dangerText },
 };
 
 export default function MarketplaceIndexScreen() {

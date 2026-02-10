@@ -132,10 +132,9 @@ export default function PostDetailScreen() {
   const mediaUrls = (post.media_urls ?? []) as string[];
   const pollOptions = (post.poll_options ?? []) as { text: string }[];
   const pollResults = (post.poll_results ?? {}) as Record<string, number>;
-  const totalVotes = Object.values(pollResults).reduce(
-    (sum, v) => sum + v,
-    0
-  );
+  const optionVotes = pollOptions.map((_, i) => pollResults[String(i)] ?? 0);
+  const totalVotes = optionVotes.reduce((sum, v) => sum + v, 0);
+  const maxVotes = Math.max(...optionVotes, 0);
 
   // Organize comments into threads
   const rootComments = (comments ?? []).filter(
@@ -240,13 +239,12 @@ export default function PostDetailScreen() {
             {post.post_type === 'poll' && pollOptions.length > 0 && (
               <View style={styles.pollContainer}>
                 {pollOptions.map((option, index) => {
-                  const votes = pollResults[String(index)] ?? 0;
+                  const votes = optionVotes[index];
                   const percentage =
                     totalVotes > 0
                       ? Math.round((votes / totalVotes) * 100)
                       : 0;
-                  const isLeading =
-                    votes === Math.max(...Object.values(pollResults));
+                  const isLeading = votes > 0 && votes === maxVotes;
 
                   return (
                     <TouchableOpacity

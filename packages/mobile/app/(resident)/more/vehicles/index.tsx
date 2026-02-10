@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,27 +57,36 @@ export default function VehiclesScreen() {
   }, [refetch]);
 
   const handleDelete = (vehicleId: string, plateNumber: string) => {
-    Alert.alert(
-      'Delete Vehicle',
-      `Are you sure you want to remove ${plateNumber} from your vehicles?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingId(vehicleId);
-            try {
-              await deleteMutation.mutateAsync(vehicleId);
-            } catch (err: any) {
-              Alert.alert('Error', err?.message ?? 'Failed to delete vehicle.');
-            } finally {
-              setDeletingId(null);
-            }
-          },
-        },
-      ],
-    );
+    const doDelete = async () => {
+      setDeletingId(vehicleId);
+      try {
+        await deleteMutation.mutateAsync(vehicleId);
+      } catch (err: any) {
+        const msg = err?.message ?? 'Failed to delete vehicle.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Error', msg);
+        }
+      } finally {
+        setDeletingId(null);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to remove ${plateNumber} from your vehicles?`)) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Vehicle',
+        `Are you sure you want to remove ${plateNumber} from your vehicles?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ],
+      );
+    }
   };
 
   const getStatusBadge = (status: string | null, accessEnabled: boolean) => {
