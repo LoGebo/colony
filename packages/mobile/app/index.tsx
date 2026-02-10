@@ -1,31 +1,46 @@
 import { Redirect } from 'expo-router';
-import { useSession } from '@/providers/SessionProvider';
-import { SYSTEM_ROLES } from '@upoe/shared';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/hooks/useRole';
+import { colors } from '@/theme';
 
 export default function IndexRedirect() {
-  const { session, isLoading } = useSession();
+  const { session, isLoading } = useAuth();
+  const { isResident, isGuard, isAdminRole, isPendingSetup } = useRole();
 
   if (isLoading) {
-    return null;
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   if (!session) {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
-  const role = session.user?.app_metadata?.role as string | undefined;
-
-  switch (role) {
-    case SYSTEM_ROLES.RESIDENT:
-      return <Redirect href="/(resident)" />;
-    case SYSTEM_ROLES.GUARD:
-      return <Redirect href="/(guard)" />;
-    case SYSTEM_ROLES.COMMUNITY_ADMIN:
-    case SYSTEM_ROLES.MANAGER:
-      return <Redirect href="/(admin)" />;
-    case 'pending_setup':
-      return <Redirect href="/(auth)/onboarding" />;
-    default:
-      return <Redirect href="/(auth)/sign-in" />;
+  if (isPendingSetup) {
+    return <Redirect href="/(auth)/onboarding" />;
   }
+
+  if (isGuard) {
+    return <Redirect href="/(guard)" />;
+  }
+
+  if (isAdminRole) {
+    return <Redirect href="/(admin)" />;
+  }
+
+  // Default: resident
+  return <Redirect href="/(resident)" />;
 }
+
+const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+});

@@ -21,12 +21,13 @@ import { pickAndUploadImage } from '@/lib/upload';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-type ProofType = 'transfer' | 'deposit' | 'cash';
+type ProofType = 'transfer_receipt' | 'deposit_slip' | 'spei_confirmation' | 'other';
 
 const PROOF_TYPES: { key: ProofType; label: string; icon: string }[] = [
-  { key: 'transfer', label: 'Transfer', icon: 'swap-horizontal-outline' },
-  { key: 'deposit', label: 'Deposit', icon: 'business-outline' },
-  { key: 'cash', label: 'Cash', icon: 'cash-outline' },
+  { key: 'transfer_receipt', label: 'Transfer', icon: 'swap-horizontal-outline' },
+  { key: 'deposit_slip', label: 'Deposit', icon: 'business-outline' },
+  { key: 'spei_confirmation', label: 'SPEI', icon: 'flash-outline' },
+  { key: 'other', label: 'Other', icon: 'cash-outline' },
 ];
 
 export default function UploadPaymentProofScreen() {
@@ -39,7 +40,7 @@ export default function UploadPaymentProofScreen() {
   const [paymentDate, setPaymentDate] = useState('');
   const [bankName, setBankName] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [proofType, setProofType] = useState<ProofType>('transfer');
+  const [proofType, setProofType] = useState<ProofType>('transfer_receipt');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 

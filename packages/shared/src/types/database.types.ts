@@ -14,6 +14,341 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_device_assignments: {
+        Row: {
+          access_device_id: string
+          assigned_at: string
+          assigned_by: string | null
+          community_id: string
+          condition_notes: string | null
+          created_at: string
+          created_by: string | null
+          deposit_amount: number | null
+          deposit_collected: boolean
+          deposit_returned_at: string | null
+          guard_id: string | null
+          id: string
+          is_active: boolean
+          provider_personnel_id: string | null
+          replacement_fee_charged: boolean | null
+          resident_id: string | null
+          return_condition: string | null
+          returned_at: string | null
+          returned_to: string | null
+          unit_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          access_device_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          community_id: string
+          condition_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          deposit_amount?: number | null
+          deposit_collected?: boolean
+          deposit_returned_at?: string | null
+          guard_id?: string | null
+          id?: string
+          is_active?: boolean
+          provider_personnel_id?: string | null
+          replacement_fee_charged?: boolean | null
+          resident_id?: string | null
+          return_condition?: string | null
+          returned_at?: string | null
+          returned_to?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          access_device_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          community_id?: string
+          condition_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          deposit_amount?: number | null
+          deposit_collected?: boolean
+          deposit_returned_at?: string | null
+          guard_id?: string | null
+          id?: string
+          is_active?: boolean
+          provider_personnel_id?: string | null
+          replacement_fee_charged?: boolean | null
+          resident_id?: string | null
+          return_condition?: string | null
+          returned_at?: string | null
+          returned_to?: string | null
+          unit_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_device_assignments_access_device_id_fkey"
+            columns: ["access_device_id"]
+            isOneToOne: false
+            referencedRelation: "access_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_provider_personnel_id_fkey"
+            columns: ["provider_personnel_id"]
+            isOneToOne: false
+            referencedRelation: "provider_personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_resident_id_fkey"
+            columns: ["resident_id"]
+            isOneToOne: false
+            referencedRelation: "residents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_resident_id_fkey"
+            columns: ["resident_id"]
+            isOneToOne: false
+            referencedRelation: "security_medical_summary"
+            referencedColumns: ["resident_id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "unit_balances"
+            referencedColumns: ["unit_id"]
+          },
+          {
+            foreignKeyName: "access_device_assignments_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_device_events: {
+        Row: {
+          access_device_id: string
+          description: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          performed_by: string | null
+        }
+        Insert: {
+          access_device_id: string
+          description: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          performed_by?: string | null
+        }
+        Update: {
+          access_device_id?: string
+          description?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_device_events_access_device_id_fkey"
+            columns: ["access_device_id"]
+            isOneToOne: false
+            referencedRelation: "access_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_device_types: {
+        Row: {
+          access_point_ids: string[] | null
+          community_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deposit_amount: number | null
+          description: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id: string
+          is_active: boolean
+          name: string
+          replacement_fee: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          access_point_ids?: string[] | null
+          community_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean
+          name: string
+          replacement_fee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          access_point_ids?: string[] | null
+          community_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          device_type?: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean
+          name?: string
+          replacement_fee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_device_types_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_devices: {
+        Row: {
+          batch_number: string | null
+          community_id: string
+          created_at: string
+          created_by: string | null
+          current_assignment_id: string | null
+          damage_notes: string | null
+          damaged_reported_at: string | null
+          deactivated_at: string | null
+          deactivated_by: string | null
+          deactivation_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          device_type_id: string
+          id: string
+          internal_code: string | null
+          lost_reported_at: string | null
+          lost_reported_by: string | null
+          purchased_at: string | null
+          serial_number: string
+          status: Database["public"]["Enums"]["device_status"]
+          status_changed_at: string
+          updated_at: string
+          updated_by: string | null
+          vendor: string | null
+        }
+        Insert: {
+          batch_number?: string | null
+          community_id: string
+          created_at?: string
+          created_by?: string | null
+          current_assignment_id?: string | null
+          damage_notes?: string | null
+          damaged_reported_at?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          device_type_id: string
+          id?: string
+          internal_code?: string | null
+          lost_reported_at?: string | null
+          lost_reported_by?: string | null
+          purchased_at?: string | null
+          serial_number: string
+          status?: Database["public"]["Enums"]["device_status"]
+          status_changed_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          batch_number?: string | null
+          community_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_assignment_id?: string | null
+          damage_notes?: string | null
+          damaged_reported_at?: string | null
+          deactivated_at?: string | null
+          deactivated_by?: string | null
+          deactivation_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          device_type_id?: string
+          id?: string
+          internal_code?: string | null
+          lost_reported_at?: string | null
+          lost_reported_by?: string | null
+          purchased_at?: string | null
+          serial_number?: string
+          status?: Database["public"]["Enums"]["device_status"]
+          status_changed_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_devices_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_devices_device_type_id_fkey"
+            columns: ["device_type_id"]
+            isOneToOne: false
+            referencedRelation: "access_device_inventory"
+            referencedColumns: ["device_type_id"]
+          },
+          {
+            foreignKeyName: "access_devices_device_type_id_fkey"
+            columns: ["device_type_id"]
+            isOneToOne: false
+            referencedRelation: "access_device_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       access_logs: {
         Row: {
           access_point_id: string
@@ -6138,6 +6473,7 @@ export type Database = {
           created_at: string
           guard_id: string
           id: string
+          observations: string | null
           route_id: string
           started_at: string
           status: string
@@ -6152,6 +6488,7 @@ export type Database = {
           created_at?: string
           guard_id: string
           id?: string
+          observations?: string | null
           route_id: string
           started_at?: string
           status?: string
@@ -6166,6 +6503,7 @@ export type Database = {
           created_at?: string
           guard_id?: string
           id?: string
+          observations?: string | null
           route_id?: string
           started_at?: string
           status?: string
@@ -7051,6 +7389,470 @@ export type Database = {
           },
         ]
       }
+      provider_access_schedules: {
+        Row: {
+          allowed_days: number[]
+          community_id: string
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_until: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          name: string
+          provider_id: string
+          start_time: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_days?: number[]
+          community_id: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          provider_id: string
+          start_time?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_days?: number[]
+          community_id?: string
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider_id?: string
+          start_time?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_access_schedules_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_access_schedules_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_documents: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by: string | null
+          document_name: string
+          document_number: string | null
+          document_type: string
+          expires_at: string | null
+          expiry_alert_sent_14d: boolean
+          expiry_alert_sent_30d: boolean
+          expiry_alert_sent_7d: boolean
+          file_name: string
+          id: string
+          issued_at: string | null
+          issuing_authority: string | null
+          provider_id: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["document_status"]
+          storage_path: string
+          updated_at: string
+          updated_by: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by?: string | null
+          document_name: string
+          document_number?: string | null
+          document_type: string
+          expires_at?: string | null
+          expiry_alert_sent_14d?: boolean
+          expiry_alert_sent_30d?: boolean
+          expiry_alert_sent_7d?: boolean
+          file_name: string
+          id?: string
+          issued_at?: string | null
+          issuing_authority?: string | null
+          provider_id: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          storage_path: string
+          updated_at?: string
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by?: string | null
+          document_name?: string
+          document_number?: string | null
+          document_type?: string
+          expires_at?: string | null
+          expiry_alert_sent_14d?: boolean
+          expiry_alert_sent_30d?: boolean
+          expiry_alert_sent_7d?: boolean
+          file_name?: string
+          id?: string
+          issued_at?: string | null
+          issuing_authority?: string | null
+          provider_id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["document_status"]
+          storage_path?: string
+          updated_at?: string
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_documents_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_documents_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_personnel: {
+        Row: {
+          allowed_access_points: string[] | null
+          authorized_from: string | null
+          authorized_until: string | null
+          community_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          first_name: string
+          full_name: string | null
+          id: string
+          ine_number: string | null
+          is_authorized: boolean
+          maternal_surname: string | null
+          notes: string | null
+          paternal_surname: string
+          phone: string | null
+          photo_url: string | null
+          provider_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_access_points?: string[] | null
+          authorized_from?: string | null
+          authorized_until?: string | null
+          community_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          first_name: string
+          full_name?: string | null
+          id?: string
+          ine_number?: string | null
+          is_authorized?: boolean
+          maternal_surname?: string | null
+          notes?: string | null
+          paternal_surname: string
+          phone?: string | null
+          photo_url?: string | null
+          provider_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_access_points?: string[] | null
+          authorized_from?: string | null
+          authorized_until?: string | null
+          community_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          first_name?: string
+          full_name?: string | null
+          id?: string
+          ine_number?: string | null
+          is_authorized?: boolean
+          maternal_surname?: string | null
+          notes?: string | null
+          paternal_surname?: string
+          phone?: string | null
+          photo_url?: string | null
+          provider_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_personnel_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_personnel_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_work_orders: {
+        Row: {
+          actual_cost: number | null
+          admin_notes: string | null
+          assigned_personnel_ids: string[] | null
+          category: string | null
+          community_id: string
+          completed_by: string | null
+          completed_date: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          description: string
+          estimated_cost: number | null
+          id: string
+          location_description: string | null
+          provider_id: string
+          provider_notes: string | null
+          rating: number | null
+          rating_notes: string | null
+          requested_date: string | null
+          scheduled_date: string | null
+          scheduled_time_end: string | null
+          scheduled_time_start: string | null
+          status: string
+          ticket_id: string | null
+          title: string
+          unit_id: string | null
+          updated_at: string
+          updated_by: string | null
+          work_order_number: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          admin_notes?: string | null
+          assigned_personnel_ids?: string[] | null
+          category?: string | null
+          community_id: string
+          completed_by?: string | null
+          completed_date?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          description: string
+          estimated_cost?: number | null
+          id?: string
+          location_description?: string | null
+          provider_id: string
+          provider_notes?: string | null
+          rating?: number | null
+          rating_notes?: string | null
+          requested_date?: string | null
+          scheduled_date?: string | null
+          scheduled_time_end?: string | null
+          scheduled_time_start?: string | null
+          status?: string
+          ticket_id?: string | null
+          title: string
+          unit_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          work_order_number: string
+        }
+        Update: {
+          actual_cost?: number | null
+          admin_notes?: string | null
+          assigned_personnel_ids?: string[] | null
+          category?: string | null
+          community_id?: string
+          completed_by?: string | null
+          completed_date?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          description?: string
+          estimated_cost?: number | null
+          id?: string
+          location_description?: string | null
+          provider_id?: string
+          provider_notes?: string | null
+          rating?: number | null
+          rating_notes?: string | null
+          requested_date?: string | null
+          scheduled_date?: string | null
+          scheduled_time_end?: string | null
+          scheduled_time_start?: string | null
+          status?: string
+          ticket_id?: string | null
+          title?: string
+          unit_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          work_order_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_work_orders_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_work_orders_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_work_orders_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_work_orders_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "unit_balances"
+            referencedColumns: ["unit_id"]
+          },
+          {
+            foreignKeyName: "provider_work_orders_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      providers: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          approved_by: string | null
+          average_rating: number | null
+          community_id: string
+          company_name: string
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          legal_name: string | null
+          notes: string | null
+          rfc: string | null
+          specialties: string[]
+          status: Database["public"]["Enums"]["provider_status"]
+          total_work_orders: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_rating?: number | null
+          community_id: string
+          company_name: string
+          contact_email?: string | null
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          rfc?: string | null
+          specialties: string[]
+          status?: Database["public"]["Enums"]["provider_status"]
+          total_work_orders?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          average_rating?: number | null
+          community_id?: string
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          legal_name?: string | null
+          notes?: string | null
+          rfc?: string | null
+          specialties?: string[]
+          status?: Database["public"]["Enums"]["provider_status"]
+          total_work_orders?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "providers_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_tokens: {
         Row: {
           created_at: string
@@ -7854,7 +8656,7 @@ export type Database = {
           first_name: string
           full_name?: string | null
           gender?: string | null
-          id: string
+          id?: string
           ine_back_url?: string | null
           ine_cic?: string | null
           ine_front_url?: string | null
@@ -8270,6 +9072,93 @@ export type Database = {
           },
           {
             foreignKeyName: "shift_assignments_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "guard_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_handovers: {
+        Row: {
+          access_point_id: string | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          community_id: string
+          created_at: string
+          guard_id: string
+          id: string
+          notes: string
+          pending_items: Json | null
+          priority: string
+          shift_ended_at: string | null
+          shift_id: string | null
+          shift_started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_point_id?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          community_id: string
+          created_at?: string
+          guard_id: string
+          id?: string
+          notes: string
+          pending_items?: Json | null
+          priority?: string
+          shift_ended_at?: string | null
+          shift_id?: string | null
+          shift_started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_point_id?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          community_id?: string
+          created_at?: string
+          guard_id?: string
+          id?: string
+          notes?: string
+          pending_items?: Json | null
+          priority?: string
+          shift_ended_at?: string | null
+          shift_id?: string | null
+          shift_started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_handovers_access_point_id_fkey"
+            columns: ["access_point_id"]
+            isOneToOne: false
+            referencedRelation: "access_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handovers_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handovers_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handovers_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "guards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_handovers_shift_id_fkey"
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "guard_shifts"
@@ -9662,6 +10551,32 @@ export type Database = {
       }
     }
     Views: {
+      access_device_inventory: {
+        Row: {
+          assigned: number | null
+          available: number | null
+          community_id: string | null
+          damaged: number | null
+          deactivated: number | null
+          deposit_amount: number | null
+          device_type: Database["public"]["Enums"]["device_type"] | null
+          device_type_id: string | null
+          device_type_name: string | null
+          lost: number | null
+          replacement_fee: number | null
+          retired: number | null
+          total_devices: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_device_types_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_ledger: {
         Row: {
           account_id: string | null
@@ -9828,6 +10743,43 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_documents_expiring: {
+        Row: {
+          community_id: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          days_until_expiry: number | null
+          document_name: string | null
+          document_number: string | null
+          document_type: string | null
+          expires_at: string | null
+          expiry_alert_sent_14d: boolean | null
+          expiry_alert_sent_30d: boolean | null
+          expiry_alert_sent_7d: boolean | null
+          id: string | null
+          is_expired: boolean | null
+          provider_id: string | null
+          status: Database["public"]["Enums"]["document_status"] | null
+          urgency_level: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_documents_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_documents_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_medical_summary: {
         Row: {
           condition_name: string | null
@@ -9975,6 +10927,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      assign_device: {
+        Args: {
+          p_collect_deposit?: boolean
+          p_device_id: string
+          p_guard_id?: string
+          p_provider_personnel_id?: string
+          p_resident_id?: string
+          p_unit_id?: string
+        }
+        Returns: string
       }
       assign_role: {
         Args: {
@@ -10302,6 +11265,10 @@ export type Database = {
         Args: { p_device_info?: Json; p_ip_address: unknown; p_user_id: string }
         Returns: string
       }
+      deactivate_device: {
+        Args: { p_device_id: string; p_reason: string }
+        Returns: undefined
+      }
       delete_message: { Args: { p_message_id: string }; Returns: boolean }
       edit_message: {
         Args: { p_message_id: string; p_new_content: string }
@@ -10421,6 +11388,10 @@ export type Database = {
       }
       generate_uuid_v7: { Args: never; Returns: string }
       generate_violation_number: {
+        Args: { p_community_id: string }
+        Returns: string
+      }
+      generate_work_order_number: {
         Args: { p_community_id: string }
         Returns: string
       }
@@ -10855,6 +11826,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_provider_access_allowed: {
+        Args: { p_check_time?: string; p_provider_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: never; Returns: boolean }
       issue_sanction: {
         Args: {
@@ -10866,6 +11841,15 @@ export type Database = {
           p_suspension_end?: string
           p_suspension_start?: string
           p_violation_id: string
+        }
+        Returns: string
+      }
+      log_device_event: {
+        Args: {
+          p_description: string
+          p_device_id: string
+          p_event_type: string
+          p_metadata?: Json
         }
         Returns: string
       }
@@ -10958,6 +11942,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      reactivate_device: { Args: { p_device_id: string }; Returns: undefined }
       record_agreement: {
         Args: {
           p_abstentions?: number
@@ -11014,6 +11999,10 @@ export type Database = {
         Args: { p_timeout_minutes?: number }
         Returns: number
       }
+      report_device_lost: {
+        Args: { p_device_id: string; p_notes?: string }
+        Returns: undefined
+      }
       report_parking_violation: {
         Args: {
           p_community_id: string
@@ -11032,6 +12021,10 @@ export type Database = {
         Returns: boolean
       }
       retry_dead_letter: { Args: { p_delivery_id: string }; Returns: boolean }
+      return_device: {
+        Args: { p_assignment_id: string; p_condition: string; p_notes?: string }
+        Returns: undefined
+      }
       revoke_role: {
         Args: { p_community_id: string; p_role_id: string; p_user_id: string }
         Returns: boolean

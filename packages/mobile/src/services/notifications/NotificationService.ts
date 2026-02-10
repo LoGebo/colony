@@ -99,6 +99,8 @@ class NotificationService {
         if (type === 'emergency_alert') {
           return {
             shouldShowAlert: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
             priority: Notifications.AndroidNotificationPriority.MAX,
@@ -109,6 +111,8 @@ class NotificationService {
         if (type === 'visitor_arrived') {
           return {
             shouldShowAlert: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
             priority: Notifications.AndroidNotificationPriority.HIGH,
@@ -118,6 +122,8 @@ class NotificationService {
         // Default: banner only, no sound
         return {
           shouldShowAlert: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
           shouldPlaySound: false,
           shouldSetBadge: true,
           priority: Notifications.AndroidNotificationPriority.DEFAULT,
@@ -271,8 +277,8 @@ class NotificationService {
     if (data.notification_id) {
       supabase.rpc('mark_notification_read', {
         p_notification_id: data.notification_id,
-      }).catch((error) => {
-        console.error('Error marking notification as read:', error);
+      } as never).then(({ error }) => {
+        if (error) console.error('Error marking notification as read:', error);
       });
     }
 

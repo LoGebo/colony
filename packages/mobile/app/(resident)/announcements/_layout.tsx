@@ -2,9 +2,9 @@ import { Stack } from 'expo-router';
 
 export default function AnnouncementsLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ title: 'Avisos' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Detalle Aviso' }} />
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
     </Stack>
   );
 }

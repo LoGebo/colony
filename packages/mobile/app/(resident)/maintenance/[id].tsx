@@ -238,15 +238,15 @@ export default function TicketDetailScreen() {
       <View style={styles.commentItem}>
         <View style={styles.commentAvatar}>
           <Ionicons
-            name={item.author_role === 'reporter' ? 'person-outline' : 'build-outline'}
+            name={item.author_role === 'reporter' || item.author_role === 'resident' ? 'person-outline' : 'build-outline'}
             size={16}
-            color={item.author_role === 'reporter' ? colors.primary : colors.teal}
+            color={item.author_role === 'reporter' || item.author_role === 'resident' ? colors.primary : colors.teal}
           />
         </View>
         <View style={styles.commentBubble}>
           <View style={styles.commentBubbleHeader}>
             <Text style={styles.commentRole}>
-              {item.author_role === 'reporter' ? 'You' : 'Staff'}
+              {item.author_role === 'reporter' || item.author_role === 'resident' ? 'You' : 'Staff'}
             </Text>
             <Text style={styles.commentDate}>{formatRelative(item.created_at)}</Text>
           </View>

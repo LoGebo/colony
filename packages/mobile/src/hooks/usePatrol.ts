@@ -19,10 +19,10 @@ export function usePatrolRoutes(communityId: string | undefined) {
       const { data, error } = await supabase
         .from('patrol_routes')
         .select(
-          'id, name, description, checkpoint_sequence, estimated_duration_minutes, is_active'
+          'id, name, description, checkpoint_sequence, estimated_duration_minutes, status'
         )
         .eq('community_id', communityId!)
-        .eq('is_active', true)
+        .eq('status', 'active' as never)
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -45,7 +45,7 @@ export function usePatrolCheckpoints(communityId: string | undefined) {
       const { data, error } = await supabase
         .from('patrol_checkpoints')
         .select(
-          'id, name, nfc_serial, gps_latitude, gps_longitude, gps_tolerance_meters, description, location_description'
+          'id, name, nfc_serial, location_lat, location_lng, location_tolerance_meters, description'
         )
         .eq('community_id', communityId!)
         .order('name', { ascending: true });

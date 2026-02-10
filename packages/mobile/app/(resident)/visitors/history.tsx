@@ -30,6 +30,8 @@ type HistoryInvitation = {
   recurring_end_time: string | null;
   cancelled_at: string | null;
   created_at: string;
+  times_used: number | null;
+  max_uses: number | null;
   qr_codes: { id: string; status: string }[] | null;
   units: { unit_number: string } | null;
 };
@@ -38,7 +40,7 @@ function getStatusBadge(invitation: HistoryInvitation) {
   if (invitation.cancelled_at) {
     return { label: 'CANCELLED', bg: colors.dangerBg, color: colors.dangerText };
   }
-  if (invitation.status === 'used') {
+  if (invitation.times_used && invitation.max_uses && invitation.times_used >= invitation.max_uses) {
     return { label: 'USED', bg: colors.successBg, color: colors.successText };
   }
   if (invitation.status === 'approved' && invitation.valid_until && isExpired(invitation.valid_until)) {

@@ -78,7 +78,7 @@ const WORK_ORDER_SELECT =
 export function useWorkOrderList(communityId: string | undefined, statusFilter?: string) {
   return useQuery({
     queryKey: [
-      ...queryKeys.workOrders.list(communityId!).queryKey,
+      ...queryKeys['work-orders'].list(communityId!).queryKey,
       { statusFilter },
     ],
     queryFn: async () => {
@@ -108,7 +108,7 @@ export function useWorkOrderList(communityId: string | undefined, statusFilter?:
 
 export function useWorkOrderDetail(id: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.workOrders.detail(id!).queryKey,
+    queryKey: queryKeys['work-orders'].detail(id!).queryKey,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -171,7 +171,7 @@ export function useCreateWorkOrder() {
     },
     onSuccess: () => {
       toast.success('Orden de trabajo creada');
-      queryClient.invalidateQueries({ queryKey: queryKeys.workOrders._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys['work-orders']._def });
     },
     onError: (error: Error) => {
       toast.error(`Error al crear orden: ${error.message}`);
@@ -206,7 +206,7 @@ export function useUpdateWorkOrder() {
     },
     onSuccess: () => {
       toast.success('Orden de trabajo actualizada');
-      queryClient.invalidateQueries({ queryKey: queryKeys.workOrders._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys['work-orders']._def });
     },
     onError: (error: Error) => {
       toast.error(`Error al actualizar orden: ${error.message}`);
@@ -247,7 +247,7 @@ export function useRateWorkOrder() {
     },
     onSuccess: () => {
       toast.success('Calificacion guardada');
-      queryClient.invalidateQueries({ queryKey: queryKeys.workOrders._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys['work-orders']._def });
       queryClient.invalidateQueries({ queryKey: queryKeys.providers._def });
     },
     onError: (error: Error) => {
@@ -262,7 +262,7 @@ export function useRateWorkOrder() {
 
 export function useWorkOrdersByProvider(providerId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.workOrders.byProvider(providerId!).queryKey,
+    queryKey: queryKeys['work-orders'].byProvider(providerId!).queryKey,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase

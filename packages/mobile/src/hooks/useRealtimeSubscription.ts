@@ -24,7 +24,7 @@ export interface UseRealtimeSubscriptionOptions {
   /** PostgREST filter e.g., 'status=eq.pending' or 'created_by_resident_id=eq.123' */
   filter?: string;
   /** Array of query key arrays to invalidate on event */
-  queryKeys: unknown[][];
+  queryKeys: readonly (readonly unknown[])[];
   /** Whether subscription is active (default: true) */
   enabled?: boolean;
   /** Optional callback for custom logic on event */

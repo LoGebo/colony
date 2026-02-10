@@ -41,7 +41,13 @@ export default function GuardDashboard() {
   const todayEntryCount = todayLogs?.length ?? 0;
   const pendingPackageCount = pendingPackages?.length ?? 0;
   const activeIncidentCount = incidents?.filter((i) => i.status !== 'closed' && i.status !== 'resolved').length ?? 0;
-  const hasEmergency = (emergencies?.length ?? 0) > 0;
+  const emergencyList = (emergencies ?? []) as unknown as Array<{
+    id: string;
+    emergency_type: string;
+    status: string;
+    location_description: string | null;
+  }>;
+  const hasEmergency = emergencyList.length > 0;
   const unacknowledgedHandover = handovers?.[0];
 
   const onRefresh = useCallback(async () => {
@@ -116,7 +122,7 @@ export default function GuardDashboard() {
         </View>
 
         {/* Emergency Banner */}
-        {hasEmergency && emergencies?.map((emergency) => (
+        {hasEmergency && emergencyList.map((emergency) => (
           <View key={emergency.id} style={styles.emergencyBanner}>
             <View style={styles.emergencyIconBox}>
               <Ionicons name="warning" size={20} color={colors.danger} />

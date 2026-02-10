@@ -3,326 +3,371 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
-  Alert,
+  TouchableOpacity,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
   ActivityIndicator,
 } from 'react-native';
-import { adminOnboardingSchema } from '@upoe/shared';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
+
+const COMMUNITY_TYPES = [
+  'Residential Complex',
+  'Gated Community',
+  'Private Club',
+  'Corporate Office',
+];
 
 export default function OnboardingScreen() {
-  const [step, setStep] = useState<1 | 2>(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  // Step 1: Organization & Community
-  const [orgName, setOrgName] = useState('');
+  const router = useRouter();
+  const { refreshSession } = useAuth();
   const [communityName, setCommunityName] = useState('');
-  const [communityAddress, setCommunityAddress] = useState('');
-  const [communityCity, setCommunityCity] = useState('');
-  const [communityState, setCommunityState] = useState('');
-  const [communityZip, setCommunityZip] = useState('');
+  const [address, setAddress] = useState('');
+  const [communityType, setCommunityType] = useState(COMMUNITY_TYPES[0]);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Step 2: Admin name
-  const [firstName, setFirstName] = useState('');
-  const [paternalSurname, setPaternalSurname] = useState('');
-
-  function handleNextStep() {
-    // Validate required fields for step 1
-    if (!orgName.trim()) {
-      setError('Nombre de organizacion requerido');
+  const handleComplete = async () => {
+    if (!communityName) {
+      Alert.alert('Error', 'Please enter a community name.');
       return;
     }
-    if (!communityName.trim()) {
-      setError('Nombre de comunidad requerido');
-      return;
-    }
-    setError('');
-    setStep(2);
-  }
-
-  async function handleSubmit() {
-    setError('');
-
-    const formData = {
-      orgName,
-      communityName,
-      communityAddress: communityAddress || undefined,
-      communityCity: communityCity || undefined,
-      communityState: communityState || undefined,
-      communityZip: communityZip || undefined,
-      firstName: firstName || undefined,
-      paternalSurname: paternalSurname || undefined,
-    };
-
-    const result = adminOnboardingSchema.safeParse(formData);
-    if (!result.success) {
-      setError(result.error.issues[0].message);
-      return;
-    }
-
     setLoading(true);
     try {
-      const { error: rpcError } = await supabase.rpc(
-        'complete_admin_onboarding',
-        {
-          p_org_name: orgName,
-          p_community_name: communityName,
-          p_community_address: communityAddress || undefined,
-          p_community_city: communityCity || undefined,
-          p_community_state: communityState || undefined,
-          p_community_zip: communityZip || undefined,
-          p_first_name: firstName || undefined,
-          p_paternal_surname: paternalSurname || undefined,
-        }
-      );
-
-      if (rpcError) {
-        Alert.alert('Error', rpcError.message);
-        return;
-      }
-
-      // CRITICAL: Refresh session to get updated app_metadata
-      // (role changes from pending_setup to community_admin)
-      await supabase.auth.refreshSession();
-
-      // Session state change triggers Stack.Protected re-evaluation
-      // and routes to the admin group automatically
-    } catch (err) {
-      Alert.alert('Error', 'Ocurrio un error inesperado');
+      const { error } = await supabase.rpc('complete_admin_onboarding', {
+        p_community_name: communityName,
+        p_org_name: communityName,
+        p_community_address: address || undefined,
+      });
+      if (error) throw error;
+      await refreshSession();
+      router.replace('/');
+    } catch (err: any) {
+      Alert.alert('Setup Failed', err.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-white"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerClassName="grow justify-center px-6 py-8"
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <AmbientBackground />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
       >
-        <View className="mb-8">
-          <Text className="text-3xl font-bold text-center text-gray-900">
-            Configuracion Inicial
-          </Text>
-          <Text className="mt-2 text-center text-gray-500">
-            {step === 1
-              ? 'Configura tu organizacion y comunidad'
-              : 'Informacion del administrador'}
-          </Text>
-          {/* Step indicator */}
-          <View className="mt-4 flex-row justify-center gap-2">
-            <View
-              className={`h-2 w-16 rounded-full ${
-                step === 1 ? 'bg-indigo-600' : 'bg-indigo-200'
-              }`}
-            />
-            <View
-              className={`h-2 w-16 rounded-full ${
-                step === 2 ? 'bg-indigo-600' : 'bg-indigo-200'
-              }`}
-            />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+            </TouchableOpacity>
+            {/* Step Dots */}
+            <View style={styles.dotsRow}>
+              <View style={[styles.dot, styles.dotActive]} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+            </View>
+            <View style={styles.spacer} />
           </View>
-        </View>
 
-        {error ? (
-          <View className="mb-4 rounded-lg bg-red-50 p-3">
-            <Text className="text-sm text-red-700">{error}</Text>
+          {/* Content */}
+          <View style={styles.content}>
+            <View style={styles.iconBox}>
+              <Ionicons name="business-outline" size={24} color={colors.warningText} />
+            </View>
+            <Text style={styles.title}>Setup Organization</Text>
+            <Text style={styles.subtitle}>Tell us about the community you manage.</Text>
           </View>
-        ) : null}
 
-        {step === 1 ? (
-          <>
-            <View className="mb-4">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Nombre de la organizacion *
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="Ej: Administradora Central"
-                value={orgName}
-                onChangeText={setOrgName}
-                editable={!loading}
-              />
-            </View>
-
-            <View className="mb-4">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Nombre de la comunidad *
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="Ej: Residencial Las Palmas"
-                value={communityName}
-                onChangeText={setCommunityName}
-                editable={!loading}
-              />
-            </View>
-
-            <Text className="mb-3 text-sm font-medium text-gray-400">
-              Direccion (opcional)
-            </Text>
-
-            <View className="mb-4">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Calle y numero
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="Calle, numero"
-                value={communityAddress}
-                onChangeText={setCommunityAddress}
-                editable={!loading}
-              />
-            </View>
-
-            <View className="mb-4 flex-row gap-3">
-              <View className="flex-1">
-                <Text className="mb-1 text-sm font-medium text-gray-700">
-                  Ciudad
-                </Text>
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>COMMUNITY NAME</Text>
+              <View style={styles.inputRow}>
                 <TextInput
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                  placeholder="Ciudad"
-                  value={communityCity}
-                  onChangeText={setCommunityCity}
-                  editable={!loading}
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="mb-1 text-sm font-medium text-gray-700">
-                  Estado
-                </Text>
-                <TextInput
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                  placeholder="Estado"
-                  value={communityState}
-                  onChangeText={setCommunityState}
-                  editable={!loading}
+                  style={styles.input}
+                  placeholder="e.g. The Highland Towers"
+                  placeholderTextColor={colors.textDisabled}
+                  value={communityName}
+                  onChangeText={setCommunityName}
                 />
               </View>
             </View>
 
-            <View className="mb-6">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Codigo postal
-              </Text>
-              <TextInput
-                className="w-32 rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="00000"
-                value={communityZip}
-                onChangeText={setCommunityZip}
-                keyboardType="numeric"
-                editable={!loading}
-              />
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>ADDRESS / LOCATION</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="location-outline" size={20} color={colors.textCaption} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Search address..."
+                  placeholderTextColor={colors.textDisabled}
+                  value={address}
+                  onChangeText={setAddress}
+                />
+              </View>
             </View>
 
-            <Pressable
-              className="rounded-lg bg-indigo-600 py-3.5 items-center"
-              onPress={handleNextStep}
-            >
-              <Text className="text-base font-semibold text-white">
-                Siguiente
-              </Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text className="mb-3 text-sm text-gray-400">
-              Tu nombre aparecera como administrador principal (opcional)
-            </Text>
-
-            <View className="mb-4">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Nombre
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="Tu nombre"
-                value={firstName}
-                onChangeText={setFirstName}
-                editable={!loading}
-              />
-            </View>
-
-            <View className="mb-6">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Apellido paterno
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-gray-900"
-                placeholder="Tu apellido"
-                value={paternalSurname}
-                onChangeText={setPaternalSurname}
-                editable={!loading}
-              />
-            </View>
-
-            {/* Review summary */}
-            <View className="mb-6 rounded-lg bg-gray-50 p-4">
-              <Text className="mb-2 text-sm font-semibold text-gray-700">
-                Resumen
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Organizacion: {orgName}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Comunidad: {communityName}
-              </Text>
-              {communityAddress ? (
-                <Text className="text-sm text-gray-600">
-                  Direccion: {communityAddress}
-                  {communityCity ? `, ${communityCity}` : ''}
-                  {communityState ? `, ${communityState}` : ''}
-                  {communityZip ? ` ${communityZip}` : ''}
-                </Text>
-              ) : null}
-              {firstName ? (
-                <Text className="text-sm text-gray-600">
-                  Administrador: {firstName} {paternalSurname}
-                </Text>
-              ) : null}
-            </View>
-
-            <View className="flex-row gap-3">
-              <Pressable
-                className="flex-1 rounded-lg border border-gray-300 py-3.5 items-center"
-                onPress={() => {
-                  setStep(1);
-                  setError('');
-                }}
-                disabled={loading}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>COMMUNITY TYPE</Text>
+              <TouchableOpacity
+                style={styles.inputRow}
+                onPress={() => setShowTypePicker(!showTypePicker)}
               >
-                <Text className="text-base font-semibold text-gray-700">
-                  Atras
-                </Text>
-              </Pressable>
+                <Text style={styles.selectText}>{communityType}</Text>
+                <Ionicons name="chevron-down" size={20} color={colors.textCaption} />
+              </TouchableOpacity>
+              {showTypePicker && (
+                <View style={styles.picker}>
+                  {COMMUNITY_TYPES.map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.pickerItem,
+                        communityType === type && styles.pickerItemActive,
+                      ]}
+                      onPress={() => {
+                        setCommunityType(type);
+                        setShowTypePicker(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          communityType === type && styles.pickerItemTextActive,
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
-              <Pressable
-                className={`flex-1 rounded-lg py-3.5 items-center ${
-                  loading ? 'bg-indigo-400' : 'bg-indigo-600'
-                }`}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-base font-semibold text-white">
-                    Crear
+            {/* Info Card */}
+            <GlassCard style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIcon}>
+                  <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.flex}>
+                  <Text style={styles.infoTitle}>Auto-Configuration</Text>
+                  <Text style={styles.infoText}>
+                    We'll automatically set up visitor rules and amenity presets based on your selection.
                   </Text>
-                )}
-              </Pressable>
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+                </View>
+              </View>
+            </GlassCard>
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleComplete}
+              activeOpacity={0.9}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.textOnDark} />
+              ) : (
+                <Text style={styles.submitButtonText}>Complete Setup</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.safeAreaTop,
+    paddingBottom: spacing.safeAreaBottom,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing['4xl'],
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.textDisabled,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+  },
+  spacer: {
+    width: 40,
+  },
+  content: {
+    marginBottom: spacing['4xl'],
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.warningBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: 30,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  subtitle: {
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: colors.textMuted,
+  },
+  form: {
+    gap: spacing['3xl'],
+  },
+  fieldGroup: {
+    gap: spacing.xs,
+  },
+  label: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginLeft: 4,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    paddingHorizontal: spacing.xl,
+    height: spacing.inputHeight,
+  },
+  inputIcon: {
+    marginRight: spacing.lg,
+  },
+  input: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: colors.textPrimary,
+    height: '100%',
+  },
+  selectText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  picker: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    overflow: 'hidden',
+    marginTop: spacing.xs,
+  },
+  pickerItem: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  pickerItemActive: {
+    backgroundColor: colors.primaryLight,
+  },
+  pickerItemText: {
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  pickerItemTextActive: {
+    color: colors.primary,
+    fontFamily: fonts.bold,
+  },
+  infoCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    alignItems: 'flex-start',
+  },
+  infoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  infoText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  submitButton: {
+    height: spacing.buttonHeight,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.xl,
+  },
+  submitButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textOnDark,
+  },
+});

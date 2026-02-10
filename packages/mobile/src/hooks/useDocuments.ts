@@ -11,52 +11,52 @@ import { useAuth } from './useAuth';
 // ---------- useMyDocuments ----------
 
 export function useMyDocuments() {
-  const { communityId } = useAuth();
+  const { communityId, user } = useAuth();
 
   return useQuery({
     queryKey: queryKeys.documents.list(communityId!).queryKey,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_accessible_documents' as never);
+      const { data, error } = await supabase.rpc('get_accessible_documents' as never, {
+        p_user_id: user!.id,
+      } as never);
       if (error) throw error;
       return data as Array<{
-        id: string;
+        document_id: string;
         name: string;
         description: string | null;
         category: string;
         is_public: boolean;
         requires_signature: boolean;
-        signature_deadline: string | null;
-        created_at: string;
-        latest_version_id: string | null;
-        latest_version_number: number | null;
-        is_signed: boolean;
+        current_version_id: string | null;
+        access_source: string;
       }>;
     },
-    enabled: !!communityId,
+    enabled: !!communityId && !!user,
   });
 }
 
 // ---------- usePendingSignatures ----------
 
 export function usePendingSignatures() {
-  const { communityId } = useAuth();
+  const { communityId, residentId } = useAuth();
 
   return useQuery({
     queryKey: [...queryKeys.documents.list(communityId!).queryKey, 'pending-signatures'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pending_signatures' as never);
+      const { data, error } = await supabase.rpc('get_pending_signatures' as never, {
+        p_resident_id: residentId!,
+      } as never);
       if (error) throw error;
       return data as Array<{
-        id: string;
-        name: string;
-        description: string | null;
+        document_id: string;
+        document_name: string;
         category: string;
+        current_version_id: string | null;
         signature_deadline: string | null;
-        latest_version_id: string | null;
-        latest_version_number: number | null;
+        days_until_deadline: number | null;
       }>;
     },
-    enabled: !!communityId,
+    enabled: !!communityId && !!residentId,
   });
 }
 

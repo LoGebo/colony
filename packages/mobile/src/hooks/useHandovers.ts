@@ -23,7 +23,7 @@ export function useRecentHandovers(communityId?: string) {
           `id, guard_id, notes, priority, pending_items,
            shift_started_at, shift_ended_at,
            acknowledged_by, acknowledged_at, created_at,
-           guards!shift_handovers_guard_id_fkey(first_name, last_name)`
+           guards!shift_handovers_guard_id_fkey(full_name)`
         )
         .eq('community_id', communityId!)
         .order('created_at', { ascending: false })
@@ -51,7 +51,7 @@ export function useUnacknowledgedHandovers(communityId?: string) {
           `id, guard_id, notes, priority, pending_items,
            shift_started_at, shift_ended_at,
            acknowledged_by, acknowledged_at, created_at,
-           guards!shift_handovers_guard_id_fkey(first_name, last_name)`
+           guards!shift_handovers_guard_id_fkey(full_name)`
         )
         .eq('community_id', communityId!)
         .is('acknowledged_at', null)

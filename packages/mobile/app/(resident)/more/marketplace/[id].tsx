@@ -1,16 +1,17 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   ScrollView,
+  StyleSheet,
+  ActivityIndicator,
   Image,
-  Pressable,
-  Alert,
   Dimensions,
+  Alert,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import {
   useListingDetail,
   useMarkAsSold,
@@ -18,312 +19,579 @@ import {
   handleContactSeller,
 } from '@/hooks/useMarketplace';
 import { useAuth } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { formatCurrency, formatDate, formatRelative } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  sale: 'Venta',
-  service: 'Servicio',
-  rental: 'Renta',
-  wanted: 'Buscado',
-};
-
-const STATUS_DISPLAY: Record<string, { label: string; bg: string; text: string }> = {
-  pending: { label: 'En revision', bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  in_review: { label: 'En revision', bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  approved: { label: 'Aprobado', bg: 'bg-green-100', text: 'text-green-800' },
-  rejected: { label: 'Rechazado', bg: 'bg-red-100', text: 'text-red-800' },
-  flagged: { label: 'Marcado', bg: 'bg-red-100', text: 'text-red-800' },
-};
-
-export default function ListingDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function MarketplaceDetailScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { residentId } = useAuth();
-
   const { data: listing, isLoading } = useListingDetail(id!);
-  const { mutate: markAsSold, isPending: markingSold } = useMarkAsSold(id!);
-  const { mutate: deleteListing, isPending: deleting } = useDeleteListing();
+  const markAsSoldMutation = useMarkAsSold(id!);
+  const deleteMutation = useDeleteListing();
+  const [activeImage, setActiveImage] = useState(0);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  const seller = listing
-    ? Array.isArray(listing.residents)
-      ? listing.residents[0]
-      : listing.residents
-    : null;
-
-  const isMine = listing?.seller_id === residentId;
-  const images = listing?.image_urls ?? [];
-
-  const handleScroll = useCallback(
-    (event: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / SCREEN_WIDTH);
-      setCurrentImageIndex(index);
-    },
-    [],
-  );
-
-  const handleContact = useCallback(async () => {
-    if (!seller?.phone || !listing) return;
-    try {
-      await handleContactSeller(seller.phone, listing.title, listing.id);
-    } catch {
-      Alert.alert('Error', 'No se pudo abrir la aplicacion de mensajeria');
-    }
-  }, [seller, listing]);
-
-  const handleMarkSold = useCallback(() => {
-    Alert.alert(
-      'Marcar como vendido',
-      'Tu publicacion se marcara como vendida y dejara de aparecer en el marketplace.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: () =>
-            markAsSold(undefined, {
-              onSuccess: () => {
-                Alert.alert('Listo', 'Tu publicacion se ha marcado como vendida');
-              },
-              onError: (err) => Alert.alert('Error', err.message),
-            }),
-        },
-      ],
+  if (isLoading || !listing) {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
     );
-  }, [markAsSold]);
+  }
 
-  const handleDelete = useCallback(() => {
-    Alert.alert(
-      'Eliminar publicacion',
-      'Esta accion no se puede deshacer. Se eliminara tu publicacion.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: () =>
-            deleteListing(id!, {
-              onSuccess: () => {
-                Alert.alert('Listo', 'Tu publicacion ha sido eliminada', [
-                  { text: 'OK', onPress: () => router.back() },
-                ]);
-              },
-              onError: (err) => Alert.alert('Error', err.message),
-            }),
+  const resident = Array.isArray(listing.residents) ? listing.residents[0] : listing.residents;
+  const sellerName = resident
+    ? `${resident.first_name} ${resident.paternal_surname ?? ''}`.trim()
+    : 'Unknown';
+  const isOwner = resident?.id === residentId;
+  const images: string[] = listing.image_urls ?? [];
+
+  const handleMarkSold = () => {
+    Alert.alert('Mark as Sold', 'This will remove the listing from the marketplace.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Mark Sold',
+        onPress: () => {
+          markAsSoldMutation.mutate(undefined, {
+            onSuccess: () => router.back(),
+          });
         },
-      ],
-    );
-  }, [deleteListing, id, router]);
-
-  const formatPrice = (price: number | null) => {
-    if (price === null || price === 0) return 'Gratis';
-    return `$${price.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      },
+    ]);
   };
 
-  if (isLoading) {
-    return <LoadingSpinner message="Cargando publicacion..." />;
-  }
+  const handleDelete = () => {
+    Alert.alert('Delete Listing', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteMutation.mutate(id!, {
+            onSuccess: () => router.back(),
+          });
+        },
+      },
+    ]);
+  };
 
-  if (!listing) {
-    return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
-        <Text className="text-gray-500">Publicacion no encontrada</Text>
-      </View>
-    );
-  }
-
-  const statusInfo = STATUS_DISPLAY[listing.moderation_status] ?? STATUS_DISPLAY.pending;
-  const createdAgo = formatDistanceToNow(new Date(listing.created_at), {
-    addSuffix: true,
-    locale: es,
-  });
+  const handleContact = () => {
+    if (!resident?.phone) {
+      Alert.alert('No Phone', 'The seller has not shared their phone number.');
+      return;
+    }
+    handleContactSeller(resident.phone, listing.title, listing.id);
+  };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      {/* Photo gallery */}
-      {images.length > 0 ? (
-        <View>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-          >
-            {images.map((url, i) => (
-              <Image
-                key={i}
-                source={{ uri: url }}
-                style={{ width: SCREEN_WIDTH, height: 280 }}
-                className="bg-gray-200"
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
+    <View style={styles.container}>
+      <AmbientBackground />
 
-          {/* Page indicator dots */}
-          {images.length > 1 ? (
-            <View className="flex-row items-center justify-center gap-1.5 py-2">
-              {images.map((_, i) => (
-                <View
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    i === currentImageIndex ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Listing Details</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Image Gallery */}
+        <View style={styles.gallery}>
+          {images.length > 0 ? (
+            <>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e) => {
+                  const idx = Math.round(
+                    e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - spacing.pagePaddingX * 2)
+                  );
+                  setActiveImage(idx);
+                }}
+              >
+                {images.map((uri, idx) => (
+                  <Image
+                    key={idx}
+                    source={{ uri }}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+              {images.length > 1 && (
+                <View style={styles.galleryDots}>
+                  {images.map((_, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.galleryDot,
+                        activeImage === idx && styles.galleryDotActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.galleryPlaceholder}>
+              <Ionicons name="image-outline" size={48} color={colors.textDisabled} />
+              <Text style={styles.galleryPlaceholderText}>No photos</Text>
             </View>
-          ) : null}
+          )}
         </View>
-      ) : (
-        <View className="h-48 bg-gray-100 items-center justify-center">
-          <Text className="text-5xl">{'🏷️'}</Text>
-        </View>
-      )}
 
-      {/* Sold banner */}
-      {listing.is_sold ? (
-        <View className="bg-red-500 py-2 items-center">
-          <Text className="text-white font-bold text-base">VENDIDO</Text>
-        </View>
-      ) : null}
-
-      {/* Content */}
-      <View className="px-4 pt-4 pb-8">
-        {/* Category + negotiable badges */}
-        <View className="flex-row items-center gap-2 mb-2">
-          <View className="bg-blue-100 rounded-full px-3 py-1">
-            <Text className="text-blue-800 text-xs font-medium">
-              {CATEGORY_LABELS[listing.category] ?? listing.category}
+        {/* Title + Price */}
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>{listing.title}</Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>
+              {listing.price ? formatCurrency(listing.price) : 'Free'}
             </Text>
-          </View>
-          {listing.price_negotiable ? (
-            <View className="bg-gray-100 rounded-full px-2.5 py-1">
-              <Text className="text-gray-600 text-xs">Negociable</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Title */}
-        <Text className="text-xl font-bold text-gray-900 mb-1">{listing.title}</Text>
-
-        {/* Price */}
-        <Text className="text-2xl font-bold text-blue-600 mb-3">
-          {formatPrice(listing.price)}
-        </Text>
-
-        {/* Moderation status (seller only) */}
-        {isMine ? (
-          <View className="mb-3">
-            <View className={`${statusInfo.bg} rounded-full px-3 py-1 self-start`}>
-              <Text className={`${statusInfo.text} text-xs font-medium`}>
-                {statusInfo.label}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Description */}
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-sm font-medium text-gray-900 mb-2">Descripcion</Text>
-          <Text className="text-sm text-gray-700 leading-5">{listing.description}</Text>
-        </View>
-
-        {/* Seller section */}
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-sm font-medium text-gray-900 mb-3">Vendedor</Text>
-          <View className="flex-row items-center gap-3">
-            {seller?.photo_url ? (
-              <Image
-                source={{ uri: seller.photo_url }}
-                className="w-10 h-10 rounded-full bg-gray-200"
-              />
-            ) : (
-              <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center">
-                <Text className="text-blue-600 font-bold text-base">
-                  {seller?.first_name?.[0] ?? '?'}
-                </Text>
+            {listing.price_negotiable && (
+              <View style={styles.negotiableBadge}>
+                <Text style={styles.negotiableBadgeText}>Negotiable</Text>
               </View>
             )}
-            <Text className="text-sm text-gray-800 font-medium">
-              {seller
-                ? `${seller.first_name} ${seller.paternal_surname}`
-                : 'Vendedor'}
-            </Text>
+          </View>
+          {listing.is_sold && (
+            <View style={styles.soldBanner}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.textCaption} />
+              <Text style={styles.soldBannerText}>This item has been sold</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Category badge */}
+        <View style={styles.categoryRow}>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{listing.category}</Text>
           </View>
         </View>
 
-        {/* Stats section */}
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <View className="flex-row justify-between">
-            <View className="items-center flex-1">
-              <Text className="text-lg font-bold text-gray-900">
-                {listing.view_count ?? 0}
-              </Text>
-              <Text className="text-xs text-gray-500">Vistas</Text>
-            </View>
-            <View className="items-center flex-1">
-              <Text className="text-lg font-bold text-gray-900">
-                {listing.inquiry_count ?? 0}
-              </Text>
-              <Text className="text-xs text-gray-500">Contactos</Text>
-            </View>
-            <View className="items-center flex-1">
-              <Text className="text-xs text-gray-500 text-center">Publicado</Text>
-              <Text className="text-xs text-gray-700 text-center">{createdAgo}</Text>
-            </View>
+        {/* Description */}
+        {listing.description ? (
+          <View style={styles.descriptionCard}>
+            <Text style={styles.descriptionText}>{listing.description}</Text>
           </View>
-        </View>
-
-        {/* Contact seller button (not shown if it's your own listing) */}
-        {!isMine && !listing.is_sold ? (
-          <Pressable
-            onPress={handleContact}
-            className="bg-green-600 rounded-lg p-4 items-center flex-row justify-center gap-2 mb-4 active:opacity-80"
-          >
-            <Text className="text-lg">{'💬'}</Text>
-            <Text className="text-white font-semibold text-base">
-              Contactar por WhatsApp
-            </Text>
-          </Pressable>
         ) : null}
 
-        {/* Seller actions */}
-        {isMine && !listing.is_sold ? (
-          <View className="gap-3">
-            <Pressable
+        {/* Seller Card */}
+        <GlassCard style={styles.sellerCard}>
+          <View style={styles.sellerRow}>
+            <View style={styles.sellerAvatar}>
+              {resident?.photo_url ? (
+                <Image source={{ uri: resident.photo_url }} style={styles.sellerAvatarImg} />
+              ) : (
+                <Ionicons name="person" size={20} color={colors.textCaption} />
+              )}
+            </View>
+            <View style={styles.sellerInfo}>
+              <Text style={styles.sellerName}>{sellerName}</Text>
+              <Text style={styles.sellerLabel}>Seller</Text>
+            </View>
+            {!isOwner && (
+              <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textOnDark} />
+                <Text style={styles.contactButtonText}>Contact</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </GlassCard>
+
+        {/* Stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Ionicons name="eye-outline" size={16} color={colors.textCaption} />
+            <Text style={styles.statValue}>{listing.view_count ?? 0}</Text>
+            <Text style={styles.statLabel}>Views</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="chatbox-outline" size={16} color={colors.textCaption} />
+            <Text style={styles.statValue}>{listing.inquiry_count ?? 0}</Text>
+            <Text style={styles.statLabel}>Inquiries</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Ionicons name="calendar-outline" size={16} color={colors.textCaption} />
+            <Text style={styles.statValue}>{formatRelative(listing.created_at)}</Text>
+            <Text style={styles.statLabel}>Posted</Text>
+          </View>
+        </View>
+
+        {/* Owner Actions */}
+        {isOwner && !listing.is_sold && (
+          <View style={styles.ownerActions}>
+            <TouchableOpacity
+              style={styles.markSoldButton}
               onPress={handleMarkSold}
-              disabled={markingSold}
-              className={`rounded-lg p-4 items-center ${
-                markingSold ? 'bg-green-400' : 'bg-green-600 active:opacity-80'
-              }`}
+              disabled={markAsSoldMutation.isPending}
             >
-              <Text className="text-white font-semibold text-base">
-                {markingSold ? 'Marcando...' : 'Marcar como vendido'}
+              <Ionicons name="checkmark-circle-outline" size={20} color={colors.textOnDark} />
+              <Text style={styles.markSoldButtonText}>
+                {markAsSoldMutation.isPending ? 'Marking...' : 'Mark as Sold'}
               </Text>
-            </Pressable>
-
-            <Pressable
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
               onPress={handleDelete}
-              disabled={deleting}
-              className={`rounded-lg p-4 items-center ${
-                deleting ? 'bg-red-300' : 'bg-red-100 active:opacity-80'
-              }`}
+              disabled={deleteMutation.isPending}
             >
-              <Text
-                className={`font-semibold text-base ${
-                  deleting ? 'text-red-400' : 'text-red-600'
-                }`}
-              >
-                {deleting ? 'Eliminando...' : 'Eliminar publicacion'}
-              </Text>
-            </Pressable>
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
           </View>
-        ) : null}
-      </View>
-    </ScrollView>
+        )}
+
+        {/* Contact Button for non-owners */}
+        {!isOwner && !listing.is_sold && (
+          <TouchableOpacity style={styles.bigContactButton} onPress={handleContact}>
+            <Ionicons name="logo-whatsapp" size={20} color={colors.textOnDark} />
+            <Text style={styles.bigContactButtonText}>Contact Seller</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Posted date */}
+        <Text style={styles.postedDate}>
+          Posted {formatDate(listing.created_at)}
+          {listing.expires_at ? ` \u00B7 Expires ${formatDate(listing.expires_at)}` : ''}
+        </Text>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.xl,
+    gap: spacing.lg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Scroll
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.bottomNavClearance + 20,
+  },
+  // Gallery
+  gallery: {
+    height: 280,
+    borderRadius: borderRadius['2xl'],
+    overflow: 'hidden',
+    backgroundColor: colors.border,
+    marginBottom: spacing['3xl'],
+  },
+  galleryImage: {
+    width: SCREEN_WIDTH - spacing.pagePaddingX * 2,
+    height: 280,
+  },
+  galleryPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  galleryPlaceholderText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textDisabled,
+  },
+  galleryDots: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  galleryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  galleryDotActive: {
+    backgroundColor: colors.surface,
+    width: 18,
+  },
+  // Title
+  titleSection: {
+    marginBottom: spacing['2xl'],
+  },
+  title: {
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+    lineHeight: 32,
+    marginBottom: spacing.md,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  price: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.primary,
+    letterSpacing: -0.3,
+  },
+  negotiableBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: colors.tealLight,
+    borderRadius: borderRadius.sm,
+  },
+  negotiableBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.tealDark,
+    textTransform: 'uppercase',
+  },
+  soldBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.md,
+  },
+  soldBannerText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textCaption,
+  },
+  // Category
+  categoryRow: {
+    flexDirection: 'row',
+    marginBottom: spacing['3xl'],
+  },
+  categoryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.sm,
+  },
+  categoryBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  // Description
+  descriptionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.cardPadding,
+    marginBottom: spacing['3xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
+  },
+  descriptionText: {
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.textBody,
+    lineHeight: 24,
+  },
+  // Seller
+  sellerCard: {
+    padding: spacing.cardPadding,
+    borderRadius: borderRadius['2xl'],
+    marginBottom: spacing['3xl'],
+  },
+  sellerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  sellerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sellerAvatarImg: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+  },
+  sellerInfo: {
+    flex: 1,
+  },
+  sellerName: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  sellerLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    height: 40,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.md,
+  },
+  contactButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textOnDark,
+  },
+  // Stats
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.cardPadding,
+    marginBottom: spacing['3xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  statValue: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textCaption,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border,
+  },
+  // Owner Actions
+  ownerActions: {
+    gap: spacing.lg,
+    marginBottom: spacing['3xl'],
+  },
+  markSoldButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.buttonHeight,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.lg,
+  },
+  markSoldButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.smallButtonHeight,
+    backgroundColor: colors.dangerBgLight,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerBg,
+  },
+  deleteButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.danger,
+  },
+  // Big Contact
+  bigContactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.buttonHeight,
+    backgroundColor: colors.tealDark,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing['3xl'],
+  },
+  bigContactButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+  // Posted date
+  postedDate: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    textAlign: 'center',
+    marginBottom: spacing['3xl'],
+  },
+});

@@ -1,189 +1,539 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Linking, Alert } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { useDocumentDetail } from '@/hooks/useDocuments';
-import { SignatureModal } from '@/components/documents/SignatureModal';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Linking,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useDocumentDetail, useSignDocument } from '@/hooks/useDocuments';
+import { formatDate, formatDateTime } from '@/lib/dates';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 import { supabase } from '@/lib/supabase';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+
+function formatFileSize(bytes: number | null | undefined): string {
+  if (!bytes) return 'Unknown size';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
-  regulation: 'Reglamento',
-  policy: 'Politica',
-  guideline: 'Guia',
-  form: 'Formulario',
-  template: 'Plantilla',
-  report: 'Reporte',
-  other: 'Otro',
+  regulation: 'Regulation',
+  contract: 'Contract',
+  notice: 'Notice',
+  policy: 'Policy',
+};
+
+const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  published: { label: 'Published', bg: colors.successBg, color: colors.successText },
+  draft: { label: 'Draft', bg: colors.warningBg, color: colors.warningText },
+  archived: { label: 'Archived', bg: colors.border, color: colors.textCaption },
 };
 
 export default function DocumentDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: doc, isLoading } = useDocumentDetail(id!);
-  const [showSignModal, setShowSignModal] = useState(false);
+  const { data: document, isLoading } = useDocumentDetail(id!);
+  const signMutation = useSignDocument();
+  const [consentText] = useState(
+    'I have read and agree to the terms described in this document.'
+  );
 
-  if (isLoading || !doc) {
-    return <LoadingSpinner message="Cargando documento..." />;
-  }
+  const handleSign = () => {
+    if (!document || !document.latestVersion) return;
+
+    Alert.alert(
+      'Sign Document',
+      consentText,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign',
+          onPress: () => {
+            signMutation.mutate({
+              document_id: document.id,
+              document_version_id: document.latestVersion!.id,
+              consent_text: consentText,
+            });
+          },
+        },
+      ]
+    );
+  };
 
   const handleDownload = async () => {
-    if (!doc.latestVersion) {
-      Alert.alert('Error', 'No hay archivo disponible');
-      return;
-    }
+    if (!document?.latestVersion) return;
+    const { storage_bucket, storage_path } = document.latestVersion;
 
-    const { data } = supabase.storage
-      .from(doc.latestVersion.storage_bucket)
-      .getPublicUrl(doc.latestVersion.storage_path);
+    const { data } = await supabase.storage
+      .from(storage_bucket)
+      .createSignedUrl(storage_path, 600);
 
-    if (data?.publicUrl) {
-      await Linking.openURL(data.publicUrl);
+    if (data?.signedUrl) {
+      Linking.openURL(data.signedUrl);
     } else {
-      // For private buckets, generate signed URL
-      const { data: signedData, error } = await supabase.storage
-        .from(doc.latestVersion.storage_bucket)
-        .createSignedUrl(doc.latestVersion.storage_path, 3600);
-
-      if (error || !signedData?.signedUrl) {
-        Alert.alert('Error', 'No se pudo generar el enlace de descarga');
-        return;
-      }
-
-      await Linking.openURL(signedData.signedUrl);
+      Alert.alert('Error', 'Could not generate download link.');
     }
   };
 
-  const isSigned = !!doc.signature;
-  const requiresSignature = doc.requires_signature;
+  if (isLoading || !document) {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  const statusCfg = STATUS_CONFIG[document.status] ?? STATUS_CONFIG.published;
+  const categoryLabel = CATEGORY_LABELS[document.category] ?? document.category;
+  const isSigned = !!document.signature;
+  const needsSignature = document.requires_signature && !isSigned;
 
   return (
-    <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      <Text className="text-xl font-bold text-gray-900 mb-2">{doc.name}</Text>
+    <View style={styles.container}>
+      <AmbientBackground />
 
-      {/* Category and status */}
-      <View className="flex-row items-center gap-2 mb-4">
-        <View className="bg-blue-100 rounded-full px-2 py-0.5">
-          <Text className="text-blue-800 text-xs font-medium">
-            {CATEGORY_LABELS[doc.category] ?? doc.category}
-          </Text>
-        </View>
-        {doc.is_public ? (
-          <View className="bg-gray-100 rounded-full px-2 py-0.5">
-            <Text className="text-gray-600 text-xs">Publico</Text>
-          </View>
-        ) : null}
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {document.name}
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* Description */}
-      {doc.description ? (
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-sm text-gray-700">{doc.description}</Text>
-        </View>
-      ) : null}
-
-      {/* Version info */}
-      {doc.latestVersion ? (
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-sm font-semibold text-gray-900 mb-2">Archivo</Text>
-          <View className="flex-row mb-1">
-            <Text className="text-sm text-gray-500 w-24">Nombre:</Text>
-            <Text className="text-sm text-gray-900 flex-1">{doc.latestVersion.file_name}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Badges */}
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.badgeText, { color: colors.primary }]}>{categoryLabel}</Text>
           </View>
-          <View className="flex-row mb-1">
-            <Text className="text-sm text-gray-500 w-24">Version:</Text>
-            <Text className="text-sm text-gray-900">v{doc.latestVersion.version_number}</Text>
+          <View style={[styles.badge, { backgroundColor: statusCfg.bg }]}>
+            <Text style={[styles.badgeText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
           </View>
-          {doc.latestVersion.file_size_bytes ? (
-            <View className="flex-row mb-1">
-              <Text className="text-sm text-gray-500 w-24">Tamano:</Text>
-              <Text className="text-sm text-gray-900">
-                {(doc.latestVersion.file_size_bytes / 1024).toFixed(1)} KB
-              </Text>
-            </View>
-          ) : null}
-          <View className="flex-row mb-3">
-            <Text className="text-sm text-gray-500 w-24">Subido:</Text>
-            <Text className="text-sm text-gray-900">
-              {format(new Date(doc.latestVersion.created_at), 'dd MMM yyyy', { locale: es })}
-            </Text>
-          </View>
-
-          {doc.latestVersion.change_summary ? (
-            <Text className="text-xs text-gray-500 italic">
-              {doc.latestVersion.change_summary}
-            </Text>
-          ) : null}
-
-          <Pressable
-            onPress={handleDownload}
-            className="bg-blue-600 rounded-lg px-4 py-2 items-center mt-3 active:opacity-80"
-          >
-            <Text className="text-white font-semibold">Descargar Documento</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {/* Signature section */}
-      {requiresSignature ? (
-        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-          <Text className="text-sm font-semibold text-gray-900 mb-2">Firma</Text>
-
-          {isSigned ? (
-            <View className="bg-green-50 rounded-lg p-3">
-              <View className="flex-row items-center mb-1">
-                <Text className="text-green-700 font-medium">{'\u{2705}'} Firmado</Text>
-              </View>
-              <Text className="text-xs text-green-600">
-                Firmado el{' '}
-                {format(new Date(doc.signature!.signed_at), "dd MMM yyyy 'a las' HH:mm", {
-                  locale: es,
-                })}
-              </Text>
-            </View>
-          ) : (
-            <View>
-              <View className="bg-orange-50 rounded-lg p-3 mb-3">
-                <Text className="text-orange-700 font-medium mb-1">Firma Requerida</Text>
-                <Text className="text-xs text-orange-600">
-                  Este documento requiere tu firma para confirmar que lo has leido y aceptado.
-                </Text>
-                {doc.signature_deadline ? (
-                  <Text className="text-xs text-orange-800 mt-1 font-medium">
-                    Fecha limite:{' '}
-                    {format(new Date(doc.signature_deadline), 'dd MMM yyyy', { locale: es })}
-                  </Text>
-                ) : null}
-              </View>
-
-              <Pressable
-                onPress={() => setShowSignModal(true)}
-                className="bg-blue-600 rounded-lg px-4 py-3 items-center active:opacity-80"
+          {document.requires_signature && (
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: isSigned ? colors.successBg : colors.warningBg,
+                },
+              ]}
+            >
+              <Ionicons
+                name={isSigned ? 'checkmark-circle' : 'time-outline'}
+                size={12}
+                color={isSigned ? colors.successText : colors.warningText}
+              />
+              <Text
+                style={[
+                  styles.badgeText,
+                  { color: isSigned ? colors.successText : colors.warningText },
+                ]}
               >
-                <Text className="text-white font-semibold">Firmar Documento</Text>
-              </Pressable>
+                {isSigned ? 'Signed' : 'Signature Required'}
+              </Text>
             </View>
           )}
         </View>
-      ) : null}
 
-      {/* Date info */}
-      <View className="mt-2">
-        <Text className="text-xs text-gray-400 text-center">
-          Creado el {format(new Date(doc.created_at), 'dd MMM yyyy', { locale: es })}
-        </Text>
-      </View>
+        {/* Description */}
+        {document.description ? (
+          <View style={styles.descriptionCard}>
+            <Text style={styles.descriptionText}>{document.description}</Text>
+          </View>
+        ) : null}
 
-      {/* Signature modal */}
-      {requiresSignature && doc.latestVersion ? (
-        <SignatureModal
-          visible={showSignModal}
-          onClose={() => setShowSignModal(false)}
-          documentName={doc.name}
-          documentId={doc.id}
-          documentVersionId={doc.latestVersion.id}
-        />
-      ) : null}
-    </ScrollView>
+        {/* Version Info */}
+        {document.latestVersion && (
+          <GlassCard style={styles.versionCard}>
+            <View style={styles.versionHeader}>
+              <Ionicons name="document-outline" size={18} color={colors.textMuted} />
+              <Text style={styles.versionTitle}>Latest Version</Text>
+            </View>
+
+            <View style={styles.versionDetails}>
+              <View style={styles.versionRow}>
+                <Text style={styles.versionLabel}>Version</Text>
+                <Text style={styles.versionValue}>v{document.latestVersion.version_number}</Text>
+              </View>
+              <View style={styles.versionRow}>
+                <Text style={styles.versionLabel}>File</Text>
+                <Text style={styles.versionValue} numberOfLines={1}>
+                  {document.latestVersion.file_name}
+                </Text>
+              </View>
+              <View style={styles.versionRow}>
+                <Text style={styles.versionLabel}>Size</Text>
+                <Text style={styles.versionValue}>
+                  {formatFileSize(document.latestVersion.file_size_bytes)}
+                </Text>
+              </View>
+              <View style={styles.versionRow}>
+                <Text style={styles.versionLabel}>Uploaded</Text>
+                <Text style={styles.versionValue}>
+                  {formatDate(document.latestVersion.created_at)}
+                </Text>
+              </View>
+            </View>
+
+            {document.latestVersion.change_summary ? (
+              <View style={styles.changeSummary}>
+                <Text style={styles.changeSummaryLabel}>Change Summary</Text>
+                <Text style={styles.changeSummaryText}>
+                  {document.latestVersion.change_summary}
+                </Text>
+              </View>
+            ) : null}
+          </GlassCard>
+        )}
+
+        {/* Created Date */}
+        <View style={styles.metaRow}>
+          <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+          <Text style={styles.metaText}>Created {formatDate(document.created_at)}</Text>
+          {document.signature_deadline && (
+            <>
+              <Text style={styles.metaDot}>{'\u00B7'}</Text>
+              <Ionicons name="time-outline" size={14} color={colors.warningText} />
+              <Text style={[styles.metaText, { color: colors.warningText }]}>
+                Due {formatDate(document.signature_deadline)}
+              </Text>
+            </>
+          )}
+        </View>
+
+        {/* Signature Section */}
+        {isSigned && document.signature && (
+          <View style={styles.signedCard}>
+            <View style={styles.signedIconWrap}>
+              <Ionicons name="checkmark-circle" size={32} color={colors.successText} />
+            </View>
+            <Text style={styles.signedTitle}>Document Signed</Text>
+            <Text style={styles.signedDate}>
+              Signed on {formatDateTime(document.signature.signed_at)}
+            </Text>
+            {document.signature.consent_text && (
+              <Text style={styles.signedConsent}>
+                &quot;{document.signature.consent_text}&quot;
+              </Text>
+            )}
+          </View>
+        )}
+
+        {needsSignature && (
+          <View style={styles.signSection}>
+            <View style={styles.signCard}>
+              <View style={styles.signIconWrap}>
+                <Ionicons name="create-outline" size={24} color={colors.primary} />
+              </View>
+              <Text style={styles.signTitle}>Signature Required</Text>
+              <Text style={styles.signConsent}>{consentText}</Text>
+              <TouchableOpacity
+                style={styles.signButton}
+                onPress={handleSign}
+                disabled={signMutation.isPending}
+              >
+                <Ionicons name="create" size={20} color={colors.textOnDark} />
+                <Text style={styles.signButtonText}>
+                  {signMutation.isPending ? 'Signing...' : 'Sign Document'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Download / View Button */}
+        {document.latestVersion && (
+          <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
+            <Ionicons name="download-outline" size={20} color={colors.primary} />
+            <Text style={styles.downloadButtonText}>Download / View File</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.xl,
+    gap: spacing.lg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  headerTitle: {
+    flex: 1,
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Scroll
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.bottomNavClearance + 20,
+  },
+  // Badges
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing['3xl'],
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.sm,
+  },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  // Description
+  descriptionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.cardPadding,
+    marginBottom: spacing['3xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
+  },
+  descriptionText: {
+    fontFamily: fonts.regular,
+    fontSize: 16,
+    color: colors.textBody,
+    lineHeight: 26,
+  },
+  // Version
+  versionCard: {
+    padding: spacing.cardPadding,
+    borderRadius: borderRadius['2xl'],
+    marginBottom: spacing['3xl'],
+  },
+  versionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  versionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  versionDetails: {
+    gap: spacing.lg,
+  },
+  versionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  versionLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textCaption,
+  },
+  versionValue: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textPrimary,
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  changeSummary: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  changeSummaryLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.md,
+  },
+  changeSummaryText: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textBody,
+    lineHeight: 22,
+  },
+  // Meta
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing['3xl'],
+  },
+  metaText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textCaption,
+  },
+  metaDot: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textCaption,
+  },
+  // Signed
+  signedCard: {
+    backgroundColor: colors.successBg,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing['3xl'],
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.2)',
+    marginBottom: spacing['3xl'],
+  },
+  signedIconWrap: {
+    marginBottom: spacing.lg,
+  },
+  signedTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: colors.successText,
+    marginBottom: spacing.xs,
+  },
+  signedDate: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.successText,
+    marginBottom: spacing.md,
+  },
+  signedConsent: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  // Sign
+  signSection: {
+    marginBottom: spacing['3xl'],
+  },
+  signCard: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing['3xl'],
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primaryLightAlt,
+  },
+  signIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+    ...shadows.sm,
+  },
+  signTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  signConsent: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textBody,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing['3xl'],
+  },
+  signButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    width: '100%',
+    height: spacing.buttonHeight,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.lg,
+  },
+  signButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textOnDark,
+  },
+  // Download
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: spacing.smallButtonHeight,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    marginBottom: spacing['3xl'],
+  },
+  downloadButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+});

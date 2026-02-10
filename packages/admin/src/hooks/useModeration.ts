@@ -70,11 +70,11 @@ export function useModerationItemDetail(itemId: string, itemType: string) {
       if (itemType === 'listing') {
         const { data, error } = await supabase
           .from('marketplace_listings')
-          .select('id, title, description, price, category, photo_urls, created_at')
+          .select('id, title, description, price, category, image_urls, created_at')
           .eq('id', itemId)
           .single();
         if (error) throw error;
-        return { type: 'listing' as const, data: { ...data, status: 'active' } };
+        return { type: 'listing' as const, data: { ...(data as Record<string, unknown>), status: 'active' } };
       }
 
       if (itemType === 'post') {
@@ -174,7 +174,7 @@ export function useClaimModerationItem() {
       } as never);
 
       if (error) throw error;
-      return data as { id: string; item_id: string; item_type: string } | null;
+      return data as unknown as { id: string; item_id: string; item_type: string } | null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.moderation._def });

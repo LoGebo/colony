@@ -19,7 +19,7 @@ export function useIncidentTypes(communityId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('incident_types')
-        .select('id, name, description, severity_default, requires_photo')
+        .select('id, name, description, default_severity')
         .eq('community_id', communityId!)
         .eq('is_active', true)
         .order('name', { ascending: true });
@@ -158,7 +158,7 @@ export function useAddIncidentComment() {
     mutationFn: async (input: AddCommentInput) => {
       const { data, error } = await supabase.rpc('add_incident_comment', {
         p_incident_id: input.incidentId,
-        p_comment_text: input.commentText,
+        p_text: input.commentText,
         p_is_internal: input.isInternal ?? false,
         p_actor_id: user!.id,
       });
@@ -228,7 +228,6 @@ export function useUploadIncidentMedia() {
           community_id: input.communityId,
           media_type: input.mediaType,
           storage_path: storagePath,
-          storage_bucket: STORAGE_BUCKETS.INCIDENT_EVIDENCE,
           caption: input.caption,
         } as never)
         .select()

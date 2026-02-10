@@ -1,259 +1,310 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   ScrollView,
-  Switch,
-  Alert,
-  Image,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
+  Switch,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons';
 import { useCreateListing } from '@/hooks/useMarketplace';
+import { useAuth } from '@/hooks/useAuth';
 import { pickAndUploadImage } from '@/lib/upload';
+import { AmbientBackground } from '@/components/ui/AmbientBackground';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 const CATEGORIES = [
-  { label: 'Venta', value: 'sale' },
-  { label: 'Servicio', value: 'service' },
-  { label: 'Renta', value: 'rental' },
-  { label: 'Buscado', value: 'wanted' },
-] as const;
-
-const MAX_PHOTOS = 5;
+  { value: 'sale', label: 'For Sale', icon: 'pricetag-outline' as const, color: colors.primary },
+  { value: 'service', label: 'Services', icon: 'construct-outline' as const, color: colors.indigo },
+  { value: 'rental', label: 'Rentals', icon: 'key-outline' as const, color: colors.warning },
+  { value: 'wanted', label: 'Wanted', icon: 'search-outline' as const, color: colors.teal },
+];
 
 export default function CreateListingScreen() {
   const router = useRouter();
   const { communityId } = useAuth();
-  const { mutate: createListing, isPending } = useCreateListing();
+  const createListing = useCreateListing();
 
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState('for_sale');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [isFree, setIsFree] = useState(false);
-  const [priceNegotiable, setPriceNegotiable] = useState(false);
+  const [negotiable, setNegotiable] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const handleAddPhoto = useCallback(async () => {
-    if (imageUrls.length >= MAX_PHOTOS) {
-      Alert.alert('Limite', `Maximo ${MAX_PHOTOS} fotos por publicacion`);
+  const handleAddImage = async () => {
+    if (imageUrls.length >= 4) {
+      Alert.alert('Limit', 'Maximum 4 images allowed.');
       return;
     }
-
-    if (!communityId) return;
-
-    setUploading(true);
     try {
-      const path = await pickAndUploadImage(
-        'community-assets',
-        communityId,
-        'marketplace',
-      );
-      if (path) {
-        setImageUrls((prev) => [...prev, path]);
-      }
+      setUploading(true);
+      const url = await pickAndUploadImage('chat-media', communityId!, 'marketplace');
+      if (url) setImageUrls((prev) => [...prev, url]);
+    } catch {
+      Alert.alert('Error', 'Failed to upload image.');
     } finally {
       setUploading(false);
     }
-  }, [imageUrls.length, communityId]);
+  };
 
-  const handleRemovePhoto = useCallback((index: number) => {
-    setImageUrls((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const handleSubmit = useCallback(() => {
-    // Validation
-    if (!category) {
-      Alert.alert('Error', 'Selecciona una categoria');
+  const handleSubmit = async () => {
+    if (!title.trim()) {
+      Alert.alert('Required', 'Please enter a title.');
       return;
     }
-    if (title.trim().length < 3) {
-      Alert.alert('Error', 'El titulo debe tener al menos 3 caracteres');
+    if (!description.trim()) {
+      Alert.alert('Required', 'Please enter a description.');
       return;
     }
-    if (description.trim().length < 10) {
-      Alert.alert('Error', 'La descripcion debe tener al menos 10 caracteres');
-      return;
-    }
-
-    const priceNum = isFree ? null : price.trim() ? parseFloat(price.trim()) : null;
-    if (!isFree && price.trim() && (isNaN(priceNum!) || priceNum! < 0)) {
-      Alert.alert('Error', 'Precio invalido');
-      return;
-    }
-
-    createListing(
-      {
+    try {
+      await createListing.mutateAsync({
         category,
         title: title.trim(),
         description: description.trim(),
-        price: priceNum,
-        price_negotiable: priceNegotiable,
+        price: price ? parseFloat(price) : null,
+        price_negotiable: negotiable,
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
-      },
-      {
-        onSuccess: () => {
-          Alert.alert(
-            'Publicacion enviada',
-            'Tu publicacion esta en revision. Sera visible cuando un administrador la apruebe.',
-            [{ text: 'OK', onPress: () => router.back() }],
-          );
-        },
-        onError: (err) => Alert.alert('Error', err.message),
-      },
-    );
-  }, [category, title, description, price, isFree, priceNegotiable, imageUrls, createListing, router]);
+      });
+      Alert.alert('Success', 'Your listing has been submitted for review.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to create listing.');
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ padding: 16 }}>
-        <Text className="text-xl font-bold text-gray-900 mb-6">Nueva Publicacion</Text>
-
-        {/* Category picker */}
-        <Text className="text-sm font-medium text-gray-700 mb-2">Categoria *</Text>
-        <View className="flex-row flex-wrap gap-2 mb-4">
-          {CATEGORIES.map((cat) => (
-            <Pressable
-              key={cat.value}
-              onPress={() => setCategory(cat.value)}
-              className={`rounded-full px-4 py-2 ${
-                category === cat.value ? 'bg-blue-600' : 'bg-white border border-gray-300'
-              }`}
-            >
-              <Text
-                className={`text-sm font-medium ${
-                  category === cat.value ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                {cat.label}
-              </Text>
-            </Pressable>
-          ))}
+    <View style={styles.container}>
+      <AmbientBackground />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>New Listing</Text>
+          <View style={styles.spacer} />
         </View>
 
-        {/* Title */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Titulo *</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-          placeholder="Ej. Sofa de 3 plazas como nuevo"
-          value={title}
-          onChangeText={setTitle}
-          maxLength={100}
-          autoCapitalize="sentences"
-        />
-
-        {/* Description */}
-        <Text className="text-sm font-medium text-gray-700 mb-1">Descripcion *</Text>
-        <TextInput
-          className="border border-gray-300 rounded-lg p-3 mb-4 bg-white min-h-[100px]"
-          placeholder="Describe tu publicacion con detalle..."
-          value={description}
-          onChangeText={setDescription}
-          maxLength={500}
-          multiline
-          textAlignVertical="top"
-        />
-        <Text className="text-xs text-gray-400 -mt-3 mb-4 text-right">
-          {description.length}/500
-        </Text>
-
-        {/* Price */}
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-sm font-medium text-gray-700">Precio</Text>
-          <View className="flex-row items-center gap-2">
-            <Text className="text-sm text-gray-500">Gratis</Text>
-            <Switch
-              value={isFree}
-              onValueChange={(val) => {
-                setIsFree(val);
-                if (val) setPrice('');
-              }}
-              trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
-              thumbColor="#ffffff"
-            />
-          </View>
-        </View>
-        {!isFree ? (
-          <TextInput
-            className="border border-gray-300 rounded-lg p-3 mb-4 bg-white"
-            placeholder="$0.00"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-          />
-        ) : (
-          <View className="mb-4" />
-        )}
-
-        {/* Price negotiable */}
-        {!isFree ? (
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-sm text-gray-700">Precio negociable</Text>
-            <Switch
-              value={priceNegotiable}
-              onValueChange={setPriceNegotiable}
-              trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
-              thumbColor="#ffffff"
-            />
-          </View>
-        ) : null}
-
-        {/* Photos */}
-        <Text className="text-sm font-medium text-gray-700 mb-2">
-          Fotos ({imageUrls.length}/{MAX_PHOTOS})
-        </Text>
-        <View className="flex-row flex-wrap gap-2 mb-4">
-          {imageUrls.map((url, index) => (
-            <View key={index} className="relative">
-              <Image
-                source={{ uri: url }}
-                className="w-20 h-20 rounded-lg bg-gray-200"
-                resizeMode="cover"
-              />
-              <Pressable
-                onPress={() => handleRemovePhoto(index)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 items-center justify-center"
-              >
-                <Text className="text-white text-xs font-bold">X</Text>
-              </Pressable>
-            </View>
-          ))}
-          {imageUrls.length < MAX_PHOTOS ? (
-            <Pressable
-              onPress={handleAddPhoto}
-              disabled={uploading}
-              className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 items-center justify-center"
-            >
-              {uploading ? (
-                <Text className="text-gray-400 text-xs">...</Text>
-              ) : (
-                <Text className="text-gray-400 text-2xl">+</Text>
-              )}
-            </Pressable>
-          ) : null}
-        </View>
-
-        {/* Submit */}
-        <Pressable
-          onPress={handleSubmit}
-          disabled={isPending || uploading}
-          className={`rounded-lg p-4 items-center mt-2 mb-8 ${
-            isPending || uploading ? 'bg-blue-400' : 'bg-blue-600 active:opacity-80'
-          }`}
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-white font-semibold text-base">
-            {isPending ? 'Publicando...' : 'Publicar'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Category Selector */}
+          <Text style={styles.sectionLabel}>CATEGORY</Text>
+          <View style={styles.categoryGrid}>
+            {CATEGORIES.map((cat) => {
+              const active = category === cat.value;
+              return (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={[styles.categoryCard, active && styles.categoryCardActive]}
+                  onPress={() => setCategory(cat.value)}
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: active ? cat.color : colors.border }]}>
+                    <Ionicons name={cat.icon} size={18} color={active ? colors.textOnDark : colors.textCaption} />
+                  </View>
+                  <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{cat.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Title */}
+          <Text style={styles.sectionLabel}>TITLE</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="What are you selling?"
+              placeholderTextColor={colors.textDisabled}
+              value={title}
+              onChangeText={setTitle}
+            />
+          </View>
+
+          {/* Description */}
+          <Text style={styles.sectionLabel}>DESCRIPTION</Text>
+          <View style={[styles.inputRow, styles.textAreaRow]}>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Describe your item..."
+              placeholderTextColor={colors.textDisabled}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Price */}
+          <Text style={styles.sectionLabel}>PRICE</Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.currencyPrefix}>$</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00 (leave empty for free)"
+              placeholderTextColor={colors.textDisabled}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
+            />
+          </View>
+
+          {/* Negotiable Toggle */}
+          <GlassCard style={styles.toggleCard}>
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleInfo}>
+                <Text style={styles.toggleTitle}>Price Negotiable</Text>
+                <Text style={styles.toggleSubtitle}>Buyers can make offers</Text>
+              </View>
+              <Switch
+                value={negotiable}
+                onValueChange={setNegotiable}
+                trackColor={{ false: colors.borderMedium, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            </View>
+          </GlassCard>
+
+          {/* Images */}
+          <Text style={styles.sectionLabel}>PHOTOS</Text>
+          <View style={styles.imageGrid}>
+            {imageUrls.map((url, i) => (
+              <View key={i} style={styles.imageThumb}>
+                <Image source={{ uri: url }} style={styles.imageThumbImg} />
+                <TouchableOpacity
+                  style={styles.imageRemove}
+                  onPress={() => setImageUrls((prev) => prev.filter((_, idx) => idx !== i))}
+                >
+                  <Ionicons name="close" size={14} color={colors.textOnDark} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {imageUrls.length < 4 && (
+              <TouchableOpacity style={styles.imageAddButton} onPress={handleAddImage} disabled={uploading}>
+                {uploading ? (
+                  <ActivityIndicator color={colors.textCaption} />
+                ) : (
+                  <>
+                    <Ionicons name="camera-outline" size={24} color={colors.textCaption} />
+                    <Text style={styles.imageAddText}>Add</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleSubmit}
+            disabled={createListing.isPending}
+            activeOpacity={0.9}
+          >
+            {createListing.isPending ? (
+              <ActivityIndicator color={colors.textOnDark} />
+            ) : (
+              <Text style={styles.submitButtonText}>Publish Listing</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  header: {
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 40, height: 40, borderRadius: borderRadius.full,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderMedium,
+    alignItems: 'center', justifyContent: 'center', ...shadows.sm,
+  },
+  headerTitle: { fontFamily: fonts.bold, fontSize: 18, color: colors.textPrimary },
+  spacer: { width: 40 },
+  scrollContent: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing['3xl'],
+    paddingBottom: spacing['6xl'],
+    gap: spacing.xl,
+  },
+  sectionLabel: {
+    fontFamily: fonts.bold, fontSize: 12, color: colors.textCaption,
+    textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 4,
+  },
+  categoryGrid: { flexDirection: 'row', gap: spacing.lg },
+  categoryCard: {
+    flex: 1, alignItems: 'center', gap: spacing.md,
+    paddingVertical: spacing.xl, backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl, borderWidth: 1, borderColor: colors.borderMedium, ...shadows.sm,
+  },
+  categoryCardActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  categoryIcon: {
+    width: 40, height: 40, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center',
+  },
+  categoryLabel: { fontFamily: fonts.bold, fontSize: 11, color: colors.textCaption },
+  categoryLabelActive: { color: colors.primary },
+  inputRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: borderRadius.lg,
+    borderWidth: 1, borderColor: colors.borderMedium, paddingHorizontal: spacing.xl, height: spacing.inputHeight,
+  },
+  textAreaRow: { height: 120, alignItems: 'flex-start', paddingVertical: spacing.xl },
+  input: {
+    flex: 1, fontFamily: fonts.medium, fontSize: 16, color: colors.textPrimary, height: '100%',
+  },
+  textArea: { textAlignVertical: 'top' },
+  currencyPrefix: { fontFamily: fonts.bold, fontSize: 18, color: colors.textPrimary, marginRight: spacing.md },
+  toggleCard: { padding: spacing.xl, borderRadius: borderRadius.lg },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  toggleInfo: { flex: 1 },
+  toggleTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.textSecondary },
+  toggleSubtitle: { fontFamily: fonts.medium, fontSize: 12, color: colors.textMuted },
+  imageGrid: { flexDirection: 'row', gap: spacing.lg, flexWrap: 'wrap' },
+  imageThumb: {
+    width: 80, height: 80, borderRadius: borderRadius.lg, overflow: 'hidden',
+  },
+  imageThumbImg: { width: '100%', height: '100%' },
+  imageRemove: {
+    position: 'absolute', top: 4, right: 4,
+    width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  imageAddButton: {
+    width: 80, height: 80, borderRadius: borderRadius.lg,
+    borderWidth: 2, borderColor: colors.borderMedium, borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center', gap: 4,
+  },
+  imageAddText: { fontFamily: fonts.bold, fontSize: 10, color: colors.textCaption },
+  submitButton: {
+    height: spacing.buttonHeight, backgroundColor: colors.dark,
+    borderRadius: borderRadius.lg, alignItems: 'center', justifyContent: 'center',
+    marginTop: spacing.xl, ...shadows.xl,
+  },
+  submitButtonText: { fontFamily: fonts.bold, fontSize: 18, color: colors.textOnDark },
+});

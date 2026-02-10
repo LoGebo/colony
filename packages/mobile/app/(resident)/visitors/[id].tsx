@@ -23,11 +23,13 @@ function getStatusBadge(invitation: {
   status: string;
   cancelled_at: string | null;
   valid_until: string | null;
+  times_used?: number | null;
+  max_uses?: number | null;
 }) {
   if (invitation.cancelled_at) {
     return { label: 'CANCELLED', bg: colors.dangerBg, color: colors.dangerText };
   }
-  if (invitation.status === 'used') {
+  if (invitation.times_used && invitation.max_uses && invitation.times_used >= invitation.max_uses) {
     return { label: 'USED', bg: colors.successBg, color: colors.successText };
   }
   if (invitation.status === 'approved' && invitation.valid_until && isExpired(invitation.valid_until)) {

@@ -17,7 +17,7 @@ import { colors, fonts, spacing, borderRadius, shadows, typography } from '@/the
 
 // ---------- Type icon + gradient config ----------
 
-type AmenityTypeKey = 'pool' | 'gym' | 'court' | 'salon' | 'bbq_area' | 'playground' | 'cinema' | 'default';
+type AmenityTypeKey = 'pool' | 'gym' | 'court' | 'salon' | 'bbq' | 'rooftop' | 'room' | 'parking' | 'other' | 'default';
 
 const TYPE_CONFIG: Record<AmenityTypeKey, {
   icon: keyof typeof Ionicons.glyphMap;
@@ -44,20 +44,30 @@ const TYPE_CONFIG: Record<AmenityTypeKey, {
     label: 'Salon',
     gradientColors: ['#DB2777', '#F472B6'],
   },
-  bbq_area: {
+  bbq: {
     icon: 'flame-outline',
     label: 'Grill',
     gradientColors: ['#EA580C', '#FB923C'],
   },
-  playground: {
-    icon: 'happy-outline',
-    label: 'Playground',
+  rooftop: {
+    icon: 'sunny-outline',
+    label: 'Rooftop',
     gradientColors: ['#CA8A04', '#FACC15'],
   },
-  cinema: {
-    icon: 'film-outline',
-    label: 'Cinema',
+  room: {
+    icon: 'business-outline',
+    label: 'Room',
     gradientColors: ['#4338CA', '#818CF8'],
+  },
+  parking: {
+    icon: 'car-outline',
+    label: 'Parking',
+    gradientColors: ['#64748B', '#94A3B8'],
+  },
+  other: {
+    icon: 'grid-outline',
+    label: 'Other',
+    gradientColors: ['#475569', '#94A3B8'],
   },
   default: {
     icon: 'grid-outline',
@@ -79,9 +89,9 @@ const ALL_CATEGORIES: { key: string; label: string; icon: keyof typeof Ionicons.
   { key: 'gym', label: 'Gym', icon: 'fitness-outline' },
   { key: 'court', label: 'Court', icon: 'tennisball-outline' },
   { key: 'salon', label: 'Salon', icon: 'people-outline' },
-  { key: 'bbq_area', label: 'Grill', icon: 'flame-outline' },
-  { key: 'playground', label: 'Play', icon: 'happy-outline' },
-  { key: 'cinema', label: 'Cinema', icon: 'film-outline' },
+  { key: 'bbq', label: 'Grill', icon: 'flame-outline' },
+  { key: 'rooftop', label: 'Rooftop', icon: 'sunny-outline' },
+  { key: 'room', label: 'Room', icon: 'business-outline' },
 ];
 
 export default function AmenitiesExplorerScreen() {

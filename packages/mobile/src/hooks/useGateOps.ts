@@ -146,7 +146,7 @@ export function useManualCheckIn() {
           person_name: input.person_name,
           person_type: input.person_type ?? 'visitor',
           person_document: input.person_document,
-          vehicle_plate: input.vehicle_plate,
+          plate_number: input.vehicle_plate,
           plate_detected: input.plate_detected,
           direction: input.direction,
           method: input.method,
@@ -314,7 +314,7 @@ export function useExpectedVisitorsRealtime() {
     event: 'INSERT',
     queryKeys: [
       [...queryKeys.visitors.active(communityId!).queryKey, 'guard-queue'],
-      queryKeys.accessLogs._def,
+      queryKeys['access-logs']._def,
     ],
     enabled: !!communityId,
   });

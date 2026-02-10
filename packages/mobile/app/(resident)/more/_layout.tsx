@@ -2,18 +2,19 @@ import { Stack } from 'expo-router';
 
 export default function MoreLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ title: 'Mas' }} />
-      <Stack.Screen name="profile/index" options={{ title: 'Mi Perfil' }} />
-      <Stack.Screen name="profile/unit" options={{ title: 'Mi Unidad' }} />
-      <Stack.Screen name="vehicles/index" options={{ title: 'Mis Vehiculos' }} />
-      <Stack.Screen name="vehicles/create" options={{ title: 'Agregar Vehiculo' }} />
-      <Stack.Screen name="documents/index" options={{ title: 'Documentos' }} />
-      <Stack.Screen name="documents/[id]" options={{ title: 'Documento' }} />
-      <Stack.Screen name="marketplace/index" options={{ title: 'Marketplace' }} />
-      <Stack.Screen name="marketplace/create" options={{ title: 'Nueva Publicacion' }} />
-      <Stack.Screen name="marketplace/[id]" options={{ title: 'Publicacion' }} />
-      <Stack.Screen name="packages/index" options={{ title: 'Mis Paquetes' }} />
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="profile/index" />
+      <Stack.Screen name="profile/unit" />
+      <Stack.Screen name="vehicles/index" />
+      <Stack.Screen name="vehicles/create" />
+      <Stack.Screen name="documents/index" />
+      <Stack.Screen name="documents/[id]" />
+      <Stack.Screen name="marketplace/index" />
+      <Stack.Screen name="marketplace/[id]" />
+      <Stack.Screen name="marketplace/create" />
+      <Stack.Screen name="packages/index" />
+      <Stack.Screen name="notification-settings" />
     </Stack>
   );
 }

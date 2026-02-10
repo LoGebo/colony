@@ -64,7 +64,7 @@ function ItemContent({
     return <div className="text-sm text-red-600">Error al cargar contenido</div>;
   }
 
-  const { type, data } = itemDetail;
+  const { type, data } = itemDetail as { type: string; data: any };
 
   const inputClass =
     'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
@@ -82,9 +82,9 @@ function ItemContent({
               </span>
               <Badge variant="neutral">{data.category}</Badge>
             </div>
-            {data.photo_urls && data.photo_urls.length > 0 && (
+            {data.image_urls && data.image_urls.length > 0 && (
               <div className="flex gap-2">
-                {data.photo_urls.slice(0, 3).map((url: string, idx: number) => (
+                {data.image_urls.slice(0, 3).map((url: string, idx: number) => (
                   <img
                     key={idx}
                     src={url}

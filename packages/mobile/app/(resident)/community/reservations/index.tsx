@@ -25,16 +25,18 @@ import { es } from 'date-fns/locale';
 
 type FilterTab = 'upcoming' | 'past' | 'cancelled';
 
-type AmenityTypeKey = 'pool' | 'gym' | 'court' | 'salon' | 'bbq_area' | 'playground' | 'cinema' | 'default';
+type AmenityTypeKey = 'pool' | 'gym' | 'court' | 'salon' | 'bbq' | 'rooftop' | 'room' | 'parking' | 'other' | 'default';
 
 const TYPE_ICONS: Record<AmenityTypeKey, keyof typeof Ionicons.glyphMap> = {
   pool: 'water-outline',
   gym: 'fitness-outline',
   court: 'tennisball-outline',
   salon: 'people-outline',
-  bbq_area: 'flame-outline',
-  playground: 'happy-outline',
-  cinema: 'film-outline',
+  bbq: 'flame-outline',
+  rooftop: 'sunny-outline',
+  room: 'business-outline',
+  parking: 'car-outline',
+  other: 'grid-outline',
   default: 'grid-outline',
 };
 

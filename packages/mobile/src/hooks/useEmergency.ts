@@ -77,7 +77,7 @@ export function useActiveEmergencies(communityId?: string) {
       const { data, error } = await supabase
         .from('emergency_alerts')
         .select(
-          'id, emergency_type, status, priority_level, triggered_by, triggered_at, location_description'
+          'id, emergency_type, status, priority, triggered_by, triggered_at, location_description'
         )
         .eq('community_id', communityId!)
         .not('status', 'in', '("resolved","false_alarm")')
@@ -128,12 +128,12 @@ export function useProviderPersonnelSearch(
       const { data, error } = await supabase
         .from('provider_personnel')
         .select(
-          'id, first_name, last_name, position, photo_url, provider_id, providers(id, company_name, status)'
+          'id, first_name, full_name, photo_url, provider_id, providers(id, company_name, status)'
         )
-        .eq('providers.community_id', communityId!)
-        .eq('providers.status', 'active' as never)
+        .eq('community_id', communityId!)
         .is('deleted_at', null)
-        .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+        .eq('is_authorized', true)
+        .or(`first_name.ilike.%${query}%,full_name.ilike.%${query}%`)
         .limit(20);
 
       if (error) throw error;
