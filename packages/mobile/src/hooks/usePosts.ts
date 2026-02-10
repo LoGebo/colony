@@ -140,13 +140,17 @@ export function useCreatePost() {
 
   return useMutation({
     mutationFn: async (input: CreatePostInput) => {
+      // Map UI post types to DB enum values
+      const dbPostType =
+        input.post_type === 'poll' ? 'poll' : 'discussion';
+
       const { data, error } = await supabase
         .from('posts')
         .insert({
           community_id: communityId!,
           channel_id: input.channel_id,
           author_id: residentId!,
-          post_type: input.post_type as never,
+          post_type: dbPostType as never,
           title: input.title ?? undefined,
           content: input.content,
           media_urls: input.media_urls ?? undefined,
@@ -271,25 +275,13 @@ export function useVotePoll() {
       postId: string;
       optionIndex: number;
     }) => {
-      // Fetch current poll_results
-      const { data: post, error: fetchError } = await supabase
-        .from('posts')
-        .select('poll_results')
-        .eq('id', postId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const results = (post.poll_results as Record<string, number>) ?? {};
-      const key = String(optionIndex);
-      results[key] = (results[key] ?? 0) + 1;
-
-      const { error } = await supabase
-        .from('posts')
-        .update({ poll_results: results as never })
-        .eq('id', postId);
+      const { data, error } = await supabase.rpc('vote_on_poll' as never, {
+        p_post_id: postId,
+        p_option_index: optionIndex,
+      } as never);
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });

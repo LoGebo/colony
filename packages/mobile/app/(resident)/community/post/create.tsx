@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +22,8 @@ import { pickAndUploadImage } from '@/lib/upload';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 type PostType = 'text' | 'photo' | 'poll';
 
 interface PollOption {
@@ -28,9 +32,10 @@ interface PollOption {
 
 export default function CreatePostScreen() {
   const router = useRouter();
-  const { communityId } = useAuth();
+  const { user, communityId } = useAuth();
   const { data: channels } = useChannels();
   const createPostMutation = useCreatePost();
+  const pollSlideAnim = useRef(new Animated.Value(0)).current;
 
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [showChannelPicker, setShowChannelPicker] = useState(false);
@@ -44,10 +49,18 @@ export default function CreatePostScreen() {
   ]);
   const [pollDays, setPollDays] = useState('7');
   const [isUploading, setIsUploading] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
 
   const selectedChannel = (channels ?? []).find(
     (c) => c.id === selectedChannelId
   );
+
+  // User display info
+  const firstName = user?.user_metadata?.first_name ?? '';
+  const lastName = user?.user_metadata?.paternal_surname ?? '';
+  const displayName = `${firstName} ${lastName}`.trim() || 'You';
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U';
 
   const handlePickImage = useCallback(async () => {
     if (!communityId) return;
@@ -60,15 +73,40 @@ export default function CreatePostScreen() {
       );
       if (path) {
         setMediaUrls((prev) => [...prev, path]);
+        // Auto-switch to photo mode when an image is added
+        if (postType !== 'photo') {
+          setPostType('photo');
+        }
       }
     } finally {
       setIsUploading(false);
     }
-  }, [communityId]);
+  }, [communityId, postType]);
 
   const handleRemoveImage = useCallback((index: number) => {
-    setMediaUrls((prev) => prev.filter((_, i) => i !== index));
+    setMediaUrls((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next;
+    });
   }, []);
+
+  const handleTogglePoll = useCallback(() => {
+    if (postType === 'poll') {
+      // Animate out, then switch
+      Animated.timing(pollSlideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start(() => setPostType('text'));
+    } else {
+      setPostType('poll');
+      Animated.timing(pollSlideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [postType, pollSlideAnim]);
 
   const handleAddPollOption = useCallback(() => {
     if (pollOptions.length >= 6) return;
@@ -140,28 +178,44 @@ export default function CreatePostScreen() {
     router,
   ]);
 
+  // Poll section animated height
+  const pollHeight = pollSlideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
   return (
     <View style={styles.container}>
       <AmbientBackground />
 
-      {/* Header */}
+      {/* ─── Header ─── */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Post</Text>
+
+        <Text style={styles.headerTitle}>Create Post</Text>
+
         <TouchableOpacity
-          style={[styles.submitButton, !canSubmit() && styles.submitButtonDisabled]}
+          style={[styles.postButton, !canSubmit() && styles.postButtonDisabled]}
           onPress={handleSubmit}
           disabled={!canSubmit() || createPostMutation.isPending}
         >
           {createPostMutation.isPending ? (
             <ActivityIndicator size="small" color={colors.textOnDark} />
           ) : (
-            <Text style={styles.submitButtonText}>Post</Text>
+            <Text
+              style={[
+                styles.postButtonText,
+                !canSubmit() && styles.postButtonTextDisabled,
+              ]}
+            >
+              Post
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -177,201 +231,202 @@ export default function CreatePostScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Channel Selector */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Channel</Text>
-            <TouchableOpacity
-              style={styles.channelSelector}
-              onPress={() => setShowChannelPicker(!showChannelPicker)}
-            >
-              <Text
-                style={[
-                  styles.channelSelectorText,
-                  !selectedChannel && styles.channelSelectorPlaceholder,
-                ]}
-              >
-                {selectedChannel?.name ?? 'Select a channel'}
-              </Text>
-              <Ionicons
-                name={showChannelPicker ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={colors.textCaption}
-              />
-            </TouchableOpacity>
-
-            {showChannelPicker && (
-              <View style={styles.channelPickerDropdown}>
-                {(channels ?? []).map((channel) => (
-                  <TouchableOpacity
-                    key={channel.id}
-                    style={[
-                      styles.channelPickerItem,
-                      selectedChannelId === channel.id &&
-                        styles.channelPickerItemActive,
-                    ]}
-                    onPress={() => {
-                      setSelectedChannelId(channel.id);
-                      setShowChannelPicker(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.channelPickerItemText,
-                        selectedChannelId === channel.id &&
-                          styles.channelPickerItemTextActive,
-                      ]}
-                    >
-                      {channel.name}
-                    </Text>
-                    {selectedChannelId === channel.id && (
-                      <Ionicons
-                        name="checkmark"
-                        size={18}
-                        color={colors.primary}
-                      />
-                    )}
-                  </TouchableOpacity>
-                ))}
+          {/* ─── User Identity Row ─── */}
+          <View style={styles.identityRow}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={styles.avatarInitials}>{initials}</Text>
               </View>
             )}
+
+            <View style={styles.identityInfo}>
+              <Text style={styles.userName}>{displayName}</Text>
+
+              {/* Channel chip */}
+              <TouchableOpacity
+                style={styles.channelChip}
+                onPress={() => setShowChannelPicker(!showChannelPicker)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="globe-outline"
+                  size={12}
+                  color={selectedChannel ? colors.primary : colors.textCaption}
+                />
+                <Text
+                  style={[
+                    styles.channelChipText,
+                    selectedChannel && styles.channelChipTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {selectedChannel?.name ?? 'Select channel'}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={12}
+                  color={selectedChannel ? colors.primary : colors.textCaption}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Post Type Selector */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Post Type</Text>
-            <View style={styles.typeRow}>
-              {(
-                [
-                  { key: 'text', icon: 'document-text-outline', label: 'Text' },
-                  { key: 'photo', icon: 'image-outline', label: 'Photo' },
-                  { key: 'poll', icon: 'stats-chart-outline', label: 'Poll' },
-                ] as { key: PostType; icon: string; label: string }[]
-              ).map((type) => (
+          {/* ─── Channel Dropdown ─── */}
+          {showChannelPicker && (
+            <View style={styles.channelDropdown}>
+              {(channels ?? []).map((channel) => (
                 <TouchableOpacity
-                  key={type.key}
+                  key={channel.id}
                   style={[
-                    styles.typeButton,
-                    postType === type.key && styles.typeButtonActive,
+                    styles.channelDropdownItem,
+                    selectedChannelId === channel.id &&
+                      styles.channelDropdownItemActive,
                   ]}
-                  onPress={() => setPostType(type.key)}
+                  onPress={() => {
+                    setSelectedChannelId(channel.id);
+                    setShowChannelPicker(false);
+                  }}
                 >
                   <Ionicons
-                    name={type.icon as any}
-                    size={20}
+                    name="chatbubble-outline"
+                    size={16}
                     color={
-                      postType === type.key
+                      selectedChannelId === channel.id
                         ? colors.primary
-                        : colors.textCaption
+                        : colors.textMuted
                     }
                   />
                   <Text
                     style={[
-                      styles.typeButtonText,
-                      postType === type.key && styles.typeButtonTextActive,
+                      styles.channelDropdownText,
+                      selectedChannelId === channel.id &&
+                        styles.channelDropdownTextActive,
                     ]}
                   >
-                    {type.label}
+                    {channel.name}
                   </Text>
+                  {selectedChannelId === channel.id && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={colors.primary}
+                      style={styles.channelCheckmark}
+                    />
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          )}
 
-          {/* Title (optional) */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              Title <Text style={styles.optionalLabel}>(optional)</Text>
-            </Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Add a title..."
-              placeholderTextColor={colors.textCaption}
-              value={title}
-              onChangeText={setTitle}
-              maxLength={200}
-            />
-          </View>
-
-          {/* Content */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Content</Text>
-            <TextInput
-              style={[styles.textInput, styles.multilineInput]}
-              placeholder="What's on your mind?"
-              placeholderTextColor={colors.textCaption}
-              value={content}
-              onChangeText={setContent}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              maxLength={5000}
-            />
-            <Text style={styles.charCount}>
-              {content.length}/5000
-            </Text>
-          </View>
-
-          {/* Photo Upload Area */}
-          {postType === 'photo' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Photos</Text>
-
-              {/* Uploaded images */}
-              {mediaUrls.length > 0 && (
-                <View style={styles.uploadedImagesGrid}>
-                  {mediaUrls.map((url, index) => (
-                    <View key={index} style={styles.uploadedImageContainer}>
-                      <Image
-                        source={{ uri: url }}
-                        style={styles.uploadedImage}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => handleRemoveImage(index)}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={24}
-                          color={colors.danger}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Upload button */}
+          {/* ─── Optional Title ─── */}
+          {showTitle ? (
+            <View style={styles.titleContainer}>
+              <TextInput
+                style={styles.titleInput}
+                placeholder="Title (optional)"
+                placeholderTextColor={colors.textCaption}
+                value={title}
+                onChangeText={setTitle}
+                maxLength={200}
+                autoFocus
+              />
               <TouchableOpacity
-                style={styles.uploadArea}
-                onPress={handlePickImage}
-                disabled={isUploading}
+                style={styles.titleDismiss}
+                onPress={() => {
+                  setShowTitle(false);
+                  setTitle('');
+                }}
               >
-                {isUploading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <View style={styles.uploadIcon}>
-                      <Ionicons
-                        name="cloud-upload-outline"
-                        size={28}
-                        color={colors.primary}
-                      />
-                    </View>
-                    <Text style={styles.uploadText}>Tap to upload photo</Text>
-                    <Text style={styles.uploadHint}>
-                      JPG, PNG up to 10MB
-                    </Text>
-                  </>
-                )}
+                <Ionicons name="close" size={16} color={colors.textCaption} />
               </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* ─── Main Content Area ─── */}
+          <TextInput
+            style={styles.contentInput}
+            placeholder="What's on your mind?"
+            placeholderTextColor={colors.textCaption}
+            value={content}
+            onChangeText={setContent}
+            multiline
+            textAlignVertical="top"
+            maxLength={5000}
+            scrollEnabled={false}
+          />
+
+          {/* ─── Photo Grid ─── */}
+          {mediaUrls.length > 0 && (
+            <View style={styles.photoGrid}>
+              {mediaUrls.map((url, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.photoItem,
+                    mediaUrls.length === 1 && styles.photoItemSingle,
+                  ]}
+                >
+                  <Image
+                    source={{ uri: url }}
+                    style={styles.photoImage}
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    style={styles.photoRemove}
+                    onPress={() => handleRemoveImage(index)}
+                  >
+                    <View style={styles.photoRemoveCircle}>
+                      <Ionicons name="close" size={14} color={colors.surface} />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* Add more photos button */}
+              {isUploading ? (
+                <View style={styles.photoAddMore}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.photoAddMore}
+                  onPress={handlePickImage}
+                >
+                  <Ionicons name="add" size={28} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
-          {/* Poll Options */}
+          {/* ─── Poll Section ─── */}
           {postType === 'poll' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Poll Options</Text>
+            <Animated.View
+              style={[
+                styles.pollSection,
+                {
+                  opacity: pollSlideAnim,
+                  transform: [
+                    {
+                      translateY: pollSlideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [20, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.pollHeader}>
+                <Ionicons
+                  name="stats-chart"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text style={styles.pollHeaderText}>Poll Options</Text>
+              </View>
+
               <View style={styles.pollOptionsContainer}>
                 {pollOptions.map((option, index) => (
                   <View key={index} style={styles.pollOptionRow}>
@@ -396,9 +451,9 @@ export default function CreatePostScreen() {
                         onPress={() => handleRemovePollOption(index)}
                       >
                         <Ionicons
-                          name="close-circle-outline"
-                          size={22}
-                          color={colors.textCaption}
+                          name="close-circle"
+                          size={20}
+                          color={colors.textDisabled}
                         />
                       </TouchableOpacity>
                     )}
@@ -412,19 +467,18 @@ export default function CreatePostScreen() {
                   >
                     <Ionicons
                       name="add-circle-outline"
-                      size={20}
+                      size={18}
                       color={colors.primary}
                     />
-                    <Text style={styles.addOptionText}>Add Option</Text>
+                    <Text style={styles.addOptionText}>Add option</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Poll Duration */}
               <View style={styles.pollDurationSection}>
-                <Text style={styles.sectionLabel}>
-                  Poll Duration{' '}
-                  <Text style={styles.optionalLabel}>(days)</Text>
+                <Text style={styles.pollDurationLabel}>
+                  Duration
                 </Text>
                 <View style={styles.durationRow}>
                   {['1', '3', '7', '14', '30'].map((days) => (
@@ -448,277 +502,388 @@ export default function CreatePostScreen() {
                   ))}
                 </View>
               </View>
-            </View>
+            </Animated.View>
           )}
         </ScrollView>
+
+        {/* ─── Bottom Attachment Bar ─── */}
+        <View style={styles.attachmentBar}>
+          <View style={styles.attachmentBarInner}>
+            <Text style={styles.attachmentBarLabel}>Add to your post</Text>
+
+            <View style={styles.attachmentActions}>
+              {/* Title toggle */}
+              <TouchableOpacity
+                style={[
+                  styles.attachmentButton,
+                  showTitle && styles.attachmentButtonActive,
+                ]}
+                onPress={() => setShowTitle(!showTitle)}
+              >
+                <Ionicons
+                  name="text"
+                  size={22}
+                  color={showTitle ? colors.primary : colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              {/* Photo */}
+              <TouchableOpacity
+                style={[
+                  styles.attachmentButton,
+                  mediaUrls.length > 0 && styles.attachmentButtonActive,
+                ]}
+                onPress={handlePickImage}
+                disabled={isUploading || postType === 'poll'}
+              >
+                {isUploading ? (
+                  <ActivityIndicator size="small" color={colors.success} />
+                ) : (
+                  <Ionicons
+                    name="image"
+                    size={22}
+                    color={
+                      postType === 'poll'
+                        ? colors.textDisabled
+                        : mediaUrls.length > 0
+                        ? colors.success
+                        : colors.success
+                    }
+                  />
+                )}
+              </TouchableOpacity>
+
+              {/* Poll */}
+              <TouchableOpacity
+                style={[
+                  styles.attachmentButton,
+                  postType === 'poll' && styles.attachmentButtonActive,
+                ]}
+                onPress={handleTogglePoll}
+                disabled={mediaUrls.length > 0}
+              >
+                <Ionicons
+                  name="stats-chart"
+                  size={22}
+                  color={
+                    mediaUrls.length > 0
+                      ? colors.textDisabled
+                      : postType === 'poll'
+                      ? colors.warning
+                      : colors.warning
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
 }
+
+// ─── Styles ────────────────────────────────
+
+const AVATAR_SIZE = 44;
+const PHOTO_GAP = 8;
+const PHOTO_COLS = 3;
+const PHOTO_SIZE =
+  (SCREEN_WIDTH - spacing.pagePaddingX * 2 - PHOTO_GAP * (PHOTO_COLS - 1) - PHOTO_GAP) /
+  PHOTO_COLS;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Header
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: spacing.safeAreaTop,
     paddingHorizontal: spacing.pagePaddingX,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.sm,
   },
   headerTitle: {
     fontFamily: fonts.bold,
     fontSize: 18,
     color: colors.textPrimary,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: spacing.lg,
   },
-  submitButton: {
-    paddingHorizontal: 20,
-    height: 40,
+  postButton: {
+    paddingHorizontal: 22,
+    height: 36,
     borderRadius: borderRadius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.blueGlow,
   },
-  submitButtonDisabled: {
-    backgroundColor: colors.textDisabled,
+  postButtonDisabled: {
+    backgroundColor: colors.primaryLightAlt,
     shadowOpacity: 0,
+    elevation: 0,
   },
-  submitButtonText: {
+  postButtonText: {
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.textOnDark,
   },
-  // Keyboard
+  postButtonTextDisabled: {
+    color: colors.textCaption,
+  },
+
+  // ── Keyboard / Scroll ──
   keyboardView: {
     flex: 1,
   },
-  // ScrollView
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: spacing.pagePaddingX,
-    paddingBottom: spacing.bottomNavClearance + 20,
+    paddingBottom: 20,
   },
-  // Section
-  section: {
-    marginBottom: spacing['3xl'],
+
+  // ── Identity Row (Facebook-style) ──
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
   },
-  sectionLabel: {
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: colors.border,
+  },
+  avatarFallback: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
     fontFamily: fonts.bold,
-    fontSize: 13,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.lg,
+    fontSize: 16,
+    color: colors.textOnDark,
   },
-  optionalLabel: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textCaption,
-    textTransform: 'lowercase',
-    letterSpacing: 0,
+  identityInfo: {
+    marginLeft: spacing.lg,
+    flex: 1,
   },
-  // Channel Selector
-  channelSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: spacing.inputHeight,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
-    paddingHorizontal: spacing.xl,
-  },
-  channelSelectorText: {
-    fontFamily: fonts.medium,
-    fontSize: 15,
+  userName: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
     color: colors.textPrimary,
+    marginBottom: 3,
   },
-  channelSelectorPlaceholder: {
-    color: colors.textCaption,
-  },
-  channelPickerDropdown: {
-    marginTop: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
-    overflow: 'hidden',
-  },
-  channelPickerItem: {
+
+  // ── Channel Chip ──
+  channelChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  channelChipText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textCaption,
+    maxWidth: 140,
+  },
+  channelChipTextActive: {
+    color: colors.primary,
+    fontFamily: fonts.bold,
+  },
+
+  // ── Channel Dropdown ──
+  channelDropdown: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    ...shadows.md,
+  },
+  channelDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  channelPickerItemActive: {
+  channelDropdownItemActive: {
     backgroundColor: colors.primaryLight,
   },
-  channelPickerItemText: {
+  channelDropdownText: {
+    flex: 1,
     fontFamily: fonts.medium,
     fontSize: 15,
     color: colors.textBody,
   },
-  channelPickerItemTextActive: {
+  channelDropdownTextActive: {
     fontFamily: fonts.bold,
     color: colors.primary,
   },
-  // Type selector
-  typeRow: {
-    flexDirection: 'row',
-    gap: spacing.lg,
+  channelCheckmark: {
+    marginLeft: 'auto',
   },
-  typeButton: {
-    flex: 1,
+
+  // ── Title Input ──
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    height: spacing.smallButtonHeight,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
+    marginBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: spacing.md,
   },
-  typeButtonActive: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  typeButtonText: {
+  titleInput: {
+    flex: 1,
     fontFamily: fonts.bold,
-    fontSize: 13,
-    color: colors.textCaption,
-  },
-  typeButtonTextActive: {
-    color: colors.primary,
-  },
-  // Text input
-  textInput: {
-    height: spacing.inputHeight,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
-    paddingHorizontal: spacing.xl,
-    fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: 20,
     color: colors.textPrimary,
+    paddingVertical: spacing.xs,
   },
-  multilineInput: {
-    height: 160,
-    paddingTop: spacing.xl,
+  titleDismiss: {
+    padding: spacing.md,
+  },
+
+  // ── Content Input ──
+  contentInput: {
+    fontFamily: fonts.regular,
+    fontSize: 18,
+    color: colors.textPrimary,
+    lineHeight: 26,
+    minHeight: 180,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     textAlignVertical: 'top',
   },
-  charCount: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textCaption,
-    textAlign: 'right',
-    marginTop: spacing.xs,
-  },
-  // Upload
-  uploadedImagesGrid: {
+
+  // ── Photo Grid ──
+  photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.lg,
+    gap: PHOTO_GAP,
     marginBottom: spacing.xl,
   },
-  uploadedImageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: borderRadius.lg,
+  photoItem: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: borderRadius.md,
     overflow: 'hidden',
+    backgroundColor: colors.border,
   },
-  uploadedImage: {
+  photoItemSingle: {
+    width: '100%',
+    height: 220,
+  },
+  photoImage: {
     width: '100%',
     height: '100%',
   },
-  removeImageButton: {
+  photoRemove: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.full,
+    top: 6,
+    right: 6,
   },
-  uploadArea: {
+  photoRemoveCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing['4xl'],
-    backgroundColor: colors.primaryLight,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
+  },
+  photoAddMore: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
     borderColor: colors.primaryLightAlt,
     borderStyle: 'dashed',
-  },
-  uploadIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
   },
-  uploadText: {
+
+  // ── Poll Section ──
+  pollSection: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  pollHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  pollHeaderText: {
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.primary,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  uploadHint: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: colors.textCaption,
-  },
-  // Poll Options
   pollOptionsContainer: {
     gap: spacing.lg,
   },
   pollOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   pollOptionNumber: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.border,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pollOptionNumberText: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: colors.textMuted,
+    color: colors.primary,
   },
   pollOptionInput: {
     flex: 1,
-    height: spacing.smallButtonHeight,
-    backgroundColor: colors.surface,
+    height: 44,
+    backgroundColor: colors.background,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
     paddingHorizontal: spacing.xl,
     fontFamily: fonts.medium,
     fontSize: 14,
@@ -731,10 +896,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    height: spacing.smallButtonHeight,
+    gap: spacing.sm,
+    height: 44,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.primaryLightAlt,
     borderStyle: 'dashed',
     backgroundColor: colors.primaryLight,
@@ -744,9 +909,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.primary,
   },
-  // Poll Duration
+
+  // ── Poll Duration ──
   pollDurationSection: {
-    marginTop: spacing['3xl'],
+    marginTop: spacing.xl,
+    paddingTop: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  pollDurationLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.lg,
   },
   durationRow: {
     flexDirection: 'row',
@@ -754,24 +931,56 @@ const styles = StyleSheet.create({
   },
   durationPill: {
     flex: 1,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   durationPillActive: {
     backgroundColor: colors.dark,
-    borderColor: colors.dark,
   },
   durationPillText: {
     fontFamily: fonts.bold,
     fontSize: 13,
-    color: colors.textBody,
+    color: colors.textMuted,
   },
   durationPillTextActive: {
     color: colors.textOnDark,
+  },
+
+  // ── Bottom Attachment Bar ──
+  attachmentBar: {
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderMedium,
+    paddingBottom: spacing.safeAreaBottom,
+  },
+  attachmentBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingVertical: spacing.lg,
+  },
+  attachmentBarLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  attachmentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  attachmentButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentButtonActive: {
+    backgroundColor: colors.background,
   },
 });

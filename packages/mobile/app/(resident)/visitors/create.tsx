@@ -10,9 +10,13 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useCreateInvitation } from '@/hooks/useVisitors';
 import { useResidentUnit } from '@/hooks/useOccupancy';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -41,8 +45,24 @@ const DAY_PILLS = [
   { label: 'S', value: 0 },
 ];
 
+// ── Picker field identifiers ──
+
+type PickerField =
+  | 'validFromDate'
+  | 'validFromTime'
+  | 'validUntilDate'
+  | 'validUntilTime'
+  | 'recurringStartTime'
+  | 'recurringEndTime';
+
+// ── Helpers ──
+
 function formatDateDisplay(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 function formatTimeDisplay(date: Date): string {
@@ -52,6 +72,8 @@ function formatTimeDisplay(date: Date): string {
 function padTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:00`;
 }
+
+// ── Component ──
 
 export default function CreateInvitationScreen() {
   const router = useRouter();
@@ -65,32 +87,132 @@ export default function CreateInvitationScreen() {
   const [vehiclePlate, setVehiclePlate] = useState('');
   const [showVehicle, setShowVehicle] = useState(false);
 
-  // Date/time state
-  const [validFrom] = useState(() => new Date());
-  const [validUntil] = useState(() => {
+  // Date/time state (with setters)
+  const [validFrom, setValidFrom] = useState(() => new Date());
+  const [validUntil, setValidUntil] = useState(() => {
     const d = new Date();
     d.setHours(d.getHours() + 8);
     return d;
   });
 
-  // Recurring state
+  // Recurring state (with setters)
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
-  const [recurringStartTime] = useState(() => {
+  const [recurringStartTime, setRecurringStartTime] = useState(() => {
     const d = new Date();
     d.setHours(8, 0, 0, 0);
     return d;
   });
-  const [recurringEndTime] = useState(() => {
+  const [recurringEndTime, setRecurringEndTime] = useState(() => {
     const d = new Date();
     d.setHours(20, 0, 0, 0);
     return d;
   });
 
+  // Picker visibility state
+  const [activePickerField, setActivePickerField] = useState<PickerField | null>(null);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+
+  // ── Picker helpers ──
+
+  const getPickerMode = (field: PickerField): 'date' | 'time' => {
+    if (field.endsWith('Date')) return 'date';
+    return 'time';
+  };
+
+  const getPickerValue = (field: PickerField): Date => {
+    switch (field) {
+      case 'validFromDate':
+      case 'validFromTime':
+        return validFrom;
+      case 'validUntilDate':
+      case 'validUntilTime':
+        return validUntil;
+      case 'recurringStartTime':
+        return recurringStartTime;
+      case 'recurringEndTime':
+        return recurringEndTime;
+    }
+  };
+
+  const applyPickerChange = useCallback(
+    (field: PickerField, selectedDate: Date) => {
+      switch (field) {
+        case 'validFromDate': {
+          const updated = new Date(validFrom);
+          updated.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+          setValidFrom(updated);
+          break;
+        }
+        case 'validFromTime': {
+          const updated = new Date(validFrom);
+          updated.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+          setValidFrom(updated);
+          break;
+        }
+        case 'validUntilDate': {
+          const updated = new Date(validUntil);
+          updated.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+          setValidUntil(updated);
+          break;
+        }
+        case 'validUntilTime': {
+          const updated = new Date(validUntil);
+          updated.setHours(selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+          setValidUntil(updated);
+          break;
+        }
+        case 'recurringStartTime':
+          setRecurringStartTime(selectedDate);
+          break;
+        case 'recurringEndTime':
+          setRecurringEndTime(selectedDate);
+          break;
+      }
+    },
+    [validFrom, validUntil],
+  );
+
+  const openPicker = useCallback((field: PickerField) => {
+    setActivePickerField(field);
+    if (Platform.OS === 'ios') {
+      setShowIOSModal(true);
+    }
+  }, []);
+
+  const closePicker = useCallback(() => {
+    setActivePickerField(null);
+    setShowIOSModal(false);
+  }, []);
+
+  const handlePickerChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      if (!activePickerField) return;
+
+      if (Platform.OS === 'android') {
+        // Android: picker dismisses itself on set or dismiss
+        setActivePickerField(null);
+        if (event.type === 'set' && selectedDate) {
+          applyPickerChange(activePickerField, selectedDate);
+        }
+      } else {
+        // iOS: picker stays open until user taps "Done"
+        if (selectedDate) {
+          applyPickerChange(activePickerField, selectedDate);
+        }
+      }
+    },
+    [activePickerField, applyPickerChange],
+  );
+
+  // ── Day toggle ──
+
   const toggleDay = useCallback((day: number) => {
     setRecurringDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   }, []);
+
+  // ── Submit ──
 
   const handleSubmit = async () => {
     if (!visitorName.trim()) {
@@ -112,8 +234,10 @@ export default function CreateInvitationScreen() {
         visitor_phone: phone.trim() || undefined,
         vehicle_plate: showVehicle && vehiclePlate.trim() ? vehiclePlate.trim() : undefined,
         recurring_days: invitationType === 'recurring' ? recurringDays : undefined,
-        recurring_start_time: invitationType === 'recurring' ? padTime(recurringStartTime) : undefined,
-        recurring_end_time: invitationType === 'recurring' ? padTime(recurringEndTime) : undefined,
+        recurring_start_time:
+          invitationType === 'recurring' ? padTime(recurringStartTime) : undefined,
+        recurring_end_time:
+          invitationType === 'recurring' ? padTime(recurringEndTime) : undefined,
         unit_id: unitId ?? undefined,
       });
 
@@ -125,6 +249,12 @@ export default function CreateInvitationScreen() {
       Alert.alert('Error', message);
     }
   };
+
+  // ── Determine if a particular button is the "active" picker ──
+
+  const isFieldActive = (field: PickerField): boolean => activePickerField === field;
+
+  // ── Render ──
 
   return (
     <View style={styles.container}>
@@ -183,7 +313,12 @@ export default function CreateInvitationScreen() {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Guest Name</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons name="person-outline" size={20} color={colors.textDisabled} style={styles.inputIcon} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={colors.textDisabled}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. Michael Smith"
@@ -198,7 +333,12 @@ export default function CreateInvitationScreen() {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Phone Number</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons name="call-outline" size={20} color={colors.textDisabled} style={styles.inputIcon} />
+                <Ionicons
+                  name="call-outline"
+                  size={20}
+                  color={colors.textDisabled}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   placeholder="+1 (555) 000-0000"
@@ -215,27 +355,58 @@ export default function CreateInvitationScreen() {
           {invitationType !== 'recurring' && (
             <View style={styles.section}>
               <View style={styles.dateRow}>
+                {/* Valid From */}
                 <View style={styles.dateField}>
                   <Text style={styles.fieldLabel}>Valid From</Text>
-                  <View style={styles.dateButton}>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      isFieldActive('validFromDate') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('validFromDate')}
+                    activeOpacity={0.7}
+                  >
                     <Ionicons name="calendar-outline" size={16} color={colors.textCaption} />
                     <Text style={styles.dateButtonText}>{formatDateDisplay(validFrom)}</Text>
-                  </View>
-                  <View style={styles.dateButton}>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      isFieldActive('validFromTime') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('validFromTime')}
+                    activeOpacity={0.7}
+                  >
                     <Ionicons name="time-outline" size={16} color={colors.textCaption} />
                     <Text style={styles.dateButtonText}>{formatTimeDisplay(validFrom)}</Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
+
+                {/* Valid Until */}
                 <View style={styles.dateField}>
                   <Text style={styles.fieldLabel}>Valid Until</Text>
-                  <View style={styles.dateButton}>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      isFieldActive('validUntilDate') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('validUntilDate')}
+                    activeOpacity={0.7}
+                  >
                     <Ionicons name="calendar-outline" size={16} color={colors.textCaption} />
                     <Text style={styles.dateButtonText}>{formatDateDisplay(validUntil)}</Text>
-                  </View>
-                  <View style={styles.dateButton}>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      isFieldActive('validUntilTime') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('validUntilTime')}
+                    activeOpacity={0.7}
+                  >
                     <Ionicons name="time-outline" size={16} color={colors.textCaption} />
                     <Text style={styles.dateButtonText}>{formatTimeDisplay(validUntil)}</Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -254,7 +425,9 @@ export default function CreateInvitationScreen() {
                       style={[styles.dayPill, isActive && styles.dayPillActive]}
                       onPress={() => toggleDay(day.value)}
                     >
-                      <Text style={[styles.dayPillText, isActive && styles.dayPillTextActive]}>
+                      <Text
+                        style={[styles.dayPillText, isActive && styles.dayPillTextActive]}
+                      >
                         {day.label}
                       </Text>
                     </TouchableOpacity>
@@ -265,15 +438,33 @@ export default function CreateInvitationScreen() {
               <View style={styles.timeRangeRow}>
                 <View style={styles.dateField}>
                   <Text style={styles.fieldLabel}>From</Text>
-                  <View style={styles.timeInput}>
-                    <Text style={styles.timeInputText}>{formatTimeDisplay(recurringStartTime)}</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.timeInput,
+                      isFieldActive('recurringStartTime') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('recurringStartTime')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.timeInputText}>
+                      {formatTimeDisplay(recurringStartTime)}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <View style={styles.dateField}>
                   <Text style={styles.fieldLabel}>Until</Text>
-                  <View style={styles.timeInput}>
-                    <Text style={styles.timeInputText}>{formatTimeDisplay(recurringEndTime)}</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.timeInput,
+                      isFieldActive('recurringEndTime') && styles.dateButtonActive,
+                    ]}
+                    onPress={() => openPicker('recurringEndTime')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.timeInputText}>
+                      {formatTimeDisplay(recurringEndTime)}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -361,9 +552,57 @@ export default function CreateInvitationScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* ── Android Native Picker (renders as dialog automatically) ── */}
+      {Platform.OS === 'android' && activePickerField != null && (
+        <DateTimePicker
+          value={getPickerValue(activePickerField)}
+          mode={getPickerMode(activePickerField)}
+          is24Hour
+          display="default"
+          onChange={handlePickerChange}
+        />
+      )}
+
+      {/* ── iOS Modal Picker ── */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={showIOSModal && activePickerField != null}
+          transparent
+          animationType="slide"
+          onRequestClose={closePicker}
+        >
+          <View style={styles.iosModalBackdrop}>
+            <TouchableOpacity
+              style={styles.iosModalBackdropTouchable}
+              activeOpacity={1}
+              onPress={closePicker}
+            />
+            <View style={styles.iosPickerContainer}>
+              <View style={styles.iosPickerHeader}>
+                <TouchableOpacity onPress={closePicker}>
+                  <Text style={styles.iosPickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              {activePickerField != null && (
+                <DateTimePicker
+                  value={getPickerValue(activePickerField)}
+                  mode={getPickerMode(activePickerField)}
+                  is24Hour
+                  display="spinner"
+                  onChange={handlePickerChange}
+                  style={styles.iosPicker}
+                />
+              )}
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
+
+// ── Styles ──
 
 const styles = StyleSheet.create({
   container: {
@@ -499,6 +738,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.xl,
     height: 44,
+  },
+  dateButtonActive: {
+    borderColor: colors.primary,
+    borderWidth: 1.5,
   },
   dateButtonText: {
     fontFamily: fonts.medium,
@@ -697,13 +940,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     height: 64,
-    backgroundColor: colors.dark,
+    backgroundColor: colors.primary,
     borderRadius: borderRadius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
-    ...shadows.darkGlow,
+    ...shadows.blueGlow,
   },
   submitButtonDisabled: {
     opacity: 0.6,
@@ -712,5 +955,37 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 18,
     color: colors.textOnDark,
+  },
+  // iOS Modal Picker
+  iosModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  iosModalBackdropTouchable: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  iosPickerContainer: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    paddingBottom: spacing.safeAreaBottom,
+  },
+  iosPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  iosPickerDone: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.primary,
+  },
+  iosPicker: {
+    height: 216,
   },
 });

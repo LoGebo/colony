@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: spacing.lg,
   },
   balanceLabel: {
     fontFamily: fonts.medium,
@@ -369,12 +370,14 @@ const styles = StyleSheet.create({
     color: colors.textOnDark,
   },
   overdueBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     backgroundColor: colors.warningBgAlpha,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
     borderColor: 'rgba(245,158,11,0.3)',
+    flexShrink: 1,
+    alignSelf: 'flex-start',
   },
   overdueBadgeText: {
     fontFamily: fonts.bold,
