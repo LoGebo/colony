@@ -14,11 +14,11 @@ export interface MoveRequestRow {
   id: string;
   move_type: string;
   status: string;
-  scheduled_date: string;
+  requested_date: string;
   unit_id: string;
   resident_id: string;
-  moving_company: string | null;
-  notes: string | null;
+  moving_company_name: string | null;
+  resident_notes: string | null;
   all_validations_passed: boolean | null;
   created_at: string;
   units: { unit_number: string } | null;
@@ -29,12 +29,12 @@ export interface MoveRequestDetail {
   id: string;
   move_type: string;
   status: string;
-  scheduled_date: string;
+  requested_date: string;
   unit_id: string;
   resident_id: string;
-  moving_company: string | null;
-  contact_phone: string | null;
-  notes: string | null;
+  moving_company_name: string | null;
+  moving_company_phone: string | null;
+  resident_notes: string | null;
   all_validations_passed: boolean | null;
   created_at: string;
   updated_at: string;
@@ -45,45 +45,49 @@ export interface MoveRequestDetail {
 export interface MoveValidationRow {
   id: string;
   validation_type: string;
-  description: string | null;
   status: string;
-  validated_by: string | null;
-  validated_at: string | null;
+  checked_at: string | null;
+  checked_by: string | null;
   notes: string | null;
-  is_required: boolean;
+  balance_at_check: number | null;
+  waiver_reason: string | null;
+  waived_by: string | null;
 }
 
 export interface MoveDepositRow {
   id: string;
   move_request_id: string;
   amount: number;
-  currency: string;
   status: string;
-  collection_date: string | null;
+  collected_at: string | null;
   refund_amount: number | null;
   deduction_amount: number | null;
   deduction_reason: string | null;
+  deposit_type: string | null;
+  payment_method: string | null;
 }
 
 export interface CreateMoveInput {
   unit_id: string;
   resident_id: string;
   move_type: string;
-  scheduled_date: string;
-  moving_company?: string;
-  contact_phone?: string;
-  notes?: string;
+  requested_date: string;
+  moving_company_name?: string;
+  moving_company_phone?: string;
+  resident_notes?: string;
 }
 
 export interface UpdateValidationInput {
   id: string;
   status: string;
-  validated_by?: string;
+  checked_by?: string;
   notes?: string;
 }
 
 export interface CreateDepositInput {
   move_request_id: string;
+  unit_id: string;
+  resident_id: string;
   amount: number;
   collection_date: string;
 }
@@ -105,7 +109,7 @@ export function useMoveList(statusFilter?: string, typeFilter?: string) {
       let query = supabase
         .from('move_requests')
         .select(
-          'id, move_type, status, scheduled_date, unit_id, resident_id, moving_company, notes, all_validations_passed, created_at, units(unit_number), residents(first_name, paternal_surname)'
+          'id, move_type, status, requested_date, unit_id, resident_id, moving_company_name, resident_notes, all_validations_passed, created_at, units(unit_number), residents(first_name, paternal_surname)'
         )
         .eq('community_id', communityId!)
         .order('created_at', { ascending: false });
@@ -138,7 +142,7 @@ export function useMoveDetail(id: string) {
       const { data, error } = await supabase
         .from('move_requests')
         .select(
-          'id, move_type, status, scheduled_date, unit_id, resident_id, moving_company, contact_phone, notes, all_validations_passed, created_at, updated_at, units(unit_number), residents(first_name, paternal_surname)'
+          'id, move_type, status, requested_date, unit_id, resident_id, moving_company_name, moving_company_phone, resident_notes, all_validations_passed, created_at, updated_at, units(unit_number), residents(first_name, paternal_surname)'
         )
         .eq('id', id)
         .eq('community_id', communityId!)
@@ -162,10 +166,9 @@ export function useMoveValidations(moveId: string) {
       const { data, error } = await supabase
         .from('move_validations')
         .select(
-          'id, validation_type, description, status, validated_by, validated_at, notes, is_required'
+          'id, validation_type, status, checked_at, checked_by, notes, balance_at_check, waiver_reason, waived_by'
         )
         .eq('move_request_id', moveId)
-        .order('is_required', { ascending: false })
         .order('validation_type', { ascending: true });
 
       if (error) throw error;
@@ -188,7 +191,7 @@ export function useMoveDeposits(moveRequestId?: string) {
       let query = supabase
         .from('move_deposits')
         .select(
-          'id, move_request_id, amount, currency, status, collection_date, refund_amount, deduction_amount, deduction_reason'
+          'id, move_request_id, amount, status, collected_at, refund_amount, deduction_amount, deduction_reason, deposit_type, payment_method'
         )
         .eq('community_id', communityId!)
         .order('created_at', { ascending: false });
@@ -226,10 +229,10 @@ export function useCreateMove() {
           unit_id: input.unit_id,
           resident_id: input.resident_id,
           move_type: input.move_type,
-          scheduled_date: input.scheduled_date,
-          moving_company: input.moving_company ?? null,
-          contact_phone: input.contact_phone ?? null,
-          notes: input.notes ?? null,
+          requested_date: input.requested_date,
+          moving_company_name: input.moving_company_name ?? null,
+          moving_company_phone: input.moving_company_phone ?? null,
+          resident_notes: input.resident_notes ?? null,
           status: 'requested',
         } as never)
         .select()
@@ -289,9 +292,9 @@ export function useUpdateValidation() {
       const payload: Record<string, unknown> = {
         status: updates.status,
       };
-      if (updates.validated_by) payload.validated_by = updates.validated_by;
+      if (updates.checked_by) payload.checked_by = updates.checked_by;
       if (updates.notes !== undefined) payload.notes = updates.notes;
-      payload.validated_at = new Date().toISOString();
+      payload.checked_at = new Date().toISOString();
 
       const { data, error } = await supabase
         .from('move_validations')
@@ -328,10 +331,12 @@ export function useCreateDeposit() {
         .insert({
           move_request_id: input.move_request_id,
           community_id: communityId!,
+          unit_id: input.unit_id,
+          resident_id: input.resident_id,
           amount: input.amount,
-          currency: 'MXN',
           status: 'collected',
-          collection_date: input.collection_date,
+          collected_at: input.collection_date,
+          deposit_type: 'move',
         } as never)
         .select()
         .single();

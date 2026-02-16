@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -17,13 +18,24 @@ export default function RootLayout() {
     'Satoshi-Black': require('../assets/fonts/Satoshi-Black.otf'),
   });
 
+  // On web, fonts may fail to load via expo-font; don't block render
+  const [fontTimeout, setFontTimeout] = useState(false);
   useEffect(() => {
-    if (fontsLoaded) {
+    if (Platform.OS === 'web') {
+      const timer = setTimeout(() => setFontTimeout(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const ready = fontsLoaded || fontTimeout;
+
+  useEffect(() => {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [ready]);
 
-  if (!fontsLoaded) {
+  if (!ready) {
     return null;
   }
 

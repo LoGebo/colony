@@ -12,8 +12,11 @@ import { formatDate } from '@/lib/formatters';
 
 const assemblyStatusVariants = {
   scheduled: 'neutral' as const,
+  convocatoria_1: 'info' as const,
+  convocatoria_2: 'info' as const,
+  convocatoria_3: 'info' as const,
   in_progress: 'info' as const,
-  completed: 'success' as const,
+  concluded: 'success' as const,
   cancelled: 'danger' as const,
 };
 
@@ -29,8 +32,11 @@ const assemblyTypeLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   scheduled: 'Programada',
+  convocatoria_1: '1a Convocatoria',
+  convocatoria_2: '2a Convocatoria',
+  convocatoria_3: '3a Convocatoria',
   in_progress: 'En Curso',
-  completed: 'Completada',
+  concluded: 'Concluida',
   cancelled: 'Cancelada',
 };
 
@@ -140,8 +146,11 @@ export default function AssembliesPage() {
         >
           <option value="">Todos los estados</option>
           <option value="scheduled">Programada</option>
+          <option value="convocatoria_1">1a Convocatoria</option>
+          <option value="convocatoria_2">2a Convocatoria</option>
+          <option value="convocatoria_3">3a Convocatoria</option>
           <option value="in_progress">En Curso</option>
-          <option value="completed">Completada</option>
+          <option value="concluded">Concluida</option>
           <option value="cancelled">Cancelada</option>
         </select>
       </div>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Documents & Signatures</title>
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b2241c31-9631-4870-90cc-b4c6c3405009" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/299b7c74-6739-4874-8ae6-0e248e209b1a" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/fd7e0571-00be-4a63-90af-22128a834134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/bfe82a67-f200-428c-8db4-04f3c670ce38" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/cf51ff25-7e63-4b29-84c8-1889866485e1" as="document">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .nav-active {
+            color: #2563EB !important;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        ::view-transition-old(bottom-nav),
+        ::view-transition-new(bottom-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+
+    <!-- Background Ambiance (Persistent) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div id="app-root" class="relative z-10 w-full min-h-screen flex flex-col pt-14 pb-[100px]">
+        
+        <main class="px-6 flex-1 flex flex-col gap-6" style="view-transition-name: main-content;">
+            <!-- Header Section -->
+            <header class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Documents</h1>
+                    <p class="text-slate-500 text-sm font-medium">Manage contracts and regulations</p>
+                </div>
+                <button class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
+                    <iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>
+                </button>
+            </header>
+
+            <!-- Signature Alerts Card -->
+            <div class="p-5 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[28px] text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                        <iconify-icon icon="lucide:pen-tool" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-indigo-100 text-xs font-bold uppercase tracking-wider">Pending Action</p>
+                        <h3 class="text-lg font-bold">2 Signatures Required</h3>
+                    </div>
+                </div>
+                <button class="w-full h-12 bg-white rounded-xl text-indigo-700 font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+                    <span>Review & Sign Now</span>
+                    <iconify-icon icon="lucide:arrow-right" class="text-lg"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex gap-2 overflow-x-auto pb-1">
+                <button class="px-5 h-10 rounded-full bg-slate-900 text-white text-xs font-bold whitespace-nowrap">All Files</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap">Pending</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap">Regulation</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold whitespace-nowrap">Archives</button>
+            </div>
+
+            <!-- Document List -->
+            <section class="space-y-4">
+                <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1">Required Documents</h2>
+                
+                <!-- Document Card 1 -->
+                <div class="glass-panel p-4 rounded-3xl flex items-center gap-4 group active:bg-white/90 transition-colors cursor-pointer">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                        <iconify-icon icon="lucide:file-text" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold text-slate-800">Rental Agreement Addendum</h4>
+                            <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[10px] font-extrabold uppercase">Draft</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Uploaded Oct 24, 2023 • 2.4 MB</p>
+                    </div>
+                    <button class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                        <iconify-icon icon="lucide:edit-3" class="text-xl"></iconify-icon>
+                    </button>
+                </div>
+
+                <!-- Document Card 2 -->
+                <div class="glass-panel p-4 rounded-3xl flex items-center gap-4 group active:bg-white/90 transition-colors cursor-pointer">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                        <iconify-icon icon="lucide:shield-check" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-sm font-bold text-slate-800">Community Bylaws 2024</h4>
+                            <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-extrabold uppercase">Signed</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Last updated Sept 12, 2023</p>
+                    </div>
+                    <button class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                        <iconify-icon icon="lucide:download" class="text-xl"></iconify-icon>
+                    </button>
+                </div>
+
+                <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1 pt-4">Regulations & Policies</h2>
+                
+                <!-- Document Card 3 -->
+                <div class="glass-panel p-4 rounded-3xl flex items-center gap-4 active:bg-white/90 transition-colors cursor-pointer">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                        <iconify-icon icon="lucide:waves" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-slate-800">Swimming Pool Policy</h4>
+                        <p class="text-xs text-slate-500">Access hours and safety rules</p>
+                    </div>
+                    <iconify-icon icon="lucide:chevron-right" class="text-xl text-slate-300"></iconify-icon>
+                </div>
+
+                <!-- Document Card 4 -->
+                <div class="glass-panel p-4 rounded-3xl flex items-center gap-4 active:bg-white/90 transition-colors cursor-pointer">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                        <iconify-icon icon="lucide:dog" class="text-2xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-slate-800">Pet Ownership Guidelines</h4>
+                        <p class="text-xs text-slate-500">Registration and cleanup policy</p>
+                    </div>
+                    <iconify-icon icon="lucide:chevron-right" class="text-xl text-slate-300"></iconify-icon>
+                </div>
+            </section>
+
+            <!-- Empty State / Archive CTA -->
+            <div class="mt-4 p-8 text-center">
+                <iconify-icon icon="lucide:archive" class="text-4xl text-slate-300 mb-3"></iconify-icon>
+                <p class="text-sm font-medium text-slate-500">Looking for older documents?</p>
+                <a href="#archive" class="text-sm font-bold text-blue-600 hover:underline">Browse Full Archive</a>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Navigation -->
+        <div class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200/60 px-6 py-4 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]" style="view-transition-name: bottom-nav;">
+            <a id="nav-home-link" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Home</span>
+            </a>
+            <a id="nav-social-link" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Social</span>
+            </a>
+            <a id="nav-billing-link" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Billing</span>
+            </a>
+            <a id="nav-profile-link" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Profile</span>
+            </a>
+        </div>
+
+    </div>
+</body>
+</html>

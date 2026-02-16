@@ -18,9 +18,9 @@ interface ElectionFormData {
 
 const electionTypes = [
   { value: 'board_election', label: 'Elección de Mesa Directiva' },
-  { value: 'budget_approval', label: 'Aprobación de Presupuesto' },
-  { value: 'rules_amendment', label: 'Enmienda de Reglamento' },
-  { value: 'general_vote', label: 'Votación General' },
+  { value: 'extraordinary_expense', label: 'Gasto Extraordinario' },
+  { value: 'bylaw_amendment', label: 'Enmienda de Reglamento' },
+  { value: 'general_decision', label: 'Decisión General' },
 ];
 
 export default function NewElectionPage() {
@@ -39,7 +39,7 @@ export default function NewElectionPage() {
     setValue,
   } = useForm<ElectionFormData>({
     defaultValues: {
-      election_type: 'general_vote',
+      election_type: 'general_decision',
     },
   });
 

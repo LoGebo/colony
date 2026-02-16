@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Visitor Invite - Lumina</title>
+    <meta name="view-transition" content="same-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #F8FAFC;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .ios-input:focus-within {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Custom scroll behavior */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .day-pill.active {
+            background: #1E293B;
+            color: white;
+            border-color: #1E293B;
+        }
+    </style>
+</head>
+<body>
+    <div class="w-full h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
+        <!-- Background Ambiance (Persistent) -->
+        <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/30 via-teal-50/20 to-transparent blur-3xl"></div>
+            <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/5 rounded-full blur-[80px]"></div>
+        </div>
+
+        <!-- Header Area (Dynamic) -->
+        <header class="shrink-0 pt-14 px-6 pb-4 flex items-center justify-between relative z-20">
+            <div class="flex items-center gap-4">
+                <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="back-to-visitors-link" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-600 active:scale-95 transition-all">
+                    <iconify-icon icon="lucide:chevron-left" class="text-2xl"></iconify-icon>
+                </a>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Create Invitation</h1>
+            </div>
+        </header>
+
+        <!-- Main Content (Dynamic) -->
+        <main style="view-transition-name: main-content" class="flex-1 overflow-y-auto px-6 pb-32 no-scrollbar relative z-10">
+            <div class="space-y-6">
+                <!-- Invite Type Selection -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Invitation Type</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="selectType('one-time')" id="type-one-time" class="type-btn h-20 bg-white border-2 border-blue-600/10 rounded-2xl flex flex-col items-center justify-center gap-1 group active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:user-check" class="text-xl text-blue-600"></iconify-icon>
+                            <span class="text-[11px] font-bold text-slate-700">One-time</span>
+                        </button>
+                        <button onclick="selectType('recurring')" id="type-recurring" class="type-btn h-20 bg-white border-2 border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-1 group active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:calendar-range" class="text-xl text-slate-400"></iconify-icon>
+                            <span class="text-[11px] font-bold text-slate-500">Recurring</span>
+                        </button>
+                        <button onclick="selectType('event')" id="type-event" class="type-btn h-20 bg-white border-2 border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-1 group active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:party-popper" class="text-xl text-slate-400"></iconify-icon>
+                            <span class="text-[11px] font-bold text-slate-500">Event</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Guest Info -->
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">Guest Name</label>
+                        <div class="ios-input group flex items-center bg-white rounded-2xl border border-slate-100 px-4 h-14 transition-all duration-300">
+                            <iconify-icon icon="lucide:user" class="text-slate-300 text-xl mr-3 group-focus-within:text-blue-500 transition-colors"></iconify-icon>
+                            <input type="text" placeholder="e.g. Michael Smith" class="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-300 text-base font-medium h-full">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">Phone Number</label>
+                        <div class="ios-input group flex items-center bg-white rounded-2xl border border-slate-100 px-4 h-14 transition-all duration-300">
+                            <iconify-icon icon="lucide:phone" class="text-slate-300 text-xl mr-3 group-focus-within:text-blue-500 transition-colors"></iconify-icon>
+                            <input type="tel" placeholder="+1 (555) 000-0000" class="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-300 text-base font-medium h-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conditional Scheduling (Recurring) -->
+                <div id="schedule-section" class="hidden space-y-4 animate-fade-in">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">Select Days</label>
+                        <div class="flex justify-between">
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">M</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">T</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">W</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">T</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">F</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">S</button>
+                            <button class="day-pill w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-xs font-bold transition-all" onclick="this.classList.toggle('active')">S</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">From</label>
+                            <input type="time" value="08:00" class="w-full bg-white rounded-2xl border border-slate-100 px-4 h-14 text-slate-900 font-medium">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-bold text-slate-400 ml-1 uppercase tracking-wider">Until</label>
+                            <input type="time" value="20:00" class="w-full bg-white rounded-2xl border border-slate-100 px-4 h-14 text-slate-900 font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Registration -->
+                <div class="glass-panel rounded-3xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <iconify-icon icon="lucide:car" class="text-xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">Vehicle Access</h4>
+                                <p class="text-xs text-slate-400">Register vehicle details</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="vehicle-toggle" class="sr-only peer" onchange="toggleVehicle()">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div id="vehicle-fields" class="hidden space-y-3 pt-2 animate-fade-in">
+                        <div class="ios-input group flex items-center bg-slate-50/50 rounded-2xl border border-slate-100 px-4 h-12 transition-all">
+                            <input type="text" placeholder="License Plate" class="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-300 text-sm font-bold">
+                        </div>
+                        <div class="ios-input group flex items-center bg-slate-50/50 rounded-2xl border border-slate-100 px-4 h-12 transition-all">
+                            <input type="text" placeholder="Make & Model (e.g. Tesla Model 3)" class="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-300 text-sm font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HMAC/Security Preview (Mock) -->
+                <div class="p-6 bg-[#1E293B] rounded-[32px] text-white shadow-xl shadow-slate-900/10">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <iconify-icon icon="lucide:shield-check" class="text-teal-400 text-2xl"></iconify-icon>
+                            <span class="text-sm font-bold tracking-tight">Secure LuminaPass™</span>
+                        </div>
+                        <div class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center py-4 bg-white rounded-2xl mb-4">
+                        <iconify-icon icon="lucide:qr-code" class="text-8xl text-slate-900 opacity-20"></iconify-icon>
+                        <p class="text-[10px] text-slate-400 font-mono mt-2 uppercase">Preview available on save</p>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Security Signature (HMAC)</span>
+                        <code class="text-[11px] font-mono text-teal-100/60 break-all bg-white/5 p-2 rounded-lg">sha256:7f2e9a1b0c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9</code>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Action Footer (Dynamic) -->
+        <div class="fixed bottom-[100px] inset-x-0 px-6 z-30">
+            <button class="w-full h-16 bg-[#1E293B] hover:bg-[#0F172A] active:scale-[0.98] transition-all rounded-2xl text-white font-bold text-lg shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3">
+                <span>Generate Invitation</span>
+                <iconify-icon icon="lucide:arrow-right" class="text-xl"></iconify-icon>
+            </button>
+        </div>
+
+        <!-- Persistent Bottom Navigation -->
+        <nav style="view-transition-name: main-nav" class="fixed bottom-0 inset-x-0 h-[90px] bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 pb-[34px] flex items-center justify-between z-40">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Home</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Visitors</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-payments" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Payments</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Social</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:user-circle" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Profile</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        function selectType(type) {
+            // Reset all buttons
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600/20', 'bg-blue-50/10');
+                btn.classList.add('border-slate-100');
+                btn.querySelector('iconify-icon').classList.replace('text-blue-600', 'text-slate-400');
+                btn.querySelector('span').classList.replace('text-slate-700', 'text-slate-500');
+            });
+
+            // Select new
+            const activeBtn = document.getElementById('type-' + type);
+            activeBtn.classList.remove('border-slate-100');
+            activeBtn.classList.add('border-blue-600/20', 'bg-blue-50/10');
+            activeBtn.querySelector('iconify-icon').classList.replace('text-slate-400', 'text-blue-600');
+            activeBtn.querySelector('span').classList.replace('text-slate-500', 'text-slate-700');
+
+            // Show/hide recurring schedule
+            const schedule = document.getElementById('schedule-section');
+            if (type === 'recurring') {
+                schedule.classList.remove('hidden');
+            } else {
+                schedule.classList.add('hidden');
+            }
+        }
+
+        function toggleVehicle() {
+            const fields = document.getElementById('vehicle-fields');
+            const toggle = document.getElementById('vehicle-toggle');
+            if (toggle.checked) {
+                fields.classList.remove('hidden');
+            } else {
+                fields.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

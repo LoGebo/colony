@@ -15,29 +15,30 @@ export interface ParkingSpotRow {
   spot_number: string;
   spot_type: string;
   status: string;
-  floor_level: string | null;
-  zone: string | null;
+  level: string | null;
+  section: string | null;
   is_covered: boolean;
-  is_handicap: boolean;
-  monthly_rate: number | null;
+  is_electric_vehicle: boolean;
+  monthly_fee: number | null;
   parking_assignments: {
     id: string;
     unit_id: string;
     assignment_type: string;
-    start_date: string;
-    end_date: string | null;
+    assigned_from: string;
+    assigned_until: string | null;
     units: { unit_number: string } | null;
   }[];
 }
 
 export interface ParkingReservationRow {
   id: string;
-  spot_id: string;
+  parking_spot_id: string;
   visitor_name: string;
-  vehicle_plate: string;
+  visitor_vehicle_plates: string | null;
   status: string;
-  reserved_from: string;
-  reserved_until: string;
+  reservation_date: string;
+  start_time: string | null;
+  end_time: string | null;
   checked_in_at: string | null;
   checked_out_at: string | null;
   parking_spots: { spot_number: string } | null;
@@ -47,23 +48,22 @@ export interface ParkingViolationRow {
   id: string;
   violation_type: string;
   description: string | null;
-  spot_id: string | null;
-  vehicle_plate: string | null;
+  parking_spot_id: string | null;
+  vehicle_plates: string | null;
   reported_by: string | null;
   status: string;
-  fine_amount: number | null;
-  reported_at: string;
+  observed_at: string;
   parking_spots: { spot_number: string } | null;
 }
 
 export interface CreateParkingSpotInput {
   spot_number: string;
   spot_type: string;
-  floor_level?: string;
-  zone?: string;
+  level?: string;
+  section?: string;
   is_covered?: boolean;
-  is_handicap?: boolean;
-  monthly_rate?: number;
+  is_electric_vehicle?: boolean;
+  monthly_fee?: number;
 }
 
 export interface UpdateParkingSpotInput {
@@ -71,25 +71,25 @@ export interface UpdateParkingSpotInput {
   spot_number?: string;
   spot_type?: string;
   status?: string;
-  floor_level?: string;
-  zone?: string;
+  level?: string;
+  section?: string;
   is_covered?: boolean;
-  is_handicap?: boolean;
-  monthly_rate?: number;
+  is_electric_vehicle?: boolean;
+  monthly_fee?: number;
 }
 
 export interface AssignParkingSpotInput {
   parking_spot_id: string;
   unit_id: string;
   assignment_type: string;
-  start_date: string;
-  end_date?: string;
+  assigned_from: string;
+  assigned_until?: string;
 }
 
 export interface UpdateParkingViolationInput {
   id: string;
   status?: string;
-  fine_amount?: number;
+  resolution_notes?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -112,7 +112,7 @@ export function useParkingSpots(
       let query = supabase
         .from('parking_spots')
         .select(
-          'id, spot_number, spot_type, status, floor_level, zone, is_covered, is_handicap, monthly_rate, parking_assignments(id, unit_id, assignment_type, start_date, end_date, units(unit_number))'
+          'id, spot_number, spot_type, status, level, section, is_covered, is_electric_vehicle, monthly_fee, parking_assignments(id, unit_id, assignment_type, assigned_from, assigned_until, units(unit_number))'
         )
         .eq('community_id', communityId!)
         .order('spot_number', { ascending: true });
@@ -145,10 +145,10 @@ export function useParkingReservations() {
       const { data, error } = await supabase
         .from('parking_reservations')
         .select(
-          'id, spot_id, visitor_name, vehicle_plate, status, reserved_from, reserved_until, checked_in_at, checked_out_at, parking_spots(spot_number)'
+          'id, parking_spot_id, visitor_name, visitor_vehicle_plates, status, reservation_date, start_time, end_time, checked_in_at, checked_out_at, parking_spots(spot_number)'
         )
         .eq('community_id', communityId!)
-        .order('reserved_from', { ascending: false });
+        .order('reservation_date', { ascending: false });
 
       if (error) throw error;
       return (data ?? []) as unknown as ParkingReservationRow[];
@@ -170,10 +170,10 @@ export function useParkingViolations(statusFilter?: string) {
       let query = supabase
         .from('parking_violations')
         .select(
-          'id, violation_type, description, spot_id, vehicle_plate, reported_by, status, fine_amount, reported_at, parking_spots(spot_number)'
+          'id, violation_type, description, parking_spot_id, vehicle_plates, reported_by, status, observed_at, parking_spots(spot_number)'
         )
         .eq('community_id', communityId!)
-        .order('reported_at', { ascending: false });
+        .order('observed_at', { ascending: false });
 
       if (statusFilter) {
         query = query.eq('status', statusFilter as never);
@@ -207,11 +207,11 @@ export function useCreateParkingSpot() {
           community_id: communityId!,
           spot_number: input.spot_number,
           spot_type: input.spot_type,
-          floor_level: input.floor_level ?? null,
-          zone: input.zone ?? null,
+          level: input.level ?? null,
+          section: input.section ?? null,
           is_covered: input.is_covered ?? false,
-          is_handicap: input.is_handicap ?? false,
-          monthly_rate: input.monthly_rate ?? null,
+          is_electric_vehicle: input.is_electric_vehicle ?? false,
+          monthly_fee: input.monthly_fee ?? null,
           status: 'available',
         } as never)
         .select()
@@ -278,8 +278,8 @@ export function useAssignParkingSpot() {
           unit_id: input.unit_id,
           community_id: communityId!,
           assignment_type: input.assignment_type,
-          start_date: input.start_date,
-          end_date: input.end_date ?? null,
+          assigned_from: input.assigned_from,
+          assigned_until: input.assigned_until ?? null,
         } as never);
 
       if (assignError) throw assignError;

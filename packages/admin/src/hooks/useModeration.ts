@@ -15,7 +15,7 @@ export interface ModerationQueueItem {
   item_type: string;
   item_id: string;
   priority: number;
-  status: string;
+  resolution: string | null;
   queued_at: string;
   assigned_to: string | null;
   assigned_at: string | null;
@@ -44,7 +44,7 @@ export function useModerationQueue() {
       const { data, error } = await supabase
         .from('moderation_queue')
         .select(
-          'id, item_type, item_id, priority, status, queued_at, assigned_to, assigned_at'
+          'id, item_type, item_id, priority, resolution, queued_at, assigned_to, assigned_at'
         )
         .eq('community_id', communityId!)
         .is('resolved_at', null)
@@ -123,12 +123,12 @@ export function useModerationStats() {
 
       if (pendingError) throw pendingError;
 
-      // In review (status = 'in_review')
+      // In review (assigned_to IS NOT NULL and not yet resolved)
       const { count: reviewCount, error: reviewError } = await supabase
         .from('moderation_queue')
         .select('*', { count: 'exact', head: true })
         .eq('community_id', communityId!)
-        .eq('status', 'in_review' as never)
+        .not('assigned_to', 'is', null)
         .is('resolved_at', null);
 
       if (reviewError) throw reviewError;

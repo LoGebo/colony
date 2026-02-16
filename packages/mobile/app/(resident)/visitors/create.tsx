@@ -241,12 +241,21 @@ export default function CreateInvitationScreen() {
         unit_id: unitId ?? undefined,
       });
 
-      Alert.alert('Success', 'Invitation created successfully.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      if (Platform.OS === 'web') {
+        window.alert('Invitation created successfully.');
+        router.back();
+      } else {
+        Alert.alert('Success', 'Invitation created successfully.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create invitation.';
-      Alert.alert('Error', message);
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Error', message);
+      }
     }
   };
 
@@ -598,6 +607,80 @@ export default function CreateInvitationScreen() {
           </View>
         </Modal>
       )}
+
+      {/* ── Web Picker Fallback ── */}
+      {Platform.OS === 'web' && activePickerField != null && (
+        <Modal
+          visible={true}
+          transparent
+          animationType="fade"
+          onRequestClose={closePicker}
+        >
+          <View style={styles.iosModalBackdrop}>
+            <TouchableOpacity
+              style={styles.iosModalBackdropTouchable}
+              activeOpacity={1}
+              onPress={closePicker}
+            />
+            <View style={styles.webPickerContainer}>
+              <View style={styles.iosPickerHeader}>
+                <Text style={styles.webPickerTitle}>
+                  {getPickerMode(activePickerField) === 'date' ? 'Select Date' : 'Select Time'}
+                </Text>
+                <TouchableOpacity onPress={closePicker}>
+                  <Text style={styles.iosPickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.webPickerBody}>
+                {getPickerMode(activePickerField) === 'date' ? (
+                  <TextInput
+                    style={styles.webDateInput}
+                    value={(() => {
+                      const d = getPickerValue(activePickerField);
+                      const y = d.getFullYear();
+                      const m = String(d.getMonth() + 1).padStart(2, '0');
+                      const day = String(d.getDate()).padStart(2, '0');
+                      return `${y}-${m}-${day}`;
+                    })()}
+                    onChangeText={(text) => {
+                      const parts = text.split('-');
+                      if (parts.length === 3) {
+                        const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                        if (!isNaN(date.getTime())) {
+                          applyPickerChange(activePickerField!, date);
+                        }
+                      }
+                    }}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textDisabled}
+                    keyboardType="default"
+                  />
+                ) : (
+                  <TextInput
+                    style={styles.webDateInput}
+                    value={formatTimeDisplay(getPickerValue(activePickerField))}
+                    onChangeText={(text) => {
+                      const parts = text.split(':');
+                      if (parts.length === 2) {
+                        const h = Number(parts[0]);
+                        const m = Number(parts[1]);
+                        if (!isNaN(h) && !isNaN(m) && h >= 0 && h < 24 && m >= 0 && m < 60) {
+                          const date = new Date(getPickerValue(activePickerField!));
+                          date.setHours(h, m, 0, 0);
+                          applyPickerChange(activePickerField!, date);
+                        }
+                      }
+                    }}
+                    placeholder="HH:MM"
+                    placeholderTextColor={colors.textDisabled}
+                    keyboardType="default"
+                  />
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -937,6 +1020,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: spacing.pagePaddingX,
+    zIndex: 20,
   },
   submitButton: {
     height: 64,
@@ -987,5 +1071,34 @@ const styles = StyleSheet.create({
   },
   iosPicker: {
     height: 216,
+  },
+  // Web Picker Fallback
+  webPickerContainer: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    paddingBottom: spacing['3xl'],
+  },
+  webPickerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  webPickerBody: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingVertical: spacing['3xl'],
+    alignItems: 'center',
+  },
+  webDateInput: {
+    width: '100%',
+    height: 56,
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.xl,
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
 });

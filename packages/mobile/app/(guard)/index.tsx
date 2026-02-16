@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import { usePendingPackages } from '@/hooks/usePackages';
 import { formatTime, formatRelative } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 export default function GuardDashboard() {
@@ -35,6 +37,8 @@ export default function GuardDashboard() {
   const acknowledgeHandover = useAcknowledgeHandover();
   const triggerEmergency = useTriggerEmergency();
   const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const visitorsYRef = useRef(0);
 
   const guardName = user?.user_metadata?.first_name ?? 'Guard';
   const gateName = accessPoint?.name ?? 'Guard Station';
@@ -57,29 +61,38 @@ export default function GuardDashboard() {
   }, [refetchLogs, refetchVisitors, refetchHandovers]);
 
   const handlePanicPress = useCallback(() => {
-    Alert.alert(
-      'Emergency Alert',
-      'This will trigger an emergency alert for the entire community. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'TRIGGER EMERGENCY',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Select Emergency Type',
-              '',
-              [
-                { text: 'Security Threat', onPress: () => triggerEmergency.mutate({ emergency_type: 'security_threat' }) },
-                { text: 'Fire', onPress: () => triggerEmergency.mutate({ emergency_type: 'fire' }) },
-                { text: 'Medical', onPress: () => triggerEmergency.mutate({ emergency_type: 'medical' }) },
-                { text: 'Cancel', style: 'cancel' },
-              ],
-            );
+    if (Platform.OS === 'web') {
+      if (window.confirm('This will trigger an emergency alert for the entire community. Are you sure?')) {
+        const type = window.prompt('Enter emergency type: security_threat, fire, or medical', 'security_threat');
+        if (type && ['security_threat', 'fire', 'medical'].includes(type)) {
+          triggerEmergency.mutate({ emergency_type: type });
+        }
+      }
+    } else {
+      Alert.alert(
+        'Emergency Alert',
+        'This will trigger an emergency alert for the entire community. Are you sure?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'TRIGGER EMERGENCY',
+            style: 'destructive',
+            onPress: () => {
+              Alert.alert(
+                'Select Emergency Type',
+                '',
+                [
+                  { text: 'Security Threat', onPress: () => triggerEmergency.mutate({ emergency_type: 'security_threat' }) },
+                  { text: 'Fire', onPress: () => triggerEmergency.mutate({ emergency_type: 'fire' }) },
+                  { text: 'Medical', onPress: () => triggerEmergency.mutate({ emergency_type: 'medical' }) },
+                  { text: 'Cancel', style: 'cancel' },
+                ],
+              );
+            },
           },
-        },
-      ],
-    );
+        ],
+      );
+    }
   }, [triggerEmergency]);
 
   const handleAcknowledge = useCallback(
@@ -94,6 +107,7 @@ export default function GuardDashboard() {
       <AmbientBackground />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -112,12 +126,15 @@ export default function GuardDashboard() {
               <View style={styles.activeDot} />
               <Text style={styles.activeText}>ACTIVE</Text>
             </View>
-            <TouchableOpacity
-              style={styles.notificationButton}
-              onPress={() => router.push('/(guard)/notifications')}
-            >
-              <Ionicons name="notifications-outline" size={22} color={colors.textBody} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <NotificationBell href="/(guard)/notifications" />
+              <TouchableOpacity
+                style={styles.notificationButton}
+                onPress={() => router.push('/(guard)/settings')}
+              >
+                <Ionicons name="settings-outline" size={22} color={colors.textBody} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -230,7 +247,10 @@ export default function GuardDashboard() {
               <Text style={styles.quickGridSub}>NO CODE VISITS</Text>
             </GlassCard>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickGridItem}>
+          <TouchableOpacity
+            style={styles.quickGridItem}
+            onPress={() => scrollRef.current?.scrollTo({ y: visitorsYRef.current, animated: true })}
+          >
             <GlassCard style={styles.quickGridCard}>
               <View style={[styles.quickGridIcon, { backgroundColor: colors.primaryLight }]}>
                 <Ionicons name="list-outline" size={24} color={colors.primary} />
@@ -244,11 +264,19 @@ export default function GuardDashboard() {
         </View>
 
         {/* Expected Visitors */}
-        {(expectedVisitors?.length ?? 0) > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EXPECTED VISITORS</Text>
+        <View
+          style={styles.section}
+          onLayout={(e) => { visitorsYRef.current = e.nativeEvent.layout.y; }}
+        >
+          <Text style={styles.sectionTitle}>EXPECTED VISITORS</Text>
+          {(expectedVisitors?.length ?? 0) === 0 ? (
+            <GlassCard style={styles.emptyCard}>
+              <Ionicons name="people-outline" size={32} color={colors.textDisabled} />
+              <Text style={styles.emptyText}>No expected visitors right now</Text>
+            </GlassCard>
+          ) : (
             <View style={styles.visitorList}>
-              {expectedVisitors?.slice(0, 5).map((visitor) => {
+              {expectedVisitors?.map((visitor) => {
                 const residentName = visitor.residents
                   ? `${(visitor.residents as { first_name: string }).first_name} ${(visitor.residents as { paternal_surname: string }).paternal_surname}`
                   : '';
@@ -271,8 +299,8 @@ export default function GuardDashboard() {
                 );
               })}
             </View>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Recent Activity / Security Logs */}
         <View style={styles.section}>
@@ -393,6 +421,10 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     alignItems: 'flex-end',
+    gap: spacing.md,
+  },
+  headerButtons: {
+    flexDirection: 'row',
     gap: spacing.md,
   },
   activeBadge: {

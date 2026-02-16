@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Tickets - Lumina</title>
+    <meta name="view-transition" content="same-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #F1F5F9;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* iOS style glass and inputs */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .ios-input:focus-within {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .active-tab-nav {
+            color: #2563EB !important;
+        }
+
+        /* Scrollbar hiding */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body>
+    <div class="w-full h-screen flex flex-col relative overflow-hidden">
+        
+        <!-- Background Ambiance (Persistent) -->
+        <div class="fixed inset-0 overflow-hidden pointer-events-none z-0" style="view-transition-name: bg-ambient">
+            <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+            <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+            <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+        </div>
+
+        <!-- Header Section -->
+        <header class="shrink-0 pt-14 px-6 relative z-20">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">Maintenance</h1>
+                    <p class="text-sm font-medium text-slate-500">Community service requests</p>
+                </div>
+                <button onclick="document.getElementById('ticket-modal').classList.remove('hidden')" class="w-10 h-10 rounded-full bg-[#1E293B] flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform">
+                    <iconify-icon icon="lucide:plus" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto px-6 pt-6 pb-24 relative z-10" style="view-transition-name: main-content">
+            
+            <!-- Category Quick Filters -->
+            <div class="flex gap-3 overflow-x-auto pb-4 mb-2">
+                <button class="px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-bold whitespace-nowrap">All Tickets</button>
+                <button class="px-4 py-2 rounded-full bg-white text-slate-500 border border-slate-200 text-xs font-bold whitespace-nowrap">Plumbing</button>
+                <button class="px-4 py-2 rounded-full bg-white text-slate-500 border border-slate-200 text-xs font-bold whitespace-nowrap">Electrical</button>
+                <button class="px-4 py-2 rounded-full bg-white text-slate-500 border border-slate-200 text-xs font-bold whitespace-nowrap">HVAC</button>
+            </div>
+
+            <!-- Ticket List -->
+            <div class="space-y-4">
+                <!-- Ticket 1: In Progress -->
+                <div class="glass-panel rounded-2xl p-4 shadow-sm relative">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <iconify-icon icon="lucide:droplet"></iconify-icon>
+                            </div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Plumbing • #MT-1024</span>
+                        </div>
+                        <span class="px-2 py-1 bg-amber-100 text-amber-600 text-[10px] font-bold rounded-md uppercase">In Progress</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 mb-1">Leak in Master Bathroom</h3>
+                    <p class="text-sm text-slate-500 leading-snug line-clamp-2 mb-4">Water is dripping from the ceiling near the shower vent since this morning.</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/100?u=1" class="w-7 h-7 rounded-full border-2 border-white object-cover">
+                            <div class="w-7 h-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">+1</div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1 text-xs text-slate-400">
+                                <iconify-icon icon="lucide:message-square"></iconify-icon> 3
+                            </span>
+                            <span class="flex items-center gap-1 text-xs text-rose-500 font-bold">
+                                <iconify-icon icon="lucide:alert-circle"></iconify-icon> High
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket 2: Pending Approval -->
+                <div class="glass-panel rounded-2xl p-4 shadow-sm opacity-90">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+                                <iconify-icon icon="lucide:zap"></iconify-icon>
+                            </div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Electrical • #MT-0988</span>
+                        </div>
+                        <span class="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-md uppercase">Pending</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 mb-1">Gym A/C malfunctioning</h3>
+                    <p class="text-sm text-slate-500 leading-snug line-clamp-2 mb-4">Unit is making a loud clicking noise and not cooling correctly.</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-medium text-slate-400 italic">Reported 2 hours ago</span>
+                        <span class="flex items-center gap-1 text-xs text-teal-600 font-bold">
+                            <iconify-icon icon="lucide:info"></iconify-icon> Medium
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ticket 3: Completed -->
+                <div class="bg-white/50 border border-slate-200/50 rounded-2xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center">
+                                <iconify-icon icon="lucide:layout"></iconify-icon>
+                            </div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-300">Common Area • #MT-0955</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-100 text-green-600 text-[10px] font-bold rounded-md uppercase">Resolved</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-400 mb-1 line-through">Broken light in Hallway B</h3>
+                    <div class="flex items-center gap-2 text-[10px] font-medium text-slate-400">
+                        <iconify-icon icon="lucide:check-circle"></iconify-icon> Fixed by Maintenance Crew on Oct 12
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placeholder Empty State (Hidden) -->
+            <div class="hidden flex flex-col items-center justify-center py-20 text-center">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                    <iconify-icon icon="lucide:clipboard-list" class="text-4xl"></iconify-icon>
+                </div>
+                <h4 class="text-lg font-bold text-slate-900">No Active Reports</h4>
+                <p class="text-sm text-slate-500 px-10">Everything looks great! If something needs fixing, tap the plus button.</p>
+            </div>
+        </main>
+
+        <!-- Create Ticket Modal (Hidden by default) -->
+        <div id="ticket-modal" class="fixed inset-0 z-50 hidden">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="document.getElementById('ticket-modal').classList.add('hidden')"></div>
+            <div class="absolute bottom-0 inset-x-0 glass-panel rounded-t-[32px] p-8 animate-slide-up">
+                <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-6">New Report</h2>
+                
+                <form class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                        <div class="relative">
+                            <select class="w-full h-14 bg-white border border-slate-200 rounded-2xl px-4 appearance-none text-slate-700 font-medium focus:ring-4 focus:ring-blue-500/10 outline-none">
+                                <option>Plumbing</option>
+                                <option>Electrical</option>
+                                <option>HVAC</option>
+                                <option>Common Area</option>
+                                <option>Other</option>
+                            </select>
+                            <iconify-icon icon="lucide:chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></iconify-icon>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Priority</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" class="py-3 rounded-xl border border-slate-100 bg-white text-[10px] font-black uppercase text-slate-400 hover:bg-slate-50">Low</button>
+                            <button type="button" class="py-3 rounded-xl border-2 border-blue-600 bg-blue-50 text-[10px] font-black uppercase text-blue-600">Med</button>
+                            <button type="button" class="py-3 rounded-xl border border-slate-100 bg-white text-[10px] font-black uppercase text-slate-400 hover:bg-slate-50">High</button>
+                            <button type="button" class="py-3 rounded-xl border border-slate-100 bg-white text-[10px] font-black uppercase text-slate-400 hover:bg-slate-50">Urgent</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                        <textarea placeholder="What needs attention?" class="w-full h-32 bg-white border border-slate-200 rounded-2xl p-4 text-slate-700 font-medium focus:ring-4 focus:ring-blue-500/10 outline-none resize-none"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <button type="button" class="h-14 bg-slate-100 rounded-2xl flex items-center justify-center gap-2 text-slate-600 font-bold active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:camera" class="text-xl"></iconify-icon>
+                            <span>Add Photo</span>
+                        </button>
+                        <button type="submit" class="h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all">
+                            Submit Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation (Persistent) -->
+        <footer class="fixed bottom-0 inset-x-0 h-[84px] glass-panel z-40 px-6 pb-[34px] flex items-center justify-between border-t border-slate-200/30" style="view-transition-name: main-nav">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:layout-grid" class="text-2xl"></iconify-icon>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+            </a>
+            <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-payments" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+            </a>
+            <a href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" id="nav-maintenance" class="flex flex-col items-center gap-1 active-tab-nav">
+                <iconify-icon icon="lucide:wrench" class="text-2xl"></iconify-icon>
+            </a>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400">
+                <div class="w-6 h-6 rounded-full border border-slate-300 overflow-hidden">
+                    <img src="https://i.pravatar.cc/100?u=a042581f4e29026704d" class="w-full h-full object-cover">
+                </div>
+            </a>
+        </footer>
+
+    </div>
+
+    <style>
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</body>
+</html>

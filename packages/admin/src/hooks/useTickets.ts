@@ -50,7 +50,7 @@ export interface TicketDetail extends TicketRow {
     assigned_to: string;
     assigned_by: string | null;
     notes: string | null;
-    created_at: string;
+    assigned_at: string;
   }[];
   ticket_comments: {
     id: string;
@@ -136,7 +136,7 @@ export function useTicket(id: string) {
       const { data, error } = await supabase
         .from('tickets')
         .select(
-          `${TICKET_SELECT}, ticket_assignments(id, assigned_to, assigned_by, notes, created_at), ticket_comments(id, content, author_id, author_role, is_system, is_internal, photo_urls, created_at)`
+          `${TICKET_SELECT}, ticket_assignments(id, assigned_to, assigned_by, notes, assigned_at), ticket_comments(id, content, author_id, author_role, is_system, is_internal, photo_urls, created_at)`
         )
         .eq('id', id)
         .eq('community_id', communityId!)

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,27 +43,37 @@ export default function PatrolDetailScreen() {
     return new Set(data.checkpoint_logs.map((cl: any) => cl.checkpoint_id));
   }, [data]);
 
-  const handleAbandon = useCallback(() => {
+  const handleAbandon = useCallback(async () => {
     if (!id) return;
-    Alert.alert(
-      'Abandon Patrol',
-      'Are you sure you want to abandon this patrol? Progress will be lost.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Abandon',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await abandonPatrol.mutateAsync(id);
-              router.back();
-            } catch (error: any) {
-              Alert.alert('Error', error?.message ?? 'Failed to abandon patrol.');
-            }
-          },
-        },
-      ],
-    );
+
+    const doAbandon = async () => {
+      try {
+        await abandonPatrol.mutateAsync(id);
+        router.back();
+      } catch (error: any) {
+        const msg = error?.message ?? 'Failed to abandon patrol.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Error', msg);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to abandon this patrol? Progress will be lost.')) {
+        await doAbandon();
+      }
+    } else {
+      Alert.alert(
+        'Abandon Patrol',
+        'Are you sure you want to abandon this patrol? Progress will be lost.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Abandon', style: 'destructive', onPress: doAbandon },
+        ],
+      );
+    }
   }, [id, abandonPatrol, router]);
 
   if (isLoading || !data) {

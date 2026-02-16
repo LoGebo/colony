@@ -59,6 +59,17 @@ const DOC_STATUS_VARIANTS: Record<string, 'warning' | 'success' | 'danger' | 'ne
   rejected: 'neutral',
 };
 
+const DOC_TYPE_LABELS: Record<string, string> = {
+  insurance_liability: 'Seguro de responsabilidad civil',
+  insurance_workers_comp: 'Seguro de accidentes laborales',
+  business_license: 'Licencia de negocio',
+  tax_registration: 'Registro fiscal (RFC)',
+  certification: 'Certificacion',
+  contract: 'Contrato',
+  background_check: 'Antecedentes penales',
+  other: 'Otro',
+};
+
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 
 const TABS = ['Informacion', 'Documentos', 'Personal', 'Horarios'] as const;
@@ -80,8 +91,8 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
     contact_name: (provider.contact_name as string) ?? '',
     contact_email: (provider.contact_email as string) ?? '',
     contact_phone: (provider.contact_phone as string) ?? '',
-    specialty: (provider.specialty as string) ?? '',
-    tax_id: (provider.tax_id as string) ?? '',
+    specialties: ((provider.specialties as string[]) ?? []).join(', '),
+    rfc: (provider.rfc as string) ?? '',
     address: (provider.address as string) ?? '',
     notes: (provider.notes as string) ?? '',
   });
@@ -93,9 +104,9 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
         company_name: form.company_name.trim(),
         contact_name: form.contact_name.trim() || null,
         contact_email: form.contact_email.trim() || null,
-        contact_phone: form.contact_phone.trim() || null,
-        specialty: form.specialty.trim() || null,
-        tax_id: form.tax_id.trim() || null,
+        contact_phone: form.contact_phone.replace(/[\s\-()]/g, '').trim() || null,
+        specialties: form.specialties.trim() ? form.specialties.split(',').map(s => s.trim()) : null,
+        rfc: form.rfc.trim() || null,
         address: form.address.trim() || null,
         notes: form.notes.trim() || null,
       },
@@ -192,8 +203,8 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
               <label className="mb-1 block text-sm font-medium text-gray-700">Especialidad</label>
               <input
                 type="text"
-                value={form.specialty}
-                onChange={(e) => setForm({ ...form, specialty: e.target.value })}
+                value={form.specialties}
+                onChange={(e) => setForm({ ...form, specialties: e.target.value })}
                 className={inputClass}
               />
             </div>
@@ -201,8 +212,8 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
               <label className="mb-1 block text-sm font-medium text-gray-700">RFC</label>
               <input
                 type="text"
-                value={form.tax_id}
-                onChange={(e) => setForm({ ...form, tax_id: e.target.value })}
+                value={form.rfc}
+                onChange={(e) => setForm({ ...form, rfc: e.target.value })}
                 className={inputClass}
               />
             </div>
@@ -250,11 +261,11 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">Especialidad</dt>
-              <dd className="mt-1 text-sm text-gray-900">{(provider.specialty as string) ?? '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900">{((provider.specialties as string[]) ?? []).join(', ') || '-'}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">RFC</dt>
-              <dd className="mt-1 text-sm text-gray-900">{(provider.tax_id as string) ?? '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900">{(provider.rfc as string) ?? '-'}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-sm font-medium text-gray-500">Direccion</dt>
@@ -322,10 +333,9 @@ function DocumentsTab({ providerId }: { providerId: string }) {
         provider_id: providerId,
         document_type: form.document_type.trim(),
         document_number: form.document_number.trim() || undefined,
-        issued_by: form.issued_by.trim() || undefined,
-        issue_date: form.issue_date || undefined,
-        expiry_date: form.expiry_date || undefined,
-        notes: form.notes.trim() || undefined,
+        issuing_authority: form.issued_by.trim() || undefined,
+        issued_at: form.issue_date || undefined,
+        expires_at: form.expiry_date || undefined,
       },
       {
         onSuccess: () => {
@@ -349,7 +359,7 @@ function DocumentsTab({ providerId }: { providerId: string }) {
   }
 
   const isExpired = (d: ProviderDocumentRow) =>
-    d.expiry_date && new Date(d.expiry_date) < new Date();
+    d.expires_at && new Date(d.expires_at) < new Date();
 
   return (
     <div className="space-y-4">
@@ -368,14 +378,17 @@ function DocumentsTab({ providerId }: { providerId: string }) {
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Tipo <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
                   value={form.document_type}
                   onChange={(e) => setForm({ ...form, document_type: e.target.value })}
                   className={inputClass}
-                  placeholder="Poliza de seguro, licencia, etc."
-                />
+                >
+                  <option value="">Seleccionar...</option>
+                  {Object.entries(DOC_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Numero</label>
@@ -455,19 +468,19 @@ function DocumentsTab({ providerId }: { providerId: string }) {
               docs.map((doc) => (
                 <tr key={doc.id} className={isExpired(doc) ? 'bg-red-50' : 'hover:bg-gray-50'}>
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
-                    {doc.document_type}
+                    {DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
                     {doc.document_number ?? '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {doc.issued_by ?? '-'}
+                    {doc.issuing_authority ?? '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {doc.issue_date ? formatDate(doc.issue_date) : '-'}
+                    {doc.issued_at ? formatDate(doc.issued_at) : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {doc.expiry_date ? formatDate(doc.expiry_date) : '-'}
+                    {doc.expires_at ? formatDate(doc.expires_at) : '-'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <Badge variant={DOC_STATUS_VARIANTS[doc.status] ?? 'neutral'}>
@@ -513,28 +526,28 @@ function PersonnelTab({ providerId }: { providerId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     first_name: '',
-    last_name: '',
-    document_type: '',
-    document_number: '',
+    paternal_surname: '',
+    maternal_surname: '',
+    ine_number: '',
     phone: '',
   });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.first_name.trim() || !form.last_name.trim()) return;
+    if (!form.first_name.trim() || !form.paternal_surname.trim()) return;
     createPersonnel.mutate(
       {
         provider_id: providerId,
         first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        document_type: form.document_type.trim() || undefined,
-        document_number: form.document_number.trim() || undefined,
-        phone: form.phone.trim() || undefined,
+        paternal_surname: form.paternal_surname.trim(),
+        maternal_surname: form.maternal_surname.trim() || undefined,
+        ine_number: form.ine_number.trim() || undefined,
+        phone: form.phone.replace(/[\s\-()]/g, '').trim() || undefined,
       },
       {
         onSuccess: () => {
           setShowForm(false);
-          setForm({ first_name: '', last_name: '', document_type: '', document_number: '', phone: '' });
+          setForm({ first_name: '', paternal_surname: '', maternal_surname: '', ine_number: '', phone: '' });
         },
       }
     );
@@ -571,36 +584,31 @@ function PersonnelTab({ providerId }: { providerId: string }) {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Apellido <span className="text-red-500">*</span>
+                  Apellido Paterno <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  value={form.last_name}
-                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  value={form.paternal_surname}
+                  onChange={(e) => setForm({ ...form, paternal_surname: e.target.value })}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Tipo documento</label>
-                <select
-                  value={form.document_type}
-                  onChange={(e) => setForm({ ...form, document_type: e.target.value })}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="INE">INE</option>
-                  <option value="passport">Pasaporte</option>
-                  <option value="license">Licencia</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Numero documento</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Apellido Materno</label>
                 <input
                   type="text"
-                  value={form.document_number}
-                  onChange={(e) => setForm({ ...form, document_number: e.target.value })}
+                  value={form.maternal_surname}
+                  onChange={(e) => setForm({ ...form, maternal_surname: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">INE</label>
+                <input
+                  type="text"
+                  value={form.ine_number}
+                  onChange={(e) => setForm({ ...form, ine_number: e.target.value })}
                   className={inputClass}
                 />
               </div>
@@ -633,15 +641,15 @@ function PersonnelTab({ providerId }: { providerId: string }) {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                    {p.first_name.charAt(0)}{p.last_name.charAt(0)}
+                    {p.first_name.charAt(0)}{p.paternal_surname.charAt(0)}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      {p.first_name} {p.last_name}
+                      {p.first_name} {p.paternal_surname}{p.maternal_surname ? ` ${p.maternal_surname}` : ''}
                     </p>
-                    {p.document_type && (
+                    {p.ine_number && (
                       <p className="text-xs text-gray-500">
-                        {p.document_type}: {p.document_number ?? '-'}
+                        INE: {p.ine_number}
                       </p>
                     )}
                     {p.phone && (
@@ -649,24 +657,24 @@ function PersonnelTab({ providerId }: { providerId: string }) {
                     )}
                   </div>
                 </div>
-                <Badge variant={p.is_active ? 'success' : 'neutral'}>
-                  {p.is_active ? 'Activo' : 'Inactivo'}
+                <Badge variant={p.is_authorized ? 'success' : 'neutral'}>
+                  {p.is_authorized ? 'Autorizado' : 'No autorizado'}
                 </Badge>
               </div>
               <div className="mt-3">
                 <Button
-                  variant={p.is_active ? 'danger' : 'primary'}
+                  variant={p.is_authorized ? 'danger' : 'primary'}
                   size="sm"
                   onClick={() =>
                     toggleActive.mutate({
                       id: p.id,
                       provider_id: providerId,
-                      is_active: p.is_active,
+                      is_authorized: p.is_authorized,
                     })
                   }
                   isLoading={toggleActive.isPending}
                 >
-                  {p.is_active ? 'Desactivar' : 'Activar'}
+                  {p.is_authorized ? 'Desautorizar' : 'Autorizar'}
                 </Button>
               </div>
             </Card>
@@ -688,28 +696,40 @@ function SchedulesTab({ providerId }: { providerId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [form, setForm] = useState({
-    day_of_week: '1',
+    name: '',
+    allowed_days: [1, 2, 3, 4, 5] as number[],
     start_time: '08:00',
     end_time: '17:00',
-    effective_from: '',
+    effective_from: new Date().toISOString().split('T')[0],
     effective_until: '',
   });
 
+  const toggleDay = (day: number) => {
+    setForm((prev) => ({
+      ...prev,
+      allowed_days: prev.allowed_days.includes(day)
+        ? prev.allowed_days.filter((d) => d !== day)
+        : [...prev.allowed_days, day].sort(),
+    }));
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim() || form.allowed_days.length === 0) return;
     createSchedule.mutate(
       {
         provider_id: providerId,
-        day_of_week: parseInt(form.day_of_week),
+        name: form.name.trim(),
+        allowed_days: form.allowed_days,
         start_time: form.start_time,
         end_time: form.end_time,
-        effective_from: form.effective_from || undefined,
+        effective_from: form.effective_from,
         effective_until: form.effective_until || undefined,
       },
       {
         onSuccess: () => {
           setShowForm(false);
-          setForm({ day_of_week: '1', start_time: '08:00', end_time: '17:00', effective_from: '', effective_until: '' });
+          setForm({ name: '', allowed_days: [1, 2, 3, 4, 5], start_time: '08:00', end_time: '17:00', effective_from: new Date().toISOString().split('T')[0], effective_until: '' });
         },
       }
     );
@@ -738,18 +758,38 @@ function SchedulesTab({ providerId }: { providerId: string }) {
       {showForm && (
         <Card>
           <form onSubmit={handleCreate} className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Dia</label>
-                <select
-                  value={form.day_of_week}
-                  onChange={(e) => setForm({ ...form, day_of_week: e.target.value })}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="sm:col-span-2 lg:col-span-3">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className={inputClass}
-                >
+                  placeholder="Ej: Horario semanal de mantenimiento"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Dias permitidos</label>
+                <div className="mt-1 flex flex-wrap gap-2">
                   {DAY_NAMES.map((name, i) => (
-                    <option key={i} value={i}>{name}</option>
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleDay(i)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                        form.allowed_days.includes(i)
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {name.slice(0, 3)}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Hora inicio</label>
@@ -770,9 +810,12 @@ function SchedulesTab({ providerId }: { providerId: string }) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Desde</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Desde <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
+                  required
                   value={form.effective_from}
                   onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
                   className={inputClass}
@@ -800,9 +843,9 @@ function SchedulesTab({ providerId }: { providerId: string }) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Dia</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Hora inicio</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Hora fin</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Nombre</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Dias</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Horario</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Periodo</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Estado</th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Acciones</th>
@@ -819,16 +862,22 @@ function SchedulesTab({ providerId }: { providerId: string }) {
               schedules.map((s: ProviderScheduleRow) => (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900">
-                    {DAY_NAMES[s.day_of_week]}
+                    {s.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    <div className="flex flex-wrap gap-1">
+                      {s.allowed_days.map((d) => (
+                        <span key={d} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
+                          {DAY_NAMES[d]?.slice(0, 3) ?? d}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {s.start_time}
+                    {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {s.end_time}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
-                    {s.effective_from ? formatDate(s.effective_from) : '-'}
+                    {formatDate(s.effective_from)}
                     {s.effective_until ? ` - ${formatDate(s.effective_until)}` : ''}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">

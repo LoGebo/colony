@@ -1,7 +1,8 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { StyleSheet, View, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/hooks/useAuth';
 import { colors, fonts, shadows } from '@/theme';
 
 type TabIconName =
@@ -19,6 +20,12 @@ function TabBarIcon({ name, color }: { name: TabIconName; color: string }) {
 }
 
 export default function GuardLayout() {
+  const { session, isLoading } = useAuth();
+
+  if (!isLoading && !session) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -78,6 +85,7 @@ export default function GuardLayout() {
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="packages" options={{ href: null }} />
       <Tabs.Screen name="directory" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

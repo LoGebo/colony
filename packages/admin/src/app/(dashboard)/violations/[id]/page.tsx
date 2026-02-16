@@ -20,28 +20,38 @@ import { formatDate, formatCurrency } from '@/lib/formatters';
 const severityVariant: Record<string, 'info' | 'warning' | 'danger'> = {
   minor: 'info',
   moderate: 'warning',
-  serious: 'danger',
-  critical: 'danger',
+  major: 'danger',
+  severe: 'danger',
 };
 
 const severityLabel: Record<string, string> = {
   minor: 'Menor',
   moderate: 'Moderada',
-  serious: 'Grave',
-  critical: 'Critica',
+  major: 'Grave',
+  severe: 'Critica',
 };
 
 const statusVariant: Record<string, 'warning' | 'info' | 'success' | 'neutral'> = {
-  open: 'warning',
+  reported: 'warning',
   under_review: 'info',
-  resolved: 'success',
+  confirmed: 'info',
+  sanctioned: 'danger' as 'warning',
+  appealed: 'warning',
+  appeal_denied: 'neutral',
+  appeal_granted: 'success',
+  closed: 'success',
   dismissed: 'neutral',
 };
 
 const statusLabel: Record<string, string> = {
-  open: 'Abierta',
+  reported: 'Reportada',
   under_review: 'En revision',
-  resolved: 'Resuelta',
+  confirmed: 'Confirmada',
+  sanctioned: 'Sancionada',
+  appealed: 'Apelada',
+  appeal_denied: 'Apelacion denegada',
+  appeal_granted: 'Apelacion aprobada',
+  closed: 'Cerrada',
   dismissed: 'Desestimada',
 };
 
@@ -49,16 +59,18 @@ const sanctionTypeVariant: Record<string, 'info' | 'warning' | 'danger'> = {
   verbal_warning: 'info',
   written_warning: 'warning',
   fine: 'danger',
-  suspension: 'danger',
+  amenity_suspension: 'danger',
   access_restriction: 'danger',
+  legal_action: 'danger',
 };
 
 const sanctionTypeLabel: Record<string, string> = {
   verbal_warning: 'Advertencia verbal',
   written_warning: 'Advertencia escrita',
   fine: 'Multa',
-  suspension: 'Suspension',
+  amenity_suspension: 'Suspension de amenidad',
   access_restriction: 'Restriccion de acceso',
+  legal_action: 'Accion legal',
 };
 
 const appealStatusVariant: Record<string, 'warning' | 'success' | 'danger' | 'info'> = {
@@ -132,7 +144,7 @@ export default function ViolationDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {violation.status !== 'resolved' && violation.status !== 'dismissed' && (
+          {violation.status !== 'closed' && violation.status !== 'dismissed' && (
             <>
               <Button
                 variant="primary"
@@ -175,7 +187,7 @@ export default function ViolationDetailPage() {
             <p className="text-sm text-gray-500">Residente</p>
             <p className="font-medium">
               {violation.residents
-                ? `${violation.residents.first_name} ${violation.residents.last_name}`
+                ? `${violation.residents.first_name} ${violation.residents.paternal_surname}`
                 : '-'}
             </p>
           </div>
@@ -307,7 +319,7 @@ export default function ViolationDetailPage() {
                   </span>
                 </div>
                 <p className="text-sm text-gray-700">{sanction.description}</p>
-                {sanction.sanction_type === 'suspension' &&
+                {sanction.sanction_type === 'amenity_suspension' &&
                   sanction.suspension_start &&
                   sanction.suspension_end && (
                     <p className="mt-2 text-xs text-gray-500">
@@ -415,8 +427,9 @@ function SanctionForm({
           <option value="verbal_warning">Advertencia verbal</option>
           <option value="written_warning">Advertencia escrita</option>
           <option value="fine">Multa</option>
-          <option value="suspension">Suspension</option>
+          <option value="amenity_suspension">Suspension de amenidad</option>
           <option value="access_restriction">Restriccion de acceso</option>
+          <option value="legal_action">Accion legal</option>
         </select>
       </div>
 
@@ -453,7 +466,7 @@ function SanctionForm({
         </div>
       )}
 
-      {formData.sanction_type === 'suspension' && (
+      {formData.sanction_type === 'amenity_suspension' && (
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -638,7 +651,7 @@ function ResolveModal({
   const handleResolve = async () => {
     await updateMutation.mutateAsync({
       id: violationId,
-      status: 'resolved',
+      status: 'closed',
       resolution_notes: resolutionNotes || undefined,
     });
     onClose();

@@ -22,7 +22,6 @@ export interface DeviceRow {
   status: Database['public']['Enums']['device_status'];
   status_changed_at: string;
   current_assignment_id: string | null;
-  notes: string | null;
   created_at: string;
   // Joined
   access_device_types?: {
@@ -45,24 +44,26 @@ export interface DeviceTypeRow {
 
 export interface DeviceAssignmentRow {
   id: string;
-  device_id: string;
+  access_device_id: string;
   unit_id: string;
   resident_id: string | null;
   assigned_at: string;
   returned_at: string | null;
-  deposit_collected: number;
-  deposit_returned: number | null;
-  replacement_fee_charged: number | null;
-  notes: string | null;
+  deposit_collected: boolean;
+  deposit_amount: number | null;
+  deposit_returned_at: string | null;
+  replacement_fee_charged: boolean;
+  condition_notes: string | null;
   assigned_by: string | null;
   returned_to: string | null;
+  is_active: boolean;
   // Joined
   units?: {
     unit_number: string;
   };
   residents?: {
     first_name: string;
-    last_name: string;
+    paternal_surname: string;
   };
 }
 
@@ -151,8 +152,8 @@ export function useDeviceAssignments(deviceId: string) {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('access_device_assignments' as never)
-        .select('*, units(unit_number), residents(first_name, last_name)')
-        .eq('device_id', deviceId)
+        .select('*, units(unit_number), residents(first_name, paternal_surname)')
+        .eq('access_device_id', deviceId)
         .order('assigned_at', { ascending: false });
 
       if (error) throw error;
@@ -197,7 +198,6 @@ export interface CreateDeviceInput {
   batch_number?: string;
   purchased_at?: string;
   vendor?: string;
-  notes?: string;
 }
 
 /**
@@ -220,7 +220,6 @@ export function useCreateDevice() {
           batch_number: input.batch_number ?? null,
           purchased_at: input.purchased_at ?? null,
           vendor: input.vendor ?? null,
-          notes: input.notes ?? null,
           status: 'in_inventory' as never,
         } as never)
         .select()
@@ -241,8 +240,8 @@ export interface AssignDeviceInput {
   device_id: string;
   unit_id: string;
   resident_id?: string;
-  deposit_collected: number;
-  notes?: string;
+  deposit_amount: number;
+  condition_notes?: string;
 }
 
 /**
@@ -261,11 +260,12 @@ export function useAssignDevice() {
       const { data: assignment, error: assignError } = await supabase
         .from('access_device_assignments' as never)
         .insert({
-          device_id: input.device_id,
+          access_device_id: input.device_id,
           unit_id: input.unit_id,
           resident_id: input.resident_id ?? null,
-          deposit_collected: input.deposit_collected,
-          notes: input.notes ?? null,
+          deposit_collected: input.deposit_amount > 0,
+          deposit_amount: input.deposit_amount,
+          condition_notes: input.condition_notes ?? null,
           assigned_by: user?.id ?? null,
         } as never)
         .select()
@@ -303,8 +303,8 @@ export function useAssignDevice() {
 export interface ReturnDeviceInput {
   device_id: string;
   assignment_id: string;
-  deposit_returned: number;
-  notes?: string;
+  return_deposit: boolean;
+  condition_notes?: string;
 }
 
 /**
@@ -324,9 +324,10 @@ export function useReturnDevice() {
         .from('access_device_assignments' as never)
         .update({
           returned_at: new Date().toISOString(),
-          deposit_returned: input.deposit_returned,
+          deposit_returned_at: input.return_deposit ? new Date().toISOString() : null,
           returned_to: user?.id ?? null,
-          notes: input.notes ?? null,
+          condition_notes: input.condition_notes ?? null,
+          is_active: false,
         } as never)
         .eq('id', input.assignment_id);
 
@@ -360,7 +361,7 @@ export function useReturnDevice() {
 export interface ReportLostInput {
   device_id: string;
   assignment_id?: string;
-  replacement_fee_charged?: number;
+  charge_replacement_fee?: boolean;
 }
 
 /**
@@ -376,11 +377,12 @@ export function useReportLost() {
       const supabase = createClient();
 
       // 1. If assignment exists, charge replacement fee
-      if (input.assignment_id && input.replacement_fee_charged) {
+      if (input.assignment_id && input.charge_replacement_fee) {
         const { error: feeError } = await supabase
           .from('access_device_assignments' as never)
           .update({
-            replacement_fee_charged: input.replacement_fee_charged,
+            replacement_fee_charged: true,
+            is_active: false,
           } as never)
           .eq('id', input.assignment_id);
 

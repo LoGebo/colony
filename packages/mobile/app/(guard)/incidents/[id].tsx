@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.pagePaddingX,
     paddingVertical: spacing.lg,
-    paddingBottom: spacing.safeAreaBottom,
+    paddingBottom: spacing.bottomNavClearance,
     borderTopWidth: 1,
     borderTopColor: colors.borderMedium,
     backgroundColor: colors.surface,

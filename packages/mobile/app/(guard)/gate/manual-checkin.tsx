@@ -38,7 +38,11 @@ export default function ManualCheckInScreen() {
   const handleSubmit = useCallback(
     (decision: 'allowed' | 'denied') => {
       if (!personName.trim()) {
-        Alert.alert('Required', 'Please enter the visitor name.');
+        if (Platform.OS === 'web') {
+          window.alert('Please enter the visitor name.');
+        } else {
+          Alert.alert('Required', 'Please enter the visitor name.');
+        }
         return;
       }
 
@@ -54,14 +58,24 @@ export default function ManualCheckInScreen() {
         },
         {
           onSuccess: () => {
-            Alert.alert(
-              decision === 'allowed' ? 'Entry Logged' : 'Entry Denied',
-              `${personName} has been ${decision === 'allowed' ? 'granted access' : 'denied entry'}.`,
-              [{ text: 'OK', onPress: () => router.replace('/(guard)') }],
-            );
+            const msg = `${personName} has been ${decision === 'allowed' ? 'granted access' : 'denied entry'}.`;
+            if (Platform.OS === 'web') {
+              window.alert(msg);
+              router.replace('/(guard)');
+            } else {
+              Alert.alert(
+                decision === 'allowed' ? 'Entry Logged' : 'Entry Denied',
+                msg,
+                [{ text: 'OK', onPress: () => router.replace('/(guard)') }],
+              );
+            }
           },
           onError: (err) => {
-            Alert.alert('Error', err.message);
+            if (Platform.OS === 'web') {
+              window.alert(err.message);
+            } else {
+              Alert.alert('Error', err.message);
+            }
           },
         },
       );

@@ -19,8 +19,11 @@ import { formatDate } from '@/lib/formatters';
 
 const assemblyStatusVariants = {
   scheduled: 'neutral' as const,
+  convocatoria_1: 'info' as const,
+  convocatoria_2: 'info' as const,
+  convocatoria_3: 'info' as const,
   in_progress: 'info' as const,
-  completed: 'success' as const,
+  concluded: 'success' as const,
   cancelled: 'danger' as const,
 };
 
@@ -36,14 +39,17 @@ const assemblyTypeLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   scheduled: 'Programada',
+  convocatoria_1: '1a Convocatoria',
+  convocatoria_2: '2a Convocatoria',
+  convocatoria_3: '3a Convocatoria',
   in_progress: 'En Curso',
-  completed: 'Completada',
+  concluded: 'Concluida',
   cancelled: 'Cancelada',
 };
 
 const attendeeTypeLabels: Record<string, string> = {
   owner: 'Propietario',
-  tenant: 'Arrendatario',
+  representative: 'Representante',
   proxy: 'Poder',
 };
 
@@ -268,40 +274,40 @@ export default function AssemblyDetailPage({
                 className={`h-full transition-all ${
                   quorumData.quorum_met ? 'bg-green-600' : 'bg-yellow-500'
                 }`}
-                style={{ width: `${Math.min(quorumData.present_percentage, 100)}%` }}
+                style={{ width: `${Math.min(quorumData.percentage, 100)}%` }}
               />
             </div>
             <p className="text-xs text-gray-500">
-              {quorumData.present_percentage.toFixed(1)}% del total
+              {quorumData.percentage.toFixed(1)}% del total
             </p>
 
             <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
               <div
                 className={`rounded border p-2 ${
-                  quorumData.convocatoria_1_met
+                  quorumData.required_for_convocatoria_1
                     ? 'border-green-300 bg-green-50 text-green-800'
                     : 'border-gray-300 bg-gray-50 text-gray-600'
                 }`}
               >
-                1ª Convocatoria: {quorumData.convocatoria_1_met ? '✓' : '✗'}
+                1ª Convocatoria: {quorumData.required_for_convocatoria_1 ? '✓' : '✗'}
               </div>
               <div
                 className={`rounded border p-2 ${
-                  quorumData.convocatoria_2_met
+                  quorumData.required_for_convocatoria_2
                     ? 'border-green-300 bg-green-50 text-green-800'
                     : 'border-gray-300 bg-gray-50 text-gray-600'
                 }`}
               >
-                2ª Convocatoria: {quorumData.convocatoria_2_met ? '✓' : '✗'}
+                2ª Convocatoria: {quorumData.required_for_convocatoria_2 ? '✓' : '✗'}
               </div>
               <div
                 className={`rounded border p-2 ${
-                  quorumData.convocatoria_3_met
+                  quorumData.required_for_convocatoria_3
                     ? 'border-green-300 bg-green-50 text-green-800'
                     : 'border-gray-300 bg-gray-50 text-gray-600'
                 }`}
               >
-                3ª Convocatoria: {quorumData.convocatoria_3_met ? '✓' : '✗'}
+                3ª Convocatoria: {quorumData.required_for_convocatoria_3 ? '✓' : '✗'}
               </div>
             </div>
           </div>
@@ -362,7 +368,7 @@ export default function AssemblyDetailPage({
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                 >
                   <option value="owner">Propietario</option>
-                  <option value="tenant">Arrendatario</option>
+                  <option value="representative">Representante</option>
                   <option value="proxy">Poder</option>
                 </select>
               </div>

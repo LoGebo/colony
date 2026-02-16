@@ -69,11 +69,11 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     spot_number: '',
     spot_type: 'assigned',
-    floor_level: '',
-    zone: '',
+    level: '',
+    section: '',
     is_covered: false,
-    is_handicap: false,
-    monthly_rate: '',
+    is_electric_vehicle: false,
+    monthly_fee: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -83,11 +83,11 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
       {
         spot_number: form.spot_number.trim(),
         spot_type: form.spot_type,
-        floor_level: form.floor_level.trim() || undefined,
-        zone: form.zone.trim() || undefined,
+        level: form.level.trim() || undefined,
+        section: form.section.trim() || undefined,
         is_covered: form.is_covered,
-        is_handicap: form.is_handicap,
-        monthly_rate: form.monthly_rate ? parseFloat(form.monthly_rate) : undefined,
+        is_electric_vehicle: form.is_electric_vehicle,
+        monthly_fee: form.monthly_fee ? parseFloat(form.monthly_fee) : undefined,
       },
       {
         onSuccess: () => {
@@ -95,11 +95,11 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
           setForm({
             spot_number: '',
             spot_type: 'assigned',
-            floor_level: '',
-            zone: '',
+            level: '',
+            section: '',
             is_covered: false,
-            is_handicap: false,
-            monthly_rate: '',
+            is_electric_vehicle: false,
+            monthly_fee: '',
           });
         },
       }
@@ -146,8 +146,8 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-sm font-medium text-gray-700">Piso</label>
             <input
               type="text"
-              value={form.floor_level}
-              onChange={(e) => setForm({ ...form, floor_level: e.target.value })}
+              value={form.level}
+              onChange={(e) => setForm({ ...form, level: e.target.value })}
               className={inputClass}
               placeholder="Sotano 1, PB, etc."
             />
@@ -156,8 +156,8 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-sm font-medium text-gray-700">Zona</label>
             <input
               type="text"
-              value={form.zone}
-              onChange={(e) => setForm({ ...form, zone: e.target.value })}
+              value={form.section}
+              onChange={(e) => setForm({ ...form, section: e.target.value })}
               className={inputClass}
               placeholder="A, B, Norte, etc."
             />
@@ -167,8 +167,8 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
             <input
               type="number"
               step="0.01"
-              value={form.monthly_rate}
-              onChange={(e) => setForm({ ...form, monthly_rate: e.target.value })}
+              value={form.monthly_fee}
+              onChange={(e) => setForm({ ...form, monthly_fee: e.target.value })}
               className={inputClass}
               placeholder="0.00"
             />
@@ -186,11 +186,11 @@ function CreateSpotForm({ onClose }: { onClose: () => void }) {
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input
                 type="checkbox"
-                checked={form.is_handicap}
-                onChange={(e) => setForm({ ...form, is_handicap: e.target.checked })}
+                checked={form.is_electric_vehicle}
+                onChange={(e) => setForm({ ...form, is_electric_vehicle: e.target.checked })}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600"
               />
-              Discapacitado
+              Vehiculo Electrico
             </label>
           </div>
         </div>
@@ -225,8 +225,8 @@ function AssignmentForm({
   const [form, setForm] = useState({
     unit_id: '',
     assignment_type: 'ownership',
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
+    assigned_from: new Date().toISOString().split('T')[0],
+    assigned_until: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -237,8 +237,8 @@ function AssignmentForm({
         parking_spot_id: spotId,
         unit_id: form.unit_id,
         assignment_type: form.assignment_type,
-        start_date: form.start_date,
-        end_date: form.end_date || undefined,
+        assigned_from: form.assigned_from,
+        assigned_until: form.assigned_until || undefined,
       },
       {
         onSuccess: () => {
@@ -290,8 +290,8 @@ function AssignmentForm({
             <label className="mb-1 block text-sm font-medium text-gray-700">Inicio</label>
             <input
               type="date"
-              value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+              value={form.assigned_from}
+              onChange={(e) => setForm({ ...form, assigned_from: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -299,8 +299,8 @@ function AssignmentForm({
             <label className="mb-1 block text-sm font-medium text-gray-700">Fin (opcional)</label>
             <input
               type="date"
-              value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+              value={form.assigned_until}
+              onChange={(e) => setForm({ ...form, assigned_until: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -363,14 +363,14 @@ export default function ParkingPage() {
         ),
       },
       {
-        accessorKey: 'zone',
+        accessorKey: 'section',
         header: 'Zona',
-        cell: ({ row }) => row.original.zone ?? '-',
+        cell: ({ row }) => row.original.section ?? '-',
       },
       {
-        accessorKey: 'floor_level',
+        accessorKey: 'level',
         header: 'Piso',
-        cell: ({ row }) => row.original.floor_level ?? '-',
+        cell: ({ row }) => row.original.level ?? '-',
       },
       {
         id: 'features',
@@ -380,8 +380,8 @@ export default function ParkingPage() {
             {row.original.is_covered && (
               <span className="text-gray-600" title="Techado">🏠</span>
             )}
-            {row.original.is_handicap && (
-              <span className="text-blue-600" title="Discapacitado">♿</span>
+            {row.original.is_electric_vehicle && (
+              <span className="text-green-600" title="Vehiculo Electrico">⚡</span>
             )}
           </div>
         ),
@@ -402,10 +402,10 @@ export default function ParkingPage() {
         },
       },
       {
-        accessorKey: 'monthly_rate',
+        accessorKey: 'monthly_fee',
         header: 'Cuota',
         cell: ({ row }) =>
-          row.original.monthly_rate ? `$${row.original.monthly_rate.toFixed(2)}` : '-',
+          row.original.monthly_fee ? `$${row.original.monthly_fee.toFixed(2)}` : '-',
       },
       {
         id: 'actions',
@@ -451,10 +451,9 @@ export default function ParkingPage() {
   const todayReservations = useMemo(() => {
     if (!reservations) return [];
     const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
     return reservations.filter((r) => {
-      const from = parseISO(r.reserved_from);
-      const until = parseISO(r.reserved_until);
-      return from <= now && now <= until;
+      return r.reservation_date === todayStr;
     });
   }, [reservations]);
 
@@ -470,20 +469,21 @@ export default function ParkingPage() {
         header: 'Visitante',
       },
       {
-        accessorKey: 'vehicle_plate',
+        accessorKey: 'visitor_vehicle_plates',
         header: 'Placa',
+        cell: ({ row }) => row.original.visitor_vehicle_plates ?? '-',
       },
       {
-        accessorKey: 'reserved_from',
-        header: 'Desde',
+        accessorKey: 'reservation_date',
+        header: 'Fecha',
         cell: ({ row }) =>
-          format(parseISO(row.original.reserved_from), 'dd/MM HH:mm', { locale: es }),
+          format(parseISO(row.original.reservation_date), 'dd/MM/yyyy', { locale: es }),
       },
       {
-        accessorKey: 'reserved_until',
-        header: 'Hasta',
+        accessorKey: 'end_time',
+        header: 'Hora Fin',
         cell: ({ row }) =>
-          format(parseISO(row.original.reserved_until), 'dd/MM HH:mm', { locale: es }),
+          row.original.end_time ?? '-',
       },
       {
         accessorKey: 'status',

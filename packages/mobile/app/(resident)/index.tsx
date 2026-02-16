@@ -11,6 +11,7 @@ import { useAnnouncementFeed } from '@/hooks/useAnnouncements';
 import { formatCurrency, formatRelative } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 export default function ResidentDashboard() {
@@ -72,15 +73,18 @@ export default function ResidentDashboard() {
             </Text>
           </View>
         </View>
-        <Link href="/(resident)/more/profile" asChild>
-          <TouchableOpacity style={styles.headerAvatar}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-            ) : (
-              <Ionicons name="person" size={18} color={colors.textCaption} />
-            )}
-          </TouchableOpacity>
-        </Link>
+        <View style={styles.headerRight}>
+          <NotificationBell />
+          <Link href="/(resident)/more/profile" asChild>
+            <TouchableOpacity style={styles.headerAvatar}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person" size={18} color={colors.textCaption} />
+              )}
+            </TouchableOpacity>
+          </Link>
+        </View>
       </View>
 
       {/* Content */}
@@ -135,24 +139,36 @@ export default function ResidentDashboard() {
 
         {/* Quick Stats Row */}
         <View style={styles.statsRow}>
-          <GlassCard style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: colors.tealLightAlt }]}>
-              <Ionicons name="people-outline" size={20} color={colors.tealDark} />
-            </View>
-            <View>
-              <Text style={styles.statLabel}>VISITORS</Text>
-              <Text style={styles.statValue}>{activeVisitorCount} Active</Text>
-            </View>
-          </GlassCard>
-          <GlassCard style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: colors.indigoBg }]}>
-              <Ionicons name="notifications-outline" size={20} color={colors.indigo} />
-            </View>
-            <View>
-              <Text style={styles.statLabel}>ALERTS</Text>
-              <Text style={styles.statValue}>{latestAnnouncements.length} New</Text>
-            </View>
-          </GlassCard>
+          <TouchableOpacity
+            style={styles.statCardTouchable}
+            onPress={() => router.push('/(resident)/visitors')}
+            activeOpacity={0.7}
+          >
+            <GlassCard style={styles.statCard}>
+              <View style={[styles.statIconBox, { backgroundColor: colors.tealLightAlt }]}>
+                <Ionicons name="people-outline" size={20} color={colors.tealDark} />
+              </View>
+              <View>
+                <Text style={styles.statLabel}>VISITORS</Text>
+                <Text style={styles.statValue}>{activeVisitorCount} Active</Text>
+              </View>
+            </GlassCard>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statCardTouchable}
+            onPress={() => router.push('/(resident)/announcements')}
+            activeOpacity={0.7}
+          >
+            <GlassCard style={styles.statCard}>
+              <View style={[styles.statIconBox, { backgroundColor: colors.indigoBg }]}>
+                <Ionicons name="notifications-outline" size={20} color={colors.indigo} />
+              </View>
+              <View>
+                <Text style={styles.statLabel}>ALERTS</Text>
+                <Text style={styles.statValue}>{latestAnnouncements.length} New</Text>
+              </View>
+            </GlassCard>
+          </TouchableOpacity>
         </View>
 
         {/* Quick Actions */}
@@ -194,6 +210,15 @@ export default function ResidentDashboard() {
                 <Ionicons name="construct-outline" size={24} color={colors.danger} />
               </View>
               <Text style={styles.quickActionLabel}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => router.push('/(resident)/community/amenities/')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: colors.indigoBg }]}>
+                <Ionicons name="calendar-outline" size={24} color={colors.indigo} />
+              </View>
+              <Text style={styles.quickActionLabel}>Amenities</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -286,6 +311,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   headerAvatar: {
     width: 40,
@@ -428,6 +458,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xl,
     marginBottom: spacing['4xl'],
+  },
+  statCardTouchable: {
+    flex: 1,
   },
   statCard: {
     flex: 1,

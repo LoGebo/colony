@@ -122,6 +122,27 @@ export function usePostComments(postId: string) {
   });
 }
 
+// ---------- useMyPostReactions ----------
+
+export function useMyPostReactions() {
+  const { residentId, communityId } = useAuth();
+
+  return useQuery({
+    queryKey: [...queryKeys.posts._def, 'my-reactions', residentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('post_reactions')
+        .select('post_id')
+        .eq('resident_id', residentId!)
+        .eq('community_id', communityId!);
+
+      if (error) throw error;
+      return new Set((data ?? []).map((r) => r.post_id));
+    },
+    enabled: !!residentId && !!communityId,
+  });
+}
+
 // ---------- useCreatePost ----------
 
 interface CreatePostInput {
@@ -198,15 +219,15 @@ export function useToggleReaction() {
         .eq('resident_id', residentId!)
         .maybeSingle();
 
+      const wasLiked = !!existing;
+
       if (existing) {
-        // Remove existing reaction
         const { error } = await supabase
           .from('post_reactions')
           .delete()
           .eq('id', existing.id);
         if (error) throw error;
       } else {
-        // Add new reaction
         const { error } = await supabase.from('post_reactions').insert({
           community_id: communityId!,
           post_id: postId,
@@ -215,9 +236,74 @@ export function useToggleReaction() {
         });
         if (error) throw error;
       }
+
+      return { wasLiked };
     },
-    onSuccess: () => {
+    onMutate: async ({ postId, reactionType }) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: queryKeys.posts._def });
+      await queryClient.cancelQueries({ queryKey: [...queryKeys.posts._def, 'my-reactions'] });
+
+      // Snapshot previous values
+      const prevMyReactions = queryClient.getQueryData<Set<string>>(
+        [...queryKeys.posts._def, 'my-reactions', residentId]
+      );
+
+      // Optimistically update my-reactions set
+      const isCurrentlyLiked = prevMyReactions?.has(postId) ?? false;
+      const nextSet = new Set(prevMyReactions);
+      if (isCurrentlyLiked) {
+        nextSet.delete(postId);
+      } else {
+        nextSet.add(postId);
+      }
+      queryClient.setQueryData(
+        [...queryKeys.posts._def, 'my-reactions', residentId],
+        nextSet,
+      );
+
+      // Optimistically update reaction_counts on all post queries in cache
+      const delta = isCurrentlyLiked ? -1 : 1;
+      queryClient.setQueriesData<any[]>(
+        { queryKey: queryKeys.posts._def },
+        (old) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((post: any) => {
+            if (post.id !== postId) return post;
+            const counts = { ...(post.reaction_counts ?? {}) };
+            counts[reactionType] = Math.max(0, (counts[reactionType] ?? 0) + delta);
+            return { ...post, reaction_counts: counts };
+          });
+        },
+      );
+
+      // Optimistically update the detail query if cached
+      const detailKey = queryKeys.posts.detail(postId).queryKey;
+      const prevDetail = queryClient.getQueryData<any>(detailKey);
+      if (prevDetail) {
+        const counts = { ...(prevDetail.reaction_counts ?? {}) };
+        counts[reactionType] = Math.max(0, (counts[reactionType] ?? 0) + delta);
+        queryClient.setQueryData(detailKey, { ...prevDetail, reaction_counts: counts });
+      }
+
+      return { prevMyReactions, prevDetail };
+    },
+    onError: (_err, variables, context) => {
+      // Rollback optimistic updates on error
+      if (context?.prevMyReactions) {
+        queryClient.setQueryData(
+          [...queryKeys.posts._def, 'my-reactions', residentId],
+          context.prevMyReactions,
+        );
+      }
+      // Refetch to get accurate server state
       queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });
+    },
+    onSettled: (_data, _error, variables) => {
+      // Always refetch after mutation settles for consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.posts._def, 'my-reactions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId).queryKey });
     },
   });
 }

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,14 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { useInvitationDetail, useCancelInvitation } from '@/hooks/useVisitors';
+import { useAuth } from '@/hooks/useAuth';
+import { useCommunityBranding } from '@/hooks/useCommunity';
 import { formatDate, formatTime, isExpired, DAY_LABELS } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { ShareableInvitationCard } from '@/components/visitors/ShareableInvitationCard';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 function getStatusBadge(invitation: {
@@ -63,8 +67,15 @@ function getTypeConfig(type: string) {
 export default function InvitationDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { communityId } = useAuth();
+  const { data: branding } = useCommunityBranding(communityId);
   const { data: invitation, isLoading } = useInvitationDetail(id ?? '');
   const cancelMutation = useCancelInvitation();
+  const qrRef = useRef<any>(null);
+  const cardRef = useRef<View>(null);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const communityName = branding?.name ?? 'Community';
 
   const qrPayload = (() => {
     if (!invitation) return null;
@@ -75,17 +86,59 @@ export default function InvitationDetailScreen() {
     return null;
   })();
 
+  const unitNumber = (invitation?.units as { unit_number: string } | null)?.unit_number ?? null;
+
+  // ── Share premium invitation card ──────────────────────────
   const handleShare = useCallback(async () => {
-    if (!invitation) return;
+    if (!invitation || !qrPayload || !cardRef.current) return;
+    setIsSharing(true);
+
     try {
-      await Share.share({
-        message: `You have been invited to visit. Visitor: ${invitation.visitor_name}. Show this QR code at the gate.${qrPayload ? `\n\nQR Data: ${qrPayload}` : ''}`,
-        title: 'Visitor Invitation',
+      const uri = await captureRef(cardRef, {
+        format: 'png',
+        quality: 1,
+        pixelRatio: 3,
+        result: 'tmpfile',
       });
+
+      if (Platform.OS === 'web') {
+        // Web: download the image
+        const link = document.createElement('a');
+        link.href = uri;
+        link.download = `invitation-${invitation.visitor_name.replace(/\s+/g, '-')}.png`;
+        link.click();
+      } else {
+        // Mobile: share via native sheet
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Share Invitation',
+            UTI: 'public.png',
+          });
+        } else {
+          // Fallback to Share API with text
+          await Share.share({
+            message: `You're invited! ${invitation.visitor_name}, show this pass at the entrance of ${communityName}.`,
+            title: 'Visitor Invitation',
+          });
+        }
+      }
     } catch {
-      // User cancelled share
+      // Fallback: try QR-only export via SVG ref
+      if (qrRef.current) {
+        qrRef.current.toDataURL((dataURL: string) => {
+          Share.share({
+            message: `You're invited to ${communityName}! Visitor: ${invitation.visitor_name}. Show this QR at the gate.`,
+            title: 'Visitor Invitation',
+            ...(Platform.OS === 'ios' ? { url: `data:image/png;base64,${dataURL}` } : {}),
+          });
+        });
+      }
+    } finally {
+      setIsSharing(false);
     }
-  }, [invitation, qrPayload]);
+  }, [invitation, qrPayload, communityName]);
 
   const handleCancel = useCallback(() => {
     if (!invitation) return;
@@ -136,11 +189,28 @@ export default function InvitationDetailScreen() {
   const isCancelled = !!invitation.cancelled_at;
   const isActive = badge.label === 'ACTIVE' || badge.label === 'PENDING';
   const recurringDays = Array.isArray(invitation.recurring_days) ? invitation.recurring_days : [];
-  const unitNumber = (invitation.units as { unit_number: string } | null)?.unit_number;
 
   return (
     <View style={styles.container}>
       <AmbientBackground />
+
+      {/* ── Hidden shareable card (rendered off-screen for capture) ── */}
+      {qrPayload && (
+        <View style={styles.offscreenContainer} pointerEvents="none">
+          <ShareableInvitationCard
+            ref={cardRef}
+            communityName={communityName}
+            visitorName={invitation.visitor_name}
+            unitNumber={unitNumber}
+            validFrom={invitation.valid_from}
+            validUntil={invitation.valid_until}
+            invitationType={invitation.invitation_type}
+            visitorPhone={invitation.visitor_phone}
+            vehiclePlate={invitation.vehicle_plate}
+            qrPayload={qrPayload}
+          />
+        </View>
+      )}
 
       {/* Header */}
       <View style={styles.header}>
@@ -173,6 +243,7 @@ export default function InvitationDetailScreen() {
                 size={200}
                 color={colors.dark}
                 backgroundColor={colors.surface}
+                getRef={(ref: any) => (qrRef.current = ref)}
               />
             ) : (
               <View style={styles.qrFallback}>
@@ -301,10 +372,21 @@ export default function InvitationDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          {/* Share QR */}
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.9}>
-            <Ionicons name="share-outline" size={20} color={colors.textOnDark} />
-            <Text style={styles.shareButtonText}>Share QR Code</Text>
+          {/* Share Invitation Card */}
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShare}
+            activeOpacity={0.9}
+            disabled={isSharing}
+          >
+            {isSharing ? (
+              <ActivityIndicator size="small" color={colors.textOnDark} />
+            ) : (
+              <>
+                <Ionicons name="share-outline" size={20} color={colors.textOnDark} />
+                <Text style={styles.shareButtonText}>Share Invitation</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Cancel */}
@@ -339,6 +421,15 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+
+  // Off-screen container for shareable card capture
+  offscreenContainer: {
+    position: 'absolute',
+    top: -9999,
+    left: -9999,
+    opacity: 1, // Must be visible for capture
+  },
+
   // Header
   header: {
     flexDirection: 'row',

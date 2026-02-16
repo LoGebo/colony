@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Announcements Manager</title>
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/40ecf9a5-a52f-4a74-9fc8-246c62e2cfb9" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/744adc10-7a6f-47ff-8452-20d29779d86c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/f5cc5b52-0197-4347-b5b3-04f97f144b20" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/1b7aee07-1e5d-4100-b50a-27def102b328" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/530871f6-da24-4a01-b2fe-2f6b1a225648" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2912f268-f4b4-4cc8-967d-48a21e4d174c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/19647916-7368-4ce0-85f5-5f2b52e5766e" as="document">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .ios-tab-active {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* View Transitions */
+        @view-transition { navigation: auto; }
+        
+        html { background-color: #F1F5F9; }
+        
+        ::view-transition-old(main-nav), ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+
+    <!-- Background Ambiance (Persistent) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/40 via-teal-50/20 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/5 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/5 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div id="root-container" class="relative z-10 w-full min-h-screen flex flex-col">
+        
+        <!-- MAIN CONTENT AREA -->
+        <main style="view-transition-name: main-content;" class="flex-1 flex flex-col pt-14 pb-[100px] px-6">
+            
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Announcements</h1>
+                    <p class="text-slate-500 text-sm">Manage community broadcasts</p>
+                </div>
+                <button onclick="document.getElementById('create-modal').classList.remove('hidden')" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20 active:scale-90 transition-transform">
+                    <iconify-icon icon="lucide:plus" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Segmented Control -->
+            <div class="bg-slate-200/50 p-1 rounded-xl flex mb-6">
+                <button class="flex-1 py-1.5 text-xs font-bold text-slate-900 ios-tab-active rounded-lg transition-all">Active</button>
+                <button class="flex-1 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-lg transition-all">Scheduled</button>
+                <button class="flex-1 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-lg transition-all">Archive</button>
+            </div>
+
+            <!-- Announcements List -->
+            <div class="space-y-4">
+                <!-- Card 1: Urgent -->
+                <div class="bg-white rounded-[24px] border border-slate-100 p-5 shadow-sm active:scale-[0.98] transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                            <iconify-icon icon="lucide:alert-triangle"></iconify-icon>
+                            Urgent
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">2h ago</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 mb-1">Water Maintenance - Main Tower</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-4">Temporary water shutdown scheduled for Tower A due to emergency pipe repair. Estimated downtime: 4 hours.</p>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-600">Read Receipt</span>
+                            <span class="text-xs font-black text-blue-600">92%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="w-[92%] h-full bg-blue-600 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Normal -->
+                <div class="bg-white rounded-[24px] border border-slate-100 p-5 shadow-sm active:scale-[0.98] transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            Community
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Yesterday</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 mb-1">Summer Pool Party! ☀️</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed mb-4">Join us this Saturday for the annual summer mixer at the pool deck. Drinks and BBQ provided.</p>
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/100?u=1" class="w-6 h-6 rounded-full border-2 border-white">
+                            <img src="https://i.pravatar.cc/100?u=2" class="w-6 h-6 rounded-full border-2 border-white">
+                            <img src="https://i.pravatar.cc/100?u=3" class="w-6 h-6 rounded-full border-2 border-white">
+                            <div class="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500">+142</div>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-400">Residents acknowledged</span>
+                    </div>
+                </div>
+
+                <!-- Card 3: Scheduled -->
+                <div class="bg-white/60 rounded-[24px] border border-dashed border-slate-300 p-5 active:scale-[0.98] transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                            <iconify-icon icon="lucide:clock"></iconify-icon>
+                            Scheduled
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Oct 12, 09:00</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-400 mb-1">Fire Alarm Testing</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed italic">Automatic broadcast scheduled for next week...</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation (Persistent) -->
+        <nav style="view-transition-name: main-nav;" class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200/60 px-6 py-4 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <a id="nav-home-link" href="https://p.superdesign.dev/draft/40ecf9a5-a52f-4a74-9fc8-246c62e2cfb9" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:layout-grid" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Admin</span>
+            </a>
+            <a id="nav-residents-link" href="https://p.superdesign.dev/draft/f5cc5b52-0197-4347-b5b3-04f97f144b20" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Users</span>
+            </a>
+            <a id="nav-announcements-link" href="https://p.superdesign.dev/draft/1b810641-9955-4a33-8f34-fb5774f72514" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:megaphone" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Broadcast</span>
+            </a>
+            <a id="nav-maintenance-link" href="https://p.superdesign.dev/draft/530871f6-da24-4a01-b2fe-2f6b1a225648" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:wrench" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Fixes</span>
+            </a>
+            <a id="nav-settings-link" href="https://p.superdesign.dev/draft/744adc10-7a6f-47ff-8452-20d29779d86c" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:settings" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Setup</span>
+            </a>
+        </nav>
+
+        <!-- Create Modal Overlay (Simplified for UI flow) -->
+        <div id="create-modal" class="fixed inset-0 z-50 flex items-end bg-black/40 backdrop-blur-sm hidden">
+            <div class="w-full bg-white rounded-t-[40px] p-8 animate-slide-up">
+                <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
+                
+                <h2 class="text-xl font-bold text-slate-900 mb-6">New Announcement</h2>
+                
+                <div class="space-y-4 mb-8">
+                    <input type="text" placeholder="Title of announcement" class="w-full h-14 bg-slate-50 rounded-2xl px-5 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium">
+                    <textarea placeholder="Write your message..." rows="4" class="w-full bg-slate-50 rounded-2xl p-5 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium resize-none"></textarea>
+                    
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Urgency</label>
+                            <select class="w-full h-12 bg-slate-50 rounded-xl px-4 border border-slate-100 outline-none font-bold text-sm">
+                                <option>Normal</option>
+                                <option>Low</option>
+                                <option>Urgent</option>
+                                <option>Emergency</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Audience</label>
+                            <select class="w-full h-12 bg-slate-50 rounded-xl px-4 border border-slate-100 outline-none font-bold text-sm">
+                                <option>All Residents</option>
+                                <option>Staff Only</option>
+                                <option>Tower A</option>
+                                <option>Tower B</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 pb-[34px]">
+                    <button onclick="document.getElementById('create-modal').classList.add('hidden')" class="flex-1 h-14 bg-slate-100 text-slate-600 rounded-2xl font-bold">Cancel</button>
+                    <button onclick="document.getElementById('create-modal').classList.add('hidden')" class="flex-[2] h-14 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20">Post Now</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</body>
+</html>

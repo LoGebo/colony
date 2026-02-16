@@ -84,7 +84,7 @@ export default function MedicalPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         {condition.residents
-                          ? `${condition.residents.first_name} ${condition.residents.last_name}`
+                          ? `${condition.residents.first_name} ${condition.residents.paternal_surname}`
                           : 'Residente Desconocido'}
                       </h3>
                       <p className="text-sm text-gray-500">
@@ -187,7 +187,7 @@ export default function MedicalPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         {need.residents
-                          ? `${need.residents.first_name} ${need.residents.last_name}`
+                          ? `${need.residents.first_name} ${need.residents.paternal_surname}`
                           : 'Residente Desconocido'}
                       </h3>
                     </div>

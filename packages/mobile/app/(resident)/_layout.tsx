@@ -1,7 +1,8 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { StyleSheet, View, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/hooks/useAuth';
 import { colors, fonts, shadows } from '@/theme';
 
 type TabIconName = 'home' | 'home-outline' | 'people' | 'people-outline' | 'chatbubble' | 'chatbubble-outline' | 'calendar' | 'calendar-outline' | 'person' | 'person-outline';
@@ -11,6 +12,13 @@ function TabBarIcon({ name, color }: { name: TabIconName; color: string }) {
 }
 
 export default function ResidentLayout() {
+  const { session, isLoading } = useAuth();
+
+  // Redirect to sign-in when session is cleared (e.g. after logout)
+  if (!isLoading && !session) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -25,6 +33,20 @@ export default function ResidentLayout() {
           </BlurView>
         ),
       }}
+      screenListeners={({ navigation }) => ({
+        tabPress: (e) => {
+          // When a tab is pressed, pop its nested stack back to root
+          // This prevents getting stuck on nested screens (e.g., Amenities inside Social)
+          const target = e.target;
+          if (!target) return;
+          const tabName = target.split('-')[0];
+          const state = navigation.getState();
+          const tabRoute = state.routes.find((r: any) => r.name === tabName);
+          if (tabRoute?.state?.index && tabRoute.state.index > 0) {
+            navigation.navigate(tabName, { screen: 'index' });
+          }
+        },
+      })}
     >
       <Tabs.Screen
         name="index"

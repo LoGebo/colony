@@ -14,13 +14,13 @@ interface ChargePreviewTableProps {
 // ── Unit type labels ───────────────────────────────────────────────
 
 const unitTypeLabels: Record<string, string> = {
-  house: 'Casa',
-  apartment: 'Departamento',
-  commercial: 'Comercial',
-  office: 'Oficina',
-  parking: 'Estacionamiento',
-  storage: 'Bodega',
-  other: 'Otro',
+  casa: 'Casa',
+  departamento: 'Departamento',
+  local: 'Local',
+  bodega: 'Bodega',
+  oficina: 'Oficina',
+  terreno: 'Terreno',
+  estacionamiento: 'Estacionamiento',
 };
 
 // ── Component ──────────────────────────────────────────────────────

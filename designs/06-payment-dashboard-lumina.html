@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments - Lumina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Glass Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* iOS-style Bottom Tab Bar */
+        .tab-bar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* View Transitions */
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(bottom-nav),
+        ::view-transition-new(bottom-nav),
+        ::view-transition-old(user-widget),
+        ::view-transition-new(user-widget) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.2s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.3s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+
+    <!-- Background Ambiance (Persistent) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div id="root-container" class="relative z-10 w-full min-h-screen flex flex-col">
+        
+        <!-- Header with persistent Profile Widget -->
+        <header class="shrink-0 pt-14 px-6 flex justify-between items-center">
+            <div class="flex items-center gap-1">
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Billing</h1>
+            </div>
+            <div style="view-transition-name: user-widget" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden border-2 border-white cursor-pointer">
+                <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" class="w-full h-full object-cover">
+            </div>
+        </header>
+
+        <main style="view-transition-name: main-content" class="flex-1 px-6 pb-28 pt-6 overflow-y-auto">
+            <!-- Current Balance Card -->
+            <div class="p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[28px] text-white shadow-xl shadow-slate-900/10 relative overflow-hidden mb-8">
+                <div class="absolute -right-12 -top-12 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
+                
+                <div class="flex justify-between items-start mb-1">
+                    <p class="text-slate-400 text-sm font-medium">Outstanding Balance</p>
+                    <span class="px-2.5 py-1 bg-rose-500/20 backdrop-blur-md rounded-lg text-rose-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <iconify-icon icon="lucide:alert-circle"></iconify-icon>
+                        7 Days Overdue
+                    </span>
+                </div>
+                
+                <h2 class="text-4xl font-bold tracking-tight mb-6">$2,450.00</h2>
+                
+                <div class="flex gap-3">
+                    <button class="flex-1 h-12 bg-white text-slate-900 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition-all">
+                        Pay Now
+                    </button>
+                    <button class="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 active:scale-[0.97] transition-all">
+                        <iconify-icon icon="lucide:upload-cloud" class="text-xl"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex flex-col gap-4 mb-8">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Payment Actions</h3>
+                <div class="glass-panel rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/80 transition-all">
+                    <div class="w-11 h-11 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
+                        <iconify-icon icon="lucide:file-text" class="text-xl"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-slate-800">Upload Transfer Receipt</p>
+                        <p class="text-xs text-slate-500">Send bank proof for manual verification</p>
+                    </div>
+                    <iconify-icon icon="lucide:chevron-right" class="text-slate-400"></iconify-icon>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-end mb-1 ml-1">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Recent Activity</h3>
+                    <button class="text-[11px] font-bold text-blue-600">View All</button>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Pending Receipt Tracking -->
+                    <div class="bg-white rounded-[20px] border border-slate-100 p-4 shadow-sm border-l-4 border-l-amber-400">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <iconify-icon icon="lucide:clock" class="text-xl"></iconify-icon>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-slate-800">Receipt Pending</h4>
+                                <p class="text-[11px] text-slate-400">Oct 25, 2023 • Reference #TRF-9021</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-amber-600">$850.00</p>
+                                <p class="text-[10px] font-medium text-amber-500">Verifying</p>
+                            </div>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full w-2/3 bg-amber-400 rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- History Items -->
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-sm">
+                        <div class="w-11 h-11 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                            <iconify-icon icon="lucide:arrow-up-right" class="text-xl"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Monthly Maintenance</p>
+                            <p class="text-xs text-slate-400">Oct 01, 2023 • Charge</p>
+                        </div>
+                        <p class="text-sm font-bold text-slate-900">-$1,600.00</p>
+                    </div>
+
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-sm">
+                        <div class="w-11 h-11 rounded-full bg-teal-50 text-teal-500 flex items-center justify-center">
+                            <iconify-icon icon="lucide:arrow-down-left" class="text-xl"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Online Payment</p>
+                            <p class="text-xs text-slate-400">Sep 28, 2023 • Paid</p>
+                        </div>
+                        <p class="text-sm font-bold text-teal-600">+$1,600.00</p>
+                    </div>
+
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-sm">
+                        <div class="w-11 h-11 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                            <iconify-icon icon="lucide:sparkles" class="text-xl"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Amenities Adjustment</p>
+                            <p class="text-xs text-slate-400">Sep 15, 2023 • Credit</p>
+                        </div>
+                        <p class="text-sm font-bold text-indigo-600">+$50.00</p>
+                    </div>
+
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-sm opacity-60">
+                        <div class="w-11 h-11 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                            <iconify-icon icon="lucide:percent" class="text-xl"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Late Payment Interest</p>
+                            <p class="text-xs text-slate-400">Sep 05, 2023 • Fee</p>
+                        </div>
+                        <p class="text-sm font-bold text-slate-900">-$35.00</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Tab Bar -->
+        <nav style="view-transition-name: bottom-nav" class="tab-bar fixed bottom-0 left-0 right-0 h-[84px] pb-[34px] px-6 flex justify-between items-center z-50">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:layout-dashboard" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Home</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Visitors</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-billing" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:receipt" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Billing</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Social</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:menu" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Menu</span>
+            </a>
+        </nav>
+
+    </div>
+</body>
+</html>

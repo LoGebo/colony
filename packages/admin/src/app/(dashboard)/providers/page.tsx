@@ -57,8 +57,8 @@ function CreateProviderForm({ onClose }: { onClose: () => void }) {
     contact_name: '',
     contact_email: '',
     contact_phone: '',
-    specialty: '',
-    tax_id: '',
+    specialties: '',
+    rfc: '',
     address: '',
     notes: '',
   });
@@ -71,9 +71,9 @@ function CreateProviderForm({ onClose }: { onClose: () => void }) {
         company_name: form.company_name.trim(),
         contact_name: form.contact_name.trim() || undefined,
         contact_email: form.contact_email.trim() || undefined,
-        contact_phone: form.contact_phone.trim() || undefined,
-        specialty: form.specialty.trim() || undefined,
-        tax_id: form.tax_id.trim() || undefined,
+        contact_phone: form.contact_phone.replace(/[\s\-()]/g, '').trim() || undefined,
+        specialties: form.specialties.trim() ? form.specialties.split(',').map(s => s.trim()) : [],
+        rfc: form.rfc.trim() || undefined,
         address: form.address.trim() || undefined,
         notes: form.notes.trim() || undefined,
       },
@@ -85,8 +85,8 @@ function CreateProviderForm({ onClose }: { onClose: () => void }) {
             contact_name: '',
             contact_email: '',
             contact_phone: '',
-            specialty: '',
-            tax_id: '',
+            specialties: '',
+            rfc: '',
             address: '',
             notes: '',
           });
@@ -150,18 +150,18 @@ function CreateProviderForm({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-sm font-medium text-gray-700">Especialidad</label>
             <input
               type="text"
-              value={form.specialty}
-              onChange={(e) => setForm({ ...form, specialty: e.target.value })}
+              value={form.specialties}
+              onChange={(e) => setForm({ ...form, specialties: e.target.value })}
               className={inputClass}
-              placeholder="Electricidad, plomeria, etc."
+              placeholder="Electricidad, plomeria, etc. (separar con comas)"
             />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">RFC</label>
             <input
               type="text"
-              value={form.tax_id}
-              onChange={(e) => setForm({ ...form, tax_id: e.target.value })}
+              value={form.rfc}
+              onChange={(e) => setForm({ ...form, rfc: e.target.value })}
               className={inputClass}
               placeholder="RFC del proveedor"
             />
@@ -239,9 +239,9 @@ export default function ProvidersPage() {
         ),
       },
       {
-        accessorKey: 'specialty',
+        accessorKey: 'specialties',
         header: 'Especialidad',
-        cell: ({ row }) => row.original.specialty ?? '-',
+        cell: ({ row }) => row.original.specialties?.join(', ') ?? '-',
       },
       {
         accessorKey: 'status',

@@ -151,8 +151,14 @@ export function useCreateReservation() {
       if (error) throw error;
       return data; // Returns reservation UUID
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      // Invalidate all amenity queries (broad)
       queryClient.invalidateQueries({ queryKey: queryKeys.amenities._def });
+      // Explicitly refetch reservations for this amenity (any month)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.amenities.reservations(variables.amenity_id).queryKey,
+        refetchType: 'all',
+      });
     },
   });
 }

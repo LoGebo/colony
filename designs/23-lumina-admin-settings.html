@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Admin Settings</title>
+    <meta name="view-transition" content="same-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/40ecf9a5-a52f-4a74-9fc8-246c62e2cfb9" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/744adc10-7a6f-47ff-8452-20d29779d86c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/f5cc5b52-0197-4347-b5b3-04f97f144b20" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/1b7aee07-1e5d-4100-b50a-27def102b328" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/530871f6-da24-4a01-b2fe-2f6b1a225648" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2912f268-f4b4-4cc8-967d-48a21e4d174c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/1b810641-9955-4a33-8f34-fb5774f72514" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/19647916-7368-4ce0-85f5-5f2b52e5766e" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/02bb5db3-9c45-4a29-80f0-e877fe1af581" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/78859f94-b514-475f-b2c5-13911a2a0191" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* iOS-style Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* View Transitions */
+        @view-transition { navigation: auto; }
+        ::view-transition-old(main-content) { animation: 0.25s ease-out both fade-out; }
+        ::view-transition-new(main-content) { animation: 0.25s ease-in 0.1s both fade-in; }
+        
+        /* Persistent Elements - Static */
+        ::view-transition-old(main-nav), ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* Toggle Switch Styling */
+        .ios-toggle:checked + .toggle-bg { background-color: #2563EB; }
+        .ios-toggle:checked + .toggle-bg .toggle-dot { transform: translateX(1.25rem); }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+
+    <!-- Background Ambiance -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full h-screen flex flex-col">
+        
+        <!-- Header -->
+        <header class="shrink-0 pt-14 px-6 pb-4 flex items-center justify-between">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="header-back-link" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-900">
+                <iconify-icon icon="lucide:chevron-left" class="text-2xl"></iconify-icon>
+            </a>
+            <h1 class="text-xl font-bold text-slate-900">Admin Settings</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto px-6 pb-32 space-y-6" style="view-transition-name: main-content;">
+            
+            <!-- Community Management Section -->
+            <section class="space-y-2">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Community Core</h3>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+                    <a href="#community-rules" id="settings-rules-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-50">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:gavel" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Internal Policies</p>
+                            <p class="text-[11px] text-slate-400">Quiet hours, pet rules, noise levels</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                    <a href="#gate-hours" id="settings-gate-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-50">
+                        <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:clock" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Operating Hours</p>
+                            <p class="text-[11px] text-slate-400">Gate and amenity access windows</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/f5cc5b52-0197-4347-b5b3-04f97f144b20" id="settings-residents-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:users" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Resident Management</p>
+                            <p class="text-[11px] text-slate-400">Onboarding, unit mapping, directory</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Financial & Admin Section -->
+            <section class="space-y-2">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Finance & Assets</h3>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+                    <a href="https://p.superdesign.dev/draft/1b7aee07-1e5d-4100-b50a-27def102b328" id="settings-payments-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-50">
+                        <div class="w-9 h-9 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:banknote" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Payment Verification</p>
+                            <p class="text-[11px] text-slate-400">Approve transfers and receipts</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/2912f268-f4b4-4cc8-967d-48a21e4d174c" id="settings-amenities-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-50">
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:palmtree" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Amenity Settings</p>
+                            <p class="text-[11px] text-slate-400">Schedules, fees, and booking rules</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                    <div class="flex items-center gap-3 p-4">
+                        <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:bell-ring" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Maintenance Alerts</p>
+                            <p class="text-[11px] text-slate-400">Urgent tickets notifications</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only ios-toggle" checked>
+                            <div class="toggle-bg w-10 h-5 bg-slate-200 rounded-full transition-colors relative">
+                                <div class="toggle-dot absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Section -->
+            <section class="space-y-2">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">System & Comms</h3>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+                    <a href="#email-templates" id="settings-templates-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-50">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:mail" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Email Templates</p>
+                            <p class="text-[11px] text-slate-400">Welcome emails, invoice notices</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/19647916-7368-4ce0-85f5-5f2b52e5766e" id="settings-moderation-link" class="flex items-center gap-3 p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                        <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                            <iconify-icon icon="lucide:shield-check" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800">Social Moderation</p>
+                            <p class="text-[11px] text-slate-400">Filter keywords, block users</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Sign Out -->
+            <button class="w-full py-4 bg-white rounded-2xl text-rose-500 font-bold text-sm shadow-sm border border-slate-100 active:scale-[0.98] transition-all">
+                Logout of Admin Panel
+            </button>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <footer class="shrink-0 fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200/60 px-6 py-4 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] pb-[34px]" style="view-transition-name: main-nav;">
+            <a id="nav-home-link" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Home</span>
+            </a>
+            <a id="nav-social-link" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Social</span>
+            </a>
+            <a id="nav-billing-link" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Billing</span>
+            </a>
+            <a id="nav-profile-link" href="#" class="flex flex-col items-center gap-1 text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:settings" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Settings</span>
+            </a>
+        </footer>
+
+    </div>
+</body>
+</html>

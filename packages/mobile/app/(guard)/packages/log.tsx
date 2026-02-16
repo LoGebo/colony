@@ -74,11 +74,21 @@ export default function LogPackageScreen() {
         description: description.trim() || undefined,
       });
 
-      Alert.alert('Package Logged', 'The package has been registered successfully.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      if (Platform.OS === 'web') {
+        window.alert('The package has been registered successfully.');
+        router.back();
+      } else {
+        Alert.alert('Package Logged', 'The package has been registered successfully.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
     } catch (error: any) {
-      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+      const msg = error?.message ?? 'Something went wrong. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 

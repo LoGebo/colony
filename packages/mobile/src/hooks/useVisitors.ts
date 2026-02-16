@@ -25,7 +25,7 @@ export function useActiveInvitations() {
         .in('status', ['approved', 'pending'])
         .is('cancelled_at', null)
         .is('deleted_at', null)
-        .gte('valid_until', new Date().toISOString())
+        .or(`valid_until.gte.${new Date().toISOString()},valid_until.is.null`)
         .order('valid_from', { ascending: true });
 
       if (error) throw error;
@@ -115,6 +115,11 @@ export function useCreateInvitation() {
   return useMutation({
     mutationFn: async (input: CreateInvitationInput) => {
       // 1. Insert the invitation
+      // Sanitize phone: DB domain requires +?[0-9]{10,15}
+      const sanitizedPhone = input.visitor_phone
+        ? input.visitor_phone.replace(/[^+\d]/g, '') || undefined
+        : undefined;
+
       const { data: invitation, error: insertError } = await supabase
         .from('invitations')
         .insert({
@@ -122,7 +127,7 @@ export function useCreateInvitation() {
           invitation_type: input.invitation_type,
           valid_from: input.valid_from,
           valid_until: input.valid_until,
-          visitor_phone: input.visitor_phone,
+          visitor_phone: sanitizedPhone,
           vehicle_plate: input.vehicle_plate,
           recurring_days: input.recurring_days,
           recurring_start_time: input.recurring_start_time,

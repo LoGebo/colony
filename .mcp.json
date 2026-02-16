@@ -6,6 +6,10 @@
       "env": {
         "SUPABASE_ACCESS_TOKEN": "sbp_530d8983560afe140b960fcfc1d613a58bd59039"
       }
+    },
+    "remotion-documentation": {
+      "command": "npx",
+      "args": ["@remotion/mcp@latest"]
     }
   }
 }

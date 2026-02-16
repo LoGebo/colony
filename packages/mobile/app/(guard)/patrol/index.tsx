@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +55,12 @@ export default function PatrolIndexScreen() {
         });
         router.push(`/(guard)/patrol/${result.id}`);
       } catch (error: any) {
-        Alert.alert('Error', error?.message ?? 'Failed to start patrol.');
+        const msg = error?.message ?? 'Failed to start patrol.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Error', msg);
+        }
       }
     },
     [guardId, communityId, startPatrol, router],

@@ -110,11 +110,11 @@ export interface AssemblyAgreementRow {
 export interface AssemblyQuorumResult {
   total_coefficient: number;
   present_coefficient: number;
-  present_percentage: number;
+  percentage: number;
   quorum_met: boolean;
-  convocatoria_1_met: boolean;
-  convocatoria_2_met: boolean;
-  convocatoria_3_met: boolean;
+  required_for_convocatoria_1: boolean;
+  required_for_convocatoria_2: boolean;
+  required_for_convocatoria_3: boolean;
 }
 
 interface ElectionFilters {
@@ -406,7 +406,17 @@ export function useAssemblyQuorum(assemblyId: string) {
         .rpc('calculate_assembly_quorum', { p_assembly_id: assemblyId });
 
       if (error) throw error;
-      return data as unknown as AssemblyQuorumResult;
+      // RPC with RETURN QUERY returns an array; extract the first row
+      const row = Array.isArray(data) ? data[0] : data;
+      return {
+        total_coefficient: Number(row.total_coefficient),
+        present_coefficient: Number(row.present_coefficient),
+        percentage: Number(row.percentage),
+        quorum_met: row.quorum_met,
+        required_for_convocatoria_1: row.required_for_convocatoria_1,
+        required_for_convocatoria_2: row.required_for_convocatoria_2,
+        required_for_convocatoria_3: row.required_for_convocatoria_3,
+      } as AssemblyQuorumResult;
     },
     enabled: !!assemblyId,
   });

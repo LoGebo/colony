@@ -25,9 +25,10 @@ const amenityTypeLabel: Record<string, string> = {
   pool: 'Alberca',
   gym: 'Gimnasio',
   salon: 'Salon',
-  court: 'Cancha',
+  rooftop: 'Rooftop',
   bbq: 'Asador',
-  playground: 'Area de juegos',
+  court: 'Cancha',
+  room: 'Sala',
   parking: 'Estacionamiento',
   other: 'Otro',
 };
@@ -36,28 +37,29 @@ const amenityTypeVariant: Record<string, 'success' | 'info' | 'warning' | 'neutr
   pool: 'info',
   gym: 'success',
   salon: 'warning',
-  court: 'info',
+  rooftop: 'info',
   bbq: 'warning',
-  playground: 'success',
+  court: 'info',
+  room: 'success',
   parking: 'neutral',
   other: 'neutral',
 };
 
 const ruleTypeLabel: Record<string, string> = {
-  max_duration: 'Duracion maxima',
-  min_advance: 'Anticipacion minima',
-  max_advance: 'Anticipacion maxima',
-  max_concurrent: 'Concurrencia maxima',
-  blackout_period: 'Periodo bloqueado',
-  owner_only: 'Solo propietarios',
-  quota_per_period: 'Cuota por periodo',
-  min_duration: 'Duracion minima',
-  cancellation_deadline: 'Plazo cancelacion',
+  max_per_day: 'Maximo por dia',
+  max_per_week: 'Maximo por semana',
+  max_per_month: 'Maximo por mes',
+  advance_min: 'Anticipacion minima',
+  advance_max: 'Anticipacion maxima',
+  duration_min: 'Duracion minima',
+  duration_max: 'Duracion maxima',
+  blackout: 'Periodo bloqueado',
   require_deposit: 'Requiere deposito',
+  owner_only: 'Solo propietarios',
 };
 
 const RULE_TYPES = Object.keys(ruleTypeLabel);
-const AMENITY_TYPES = ['pool', 'gym', 'salon', 'court', 'bbq', 'playground', 'parking', 'other'];
+const AMENITY_TYPES = ['pool', 'gym', 'salon', 'rooftop', 'bbq', 'court', 'room', 'parking', 'other'];
 
 /* ------------------------------------------------------------------ */
 /*  Default date range for utilization (last 30 days)                 */
@@ -153,8 +155,8 @@ export default function AmenityDetailPage({
     setEditType(amenity.amenity_type ?? 'other');
     setEditLocation(amenity.location ?? '');
     setEditCapacity(amenity.capacity?.toString() ?? '');
-    setEditReservable(amenity.is_reservable ?? false);
-    setEditApproval(amenity.requires_approval ?? false);
+    setEditReservable(amenity.requires_reservation ?? false);
+    setEditApproval(false);
     setIsEditing(true);
   }, [amenity]);
 
@@ -168,12 +170,11 @@ export default function AmenityDetailPage({
         amenity_type: editType,
         location: editLocation || undefined,
         capacity: editCapacity ? parseInt(editCapacity, 10) : undefined,
-        is_reservable: editReservable,
-        requires_approval: editApproval,
+        requires_reservation: editReservable,
       },
       { onSuccess: () => setIsEditing(false) }
     );
-  }, [amenity, editName, editDescription, editType, editLocation, editCapacity, editReservable, editApproval, updateAmenity]);
+  }, [amenity, editName, editDescription, editType, editLocation, editCapacity, editReservable, updateAmenity]);
 
   const handleAddRule = useCallback(() => {
     if (!amenity) return;
@@ -263,8 +264,8 @@ export default function AmenityDetailPage({
         <Badge variant={amenityTypeVariant[amenity.amenity_type ?? ''] ?? 'neutral'}>
           {amenityTypeLabel[amenity.amenity_type ?? ''] ?? amenity.amenity_type ?? 'N/A'}
         </Badge>
-        <Badge variant={amenity.is_active ? 'success' : 'danger'}>
-          {amenity.is_active ? 'Activa' : 'Inactiva'}
+        <Badge variant={amenity.status === 'active' ? 'success' : 'danger'}>
+          {amenity.status === 'active' ? 'Activa' : 'Inactiva'}
         </Badge>
       </div>
 
@@ -344,15 +345,6 @@ export default function AmenityDetailPage({
                     />
                     Reservable
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={editApproval}
-                      onChange={(e) => setEditApproval(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    Aprobacion
-                  </label>
                 </div>
                 <div className="flex justify-end gap-2 sm:col-span-2">
                   <Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>
@@ -392,11 +384,7 @@ export default function AmenityDetailPage({
                 </div>
                 <div>
                   <dt className="text-xs text-gray-500">Reservable</dt>
-                  <dd className="text-sm text-gray-900">{amenity.is_reservable ? 'Si' : 'No'}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">Requiere aprobacion</dt>
-                  <dd className="text-sm text-gray-900">{amenity.requires_approval ? 'Si' : 'No'}</dd>
+                  <dd className="text-sm text-gray-900">{amenity.requires_reservation ? 'Si' : 'No'}</dd>
                 </div>
               </dl>
             )}

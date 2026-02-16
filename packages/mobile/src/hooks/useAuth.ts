@@ -6,7 +6,7 @@ import type { AppMetadata } from '@upoe/shared';
 /**
  * Primary auth hook for mobile.
  * Extracts user, role, and community context from the SessionProvider.
- * signOut() clears the session -- Stack.Protected handles redirect automatically.
+ * signOut() clears the session — layout Redirects handle navigation to sign-in.
  */
 export function useAuth() {
   const { session, isLoading } = useSession();
@@ -16,7 +16,7 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    // No manual navigation -- Stack.Protected detects null session and redirects
+    // Layout Redirects automatically navigate to /(auth)/sign-in when session becomes null
   }, []);
 
   const refreshSession = useCallback(async () => {

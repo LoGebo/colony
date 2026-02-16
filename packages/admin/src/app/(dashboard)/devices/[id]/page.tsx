@@ -60,17 +60,16 @@ export default function DeviceDetailPage() {
 
   // Calculate deposit/fee summary
   const totalDepositsCollected = assignments.reduce(
-    (sum, a) => sum + a.deposit_collected,
+    (sum, a) => sum + (a.deposit_amount ?? 0),
     0
   );
   const totalDepositsReturned = assignments.reduce(
-    (sum, a) => sum + (a.deposit_returned ?? 0),
+    (sum, a) => sum + (a.deposit_returned_at ? (a.deposit_amount ?? 0) : 0),
     0
   );
-  const totalFeesCharged = assignments.reduce(
-    (sum, a) => sum + (a.replacement_fee_charged ?? 0),
-    0
-  );
+  const totalFeesCharged = assignments.filter(
+    (a) => a.replacement_fee_charged
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -155,12 +154,7 @@ export default function DeviceDetailPage() {
             <p className="text-sm text-gray-900">{formatDate(device.created_at)}</p>
           </div>
         </div>
-        {device.notes && (
-          <div className="mt-4">
-            <span className="text-sm font-medium text-gray-700">Notas:</span>
-            <p className="mt-1 text-sm text-gray-600">{device.notes}</p>
-          </div>
-        )}
+        {/* No notes column on access_devices */}
       </Card>
 
       {/* Action Buttons */}
@@ -280,7 +274,7 @@ export default function DeviceDetailPage() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                       {assignment.residents
-                        ? `${assignment.residents.first_name} ${assignment.residents.last_name}`
+                        ? `${assignment.residents.first_name} ${assignment.residents.paternal_surname}`
                         : '-'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600">
@@ -292,17 +286,17 @@ export default function DeviceDetailPage() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-900">
-                      {formatCurrency(assignment.deposit_collected)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-900">
-                      {assignment.deposit_returned
-                        ? formatCurrency(assignment.deposit_returned)
+                      {assignment.deposit_collected
+                        ? formatCurrency(assignment.deposit_amount ?? 0)
                         : '-'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-900">
-                      {assignment.replacement_fee_charged
-                        ? formatCurrency(assignment.replacement_fee_charged)
+                      {assignment.deposit_returned_at
+                        ? formatCurrency(assignment.deposit_amount ?? 0)
                         : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-900">
+                      {assignment.replacement_fee_charged ? 'Si' : '-'}
                     </td>
                   </tr>
                 ))}
@@ -323,7 +317,7 @@ export default function DeviceDetailPage() {
         <ReturnDeviceModal
           deviceId={deviceId}
           assignmentId={currentAssignment.id}
-          depositCollected={currentAssignment.deposit_collected}
+          depositAmount={currentAssignment.deposit_amount ?? 0}
           onClose={() => setShowReturnModal(false)}
         />
       )}
@@ -353,8 +347,8 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
   const [formData, setFormData] = useState({
     unit_id: '',
     resident_id: '',
-    deposit_collected: '',
-    notes: '',
+    deposit_amount: '',
+    condition_notes: '',
   });
 
   // Fetch units
@@ -381,14 +375,14 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('occupancies')
-        .select('residents!inner(id, first_name, last_name)')
+        .select('residents!inner(id, first_name, paternal_surname)')
         .eq('unit_id', formData.unit_id)
-        .is('ended_at', null);
+        .is('end_date', null);
       if (error) throw error;
-      return (data?.map((o: unknown) => (o as { residents: { id: string; first_name: string; last_name: string } | null }).residents).filter(Boolean) ?? []) as Array<{
+      return (data?.map((o: unknown) => (o as { residents: { id: string; first_name: string; paternal_surname: string } | null }).residents).filter(Boolean) ?? []) as Array<{
         id: string;
         first_name: string;
-        last_name: string;
+        paternal_surname: string;
       }>;
     },
     enabled: !!formData.unit_id,
@@ -401,8 +395,8 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
         device_id: deviceId,
         unit_id: formData.unit_id,
         resident_id: formData.resident_id || undefined,
-        deposit_collected: parseFloat(formData.deposit_collected),
-        notes: formData.notes || undefined,
+        deposit_amount: parseFloat(formData.deposit_amount) || 0,
+        condition_notes: formData.condition_notes || undefined,
       });
       onClose();
     } catch (error) {
@@ -452,7 +446,7 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
                 <option value="">Ninguno</option>
                 {residents.map((resident) => (
                   <option key={resident.id} value={resident.id}>
-                    {resident.first_name} {resident.last_name}
+                    {resident.first_name} {resident.paternal_surname}
                   </option>
                 ))}
               </select>
@@ -460,15 +454,15 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
           )}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Deposito Recolectado *
+              Monto de Deposito *
             </label>
             <input
               required
               type="number"
               step="0.01"
-              value={formData.deposit_collected}
+              value={formData.deposit_amount}
               onChange={(e) =>
-                setFormData({ ...formData, deposit_collected: e.target.value })
+                setFormData({ ...formData, deposit_amount: e.target.value })
               }
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
@@ -478,9 +472,9 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
               Notas
             </label>
             <textarea
-              value={formData.notes}
+              value={formData.condition_notes}
               onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
+                setFormData({ ...formData, condition_notes: e.target.value })
               }
               rows={2}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
@@ -511,20 +505,20 @@ function AssignDeviceModal({ deviceId, onClose }: AssignDeviceModalProps) {
 interface ReturnDeviceModalProps {
   deviceId: string;
   assignmentId: string;
-  depositCollected: number;
+  depositAmount: number;
   onClose: () => void;
 }
 
 function ReturnDeviceModal({
   deviceId,
   assignmentId,
-  depositCollected,
+  depositAmount,
   onClose,
 }: ReturnDeviceModalProps) {
   const returnDevice = useReturnDevice();
   const [formData, setFormData] = useState({
-    deposit_returned: depositCollected.toString(),
-    notes: '',
+    return_deposit: true,
+    condition_notes: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -533,8 +527,8 @@ function ReturnDeviceModal({
       await returnDevice.mutateAsync({
         device_id: deviceId,
         assignment_id: assignmentId,
-        deposit_returned: parseFloat(formData.deposit_returned),
-        notes: formData.notes || undefined,
+        return_deposit: formData.return_deposit,
+        condition_notes: formData.condition_notes || undefined,
       });
       onClose();
     } catch (error) {
@@ -551,32 +545,31 @@ function ReturnDeviceModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="rounded-md bg-blue-50 p-3">
             <p className="text-sm text-blue-800">
-              Deposito recolectado: {formatCurrency(depositCollected)}
+              Deposito recolectado: {formatCurrency(depositAmount)}
             </p>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Deposito a Devolver *
-            </label>
+          <div className="flex items-center gap-2">
             <input
-              required
-              type="number"
-              step="0.01"
-              value={formData.deposit_returned}
+              type="checkbox"
+              id="return_deposit"
+              checked={formData.return_deposit}
               onChange={(e) =>
-                setFormData({ ...formData, deposit_returned: e.target.value })
+                setFormData({ ...formData, return_deposit: e.target.checked })
               }
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="h-4 w-4 rounded border-gray-300"
             />
+            <label htmlFor="return_deposit" className="text-sm font-medium text-gray-700">
+              Devolver deposito ({formatCurrency(depositAmount)})
+            </label>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
-              Notas
+              Notas de condicion
             </label>
             <textarea
-              value={formData.notes}
+              value={formData.condition_notes}
               onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
+                setFormData({ ...formData, condition_notes: e.target.value })
               }
               rows={2}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
@@ -612,7 +605,7 @@ interface ReportLostModalProps {
 
 function ReportLostModal({ deviceId, assignmentId, onClose }: ReportLostModalProps) {
   const reportLost = useReportLost();
-  const [replacementFee, setReplacementFee] = useState('');
+  const [chargeReplacementFee, setChargeReplacementFee] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -620,7 +613,7 @@ function ReportLostModal({ deviceId, assignmentId, onClose }: ReportLostModalPro
       await reportLost.mutateAsync({
         device_id: deviceId,
         assignment_id: assignmentId,
-        replacement_fee_charged: replacementFee ? parseFloat(replacementFee) : undefined,
+        charge_replacement_fee: chargeReplacementFee || undefined,
       });
       onClose();
     } catch (error) {
@@ -642,17 +635,17 @@ function ReportLostModal({ deviceId, assignmentId, onClose }: ReportLostModalPro
             </p>
           </div>
           {assignmentId && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Cargo por Reemplazo (opcional)
-              </label>
+            <div className="flex items-center gap-2">
               <input
-                type="number"
-                step="0.01"
-                value={replacementFee}
-                onChange={(e) => setReplacementFee(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                type="checkbox"
+                id="charge_replacement"
+                checked={chargeReplacementFee}
+                onChange={(e) => setChargeReplacementFee(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
               />
+              <label htmlFor="charge_replacement" className="text-sm font-medium text-gray-700">
+                Cobrar cargo por reemplazo
+              </label>
             </div>
           )}
           <div className="flex gap-2">

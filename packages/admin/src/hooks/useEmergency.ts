@@ -17,21 +17,21 @@ type AccessibilityNeedRow = Database['public']['Tables']['accessibility_needs'][
 export interface EmergencyContactWithResident extends EmergencyContactRow {
   residents: {
     first_name: string;
-    last_name: string;
+    paternal_surname: string;
   } | null;
 }
 
 export interface MedicalConditionWithResident extends MedicalConditionRow {
   residents: {
     first_name: string;
-    last_name: string;
+    paternal_surname: string;
   } | null;
 }
 
 export interface AccessibilityNeedWithResident extends AccessibilityNeedRow {
   residents: {
     first_name: string;
-    last_name: string;
+    paternal_surname: string;
   } | null;
 }
 
@@ -103,7 +103,7 @@ export function useAllEmergencyContacts(page: number, pageSize: number) {
 
       const { data, error, count } = await supabase
         .from('emergency_contacts')
-        .select('*, residents(first_name, last_name)', { count: 'exact' })
+        .select('*, residents(first_name, paternal_surname)', { count: 'exact' })
         .eq('community_id', communityId!)
         .is('deleted_at', null)
         .order('contact_name')
@@ -132,7 +132,7 @@ export function useMedicalConditions() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('medical_conditions')
-        .select('*, residents(first_name, last_name)')
+        .select('*, residents(first_name, paternal_surname)')
         .eq('community_id', communityId!)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
@@ -160,7 +160,7 @@ export function useAccessibilityNeeds() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('accessibility_needs')
-        .select('*, residents(first_name, last_name)')
+        .select('*, residents(first_name, paternal_surname)')
         .eq('community_id', communityId!)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });

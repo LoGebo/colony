@@ -16,7 +16,7 @@ export interface ProviderRow {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
-  specialty: string | null;
+  specialties: string[] | null;
   status: string;
   total_work_orders: number;
   average_rating: number | null;
@@ -27,36 +27,37 @@ export interface ProviderDocumentRow {
   id: string;
   document_type: string;
   document_number: string | null;
-  issued_by: string | null;
-  issue_date: string | null;
-  expiry_date: string | null;
+  issuing_authority: string | null;
+  issued_at: string | null;
+  expires_at: string | null;
   status: string;
-  file_url: string | null;
-  notes: string | null;
+  storage_path: string | null;
+  file_name: string | null;
   created_at: string;
 }
 
 export interface ProviderPersonnelRow {
   id: string;
   first_name: string;
-  last_name: string;
-  document_type: string | null;
-  document_number: string | null;
+  paternal_surname: string;
+  maternal_surname: string | null;
+  full_name: string | null;
+  ine_number: string | null;
   phone: string | null;
   photo_url: string | null;
-  is_active: boolean;
+  is_authorized: boolean;
   created_at: string;
 }
 
 export interface ProviderScheduleRow {
   id: string;
-  day_of_week: number;
+  name: string;
+  allowed_days: number[];
   start_time: string;
   end_time: string;
-  effective_from: string | null;
+  effective_from: string;
   effective_until: string | null;
   is_active: boolean;
-  notes: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -74,7 +75,7 @@ export function useProviderList(communityId: string | undefined, statusFilter?: 
       let query = supabase
         .from('providers')
         .select(
-          'id, company_name, contact_name, contact_email, contact_phone, specialty, status, total_work_orders, average_rating, created_at'
+          'id, company_name, contact_name, contact_email, contact_phone, specialties, status, total_work_orders, average_rating, created_at'
         )
         .eq('community_id', communityId!)
         .order('company_name', { ascending: true });
@@ -122,8 +123,8 @@ interface CreateProviderInput {
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
-  specialty?: string;
-  tax_id?: string;
+  specialties?: string[];
+  rfc?: string;
   address?: string;
   notes?: string;
 }
@@ -140,11 +141,11 @@ export function useCreateProvider() {
         .insert({
           community_id: communityId!,
           company_name: input.company_name,
-          contact_name: input.contact_name ?? null,
+          contact_name: input.contact_name || '',
           contact_email: input.contact_email ?? null,
-          contact_phone: input.contact_phone ?? null,
-          specialty: input.specialty ?? null,
-          tax_id: input.tax_id ?? null,
+          contact_phone: input.contact_phone || '',
+          specialties: input.specialties ?? [],
+          rfc: input.rfc ?? null,
           address: input.address ?? null,
           notes: input.notes ?? null,
           status: 'pending_approval' as never,
@@ -212,10 +213,10 @@ export function useProviderDocuments(providerId: string | undefined) {
       const { data, error } = await supabase
         .from('provider_documents')
         .select(
-          'id, document_type, document_number, issued_by, issue_date, expiry_date, status, file_url, notes, created_at'
+          'id, document_type, document_number, issuing_authority, issued_at, expires_at, status, storage_path, file_name, created_at'
         )
         .eq('provider_id', providerId!)
-        .order('expiry_date', { ascending: true });
+        .order('expires_at', { ascending: true });
 
       if (error) throw error;
       return (data ?? []) as unknown as ProviderDocumentRow[];
@@ -232,10 +233,9 @@ interface CreateProviderDocumentInput {
   provider_id: string;
   document_type: string;
   document_number?: string;
-  issued_by?: string;
-  issue_date?: string;
-  expiry_date?: string;
-  notes?: string;
+  issuing_authority?: string;
+  issued_at?: string;
+  expires_at?: string;
 }
 
 export function useCreateProviderDocument() {
@@ -251,12 +251,14 @@ export function useCreateProviderDocument() {
           provider_id: input.provider_id,
           community_id: communityId!,
           document_type: input.document_type,
+          document_name: input.document_type,
           document_number: input.document_number ?? null,
-          issued_by: input.issued_by ?? null,
-          issue_date: input.issue_date ?? null,
-          expiry_date: input.expiry_date ?? null,
+          issuing_authority: input.issuing_authority ?? null,
+          issued_at: input.issued_at ?? null,
+          expires_at: input.expires_at ?? null,
           status: 'pending_verification' as never,
-          notes: input.notes ?? null,
+          storage_path: '',
+          file_name: '',
         } as never)
         .select()
         .single();
@@ -326,10 +328,10 @@ export function useProviderPersonnel(providerId: string | undefined) {
       const { data, error } = await supabase
         .from('provider_personnel')
         .select(
-          'id, first_name, last_name, document_type, document_number, phone, photo_url, is_active, created_at'
+          'id, first_name, paternal_surname, maternal_surname, full_name, ine_number, phone, photo_url, is_authorized, created_at'
         )
         .eq('provider_id', providerId!)
-        .order('last_name', { ascending: true });
+        .order('paternal_surname', { ascending: true });
 
       if (error) throw error;
       return (data ?? []) as unknown as ProviderPersonnelRow[];
@@ -345,9 +347,9 @@ export function useProviderPersonnel(providerId: string | undefined) {
 interface CreateProviderPersonnelInput {
   provider_id: string;
   first_name: string;
-  last_name: string;
-  document_type?: string;
-  document_number?: string;
+  paternal_surname: string;
+  maternal_surname?: string;
+  ine_number?: string;
   phone?: string;
 }
 
@@ -364,9 +366,9 @@ export function useCreateProviderPersonnel() {
           provider_id: input.provider_id,
           community_id: communityId!,
           first_name: input.first_name,
-          last_name: input.last_name,
-          document_type: input.document_type ?? null,
-          document_number: input.document_number ?? null,
+          paternal_surname: input.paternal_surname,
+          maternal_surname: input.maternal_surname ?? null,
+          ine_number: input.ine_number ?? null,
           phone: input.phone ?? null,
         } as never)
         .select()
@@ -398,16 +400,16 @@ export function useTogglePersonnelActive() {
     mutationFn: async ({
       id,
       provider_id,
-      is_active,
+      is_authorized,
     }: {
       id: string;
       provider_id: string;
-      is_active: boolean;
+      is_authorized: boolean;
     }) => {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('provider_personnel')
-        .update({ is_active: !is_active } as never)
+        .update({ is_authorized: !is_authorized } as never)
         .eq('id', id)
         .select()
         .single();
@@ -416,7 +418,7 @@ export function useTogglePersonnelActive() {
       return { ...data, provider_id };
     },
     onSuccess: (_data, variables) => {
-      toast.success(variables.is_active ? 'Personal desactivado' : 'Personal activado');
+      toast.success(variables.is_authorized ? 'Personal desautorizado' : 'Personal autorizado');
       queryClient.invalidateQueries({
         queryKey: queryKeys.providers.personnel(variables.provider_id).queryKey,
       });
@@ -439,11 +441,10 @@ export function useProviderSchedules(providerId: string | undefined) {
       const { data, error } = await supabase
         .from('provider_access_schedules')
         .select(
-          'id, day_of_week, start_time, end_time, effective_from, effective_until, is_active, notes'
+          'id, name, allowed_days, start_time, end_time, effective_from, effective_until, is_active'
         )
         .eq('provider_id', providerId!)
-        .order('day_of_week', { ascending: true })
-        .order('start_time', { ascending: true });
+        .order('name', { ascending: true });
 
       if (error) throw error;
       return (data ?? []) as unknown as ProviderScheduleRow[];
@@ -458,10 +459,11 @@ export function useProviderSchedules(providerId: string | undefined) {
 
 interface CreateProviderScheduleInput {
   provider_id: string;
-  day_of_week: number;
+  name: string;
+  allowed_days: number[];
   start_time: string;
   end_time: string;
-  effective_from?: string;
+  effective_from: string;
   effective_until?: string;
 }
 
@@ -477,10 +479,11 @@ export function useCreateProviderSchedule() {
         .insert({
           provider_id: input.provider_id,
           community_id: communityId!,
-          day_of_week: input.day_of_week,
+          name: input.name,
+          allowed_days: input.allowed_days,
           start_time: input.start_time,
           end_time: input.end_time,
-          effective_from: input.effective_from ?? null,
+          effective_from: input.effective_from,
           effective_until: input.effective_until ?? null,
         } as never)
         .select()
@@ -546,12 +549,12 @@ export function useExpiringDocuments(communityId: string | undefined) {
       const { data, error } = await supabase
         .from('provider_documents')
         .select(
-          'id, document_type, expiry_date, status, provider_id, providers!inner(company_name)'
+          'id, document_type, expires_at, status, provider_id, providers!inner(company_name)'
         )
         .eq('providers.community_id', communityId!)
-        .lte('expiry_date', cutoff)
+        .lte('expires_at', cutoff)
         .neq('status', 'rejected' as never)
-        .order('expiry_date', { ascending: true });
+        .order('expires_at', { ascending: true });
 
       if (error) throw error;
       return data ?? [];

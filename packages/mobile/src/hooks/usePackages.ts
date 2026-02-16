@@ -162,7 +162,30 @@ export function useConfirmPickup() {
         if (updateCodeError) throw updateCodeError;
       }
 
-      // 2. Update package to picked_up
+      // 2. Walk through intermediate states to reach picked_up
+      //    The DB trigger enforces: received→stored→notified→pending_pickup→picked_up
+      const { data: pkg } = await supabase
+        .from('packages')
+        .select('status')
+        .eq('id', packageId)
+        .single();
+
+      const currentStatus = pkg?.status as string;
+      const stateWalk: string[] = [];
+
+      if (currentStatus === 'received') stateWalk.push('stored', 'notified', 'pending_pickup');
+      else if (currentStatus === 'stored') stateWalk.push('notified', 'pending_pickup');
+      else if (currentStatus === 'notified') stateWalk.push('pending_pickup');
+      // pending_pickup can go directly to picked_up
+
+      for (const intermediateStatus of stateWalk) {
+        const { error: walkError } = await supabase
+          .from('packages')
+          .update({ status: intermediateStatus })
+          .eq('id', packageId);
+        if (walkError) throw walkError;
+      }
+
       const { data, error } = await supabase
         .from('packages')
         .update({

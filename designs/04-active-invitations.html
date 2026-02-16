@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Active Invitations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #F1F5F9;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(bottom-nav),
+        ::view-transition-new(bottom-nav),
+        ::view-transition-old(bg-elements),
+        ::view-transition-new(bg-elements),
+        ::view-transition-old(user-profile-widget),
+        ::view-transition-new(user-profile-widget) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(10px); } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* iOS Glass Background */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Active Tab Underline Animation */
+        .tab-indicator {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <!-- Background Ambiance (Persistent) -->
+    <div style="view-transition-name: bg-elements" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full h-screen flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="shrink-0 pt-14 px-6 flex items-center justify-between pb-4">
+            <div class="flex items-center gap-3">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="back-to-dash" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-600">
+                    <iconify-icon icon="lucide:chevron-left" class="text-xl"></iconify-icon>
+                </a>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Invitations</h1>
+            </div>
+            <div style="view-transition-name: user-profile-widget" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
+                <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" class="w-full h-full object-cover">
+            </div>
+        </header>
+
+        <!-- Main Content Area (Dynamic) -->
+        <main style="view-transition-name: main-content" class="flex-1 overflow-y-auto px-6 pb-24 hide-scrollbar">
+            <!-- Filter Tabs -->
+            <div class="flex bg-slate-200/50 p-1 rounded-2xl mb-6 relative">
+                <button class="flex-1 py-2.5 text-sm font-bold text-slate-900 z-10 relative transition-colors">Active</button>
+                <button class="flex-1 py-2.5 text-sm font-medium text-slate-500 z-10 relative transition-colors">Pending</button>
+                <a href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" id="nav-history-tab" class="flex-1 py-2.5 text-sm font-medium text-slate-500 z-10 relative text-center">History</a>
+                <!-- Sliding Highlighter (simulated for active) -->
+                <div class="absolute top-1 left-1 bottom-1 w-[calc(33.33%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300"></div>
+            </div>
+
+            <!-- Invitations List -->
+            <div class="space-y-4">
+                <!-- Invitation Card 1 -->
+                <div class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Carlos Mendez</h3>
+                                <p class="text-xs text-slate-500 font-medium">One-time Access</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider rounded-lg">Active</span>
+                    </div>
+                    <div class="flex items-center gap-6 py-2 border-y border-slate-50">
+                        <div class="flex items-center gap-2">
+                            <iconify-icon icon="lucide:calendar" class="text-slate-400"></iconify-icon>
+                            <span class="text-xs font-bold text-slate-700">Today</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <iconify-icon icon="lucide:clock" class="text-slate-400"></iconify-icon>
+                            <span class="text-xs font-bold text-slate-700">14:00 - 18:00</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="flex-1 h-12 bg-slate-900 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2">
+                            <iconify-icon icon="lucide:qr-code"></iconify-icon>
+                            Share QR
+                        </button>
+                        <button class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-rose-500">
+                            <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Invitation Card 2 -->
+                <div class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                                <iconify-icon icon="lucide:repeat" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Amazon Delivery</h3>
+                                <p class="text-xs text-slate-500 font-medium">Recurring Access</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider rounded-lg">Active</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-3 flex flex-wrap gap-2">
+                        <span class="px-2 py-0.5 bg-white text-[10px] font-bold text-slate-600 rounded-md border border-slate-200">Mon</span>
+                        <span class="px-2 py-0.5 bg-white text-[10px] font-bold text-slate-600 rounded-md border border-slate-200">Tue</span>
+                        <span class="px-2 py-0.5 bg-white text-[10px] font-bold text-slate-600 rounded-md border border-slate-200">Wed</span>
+                        <span class="px-2 py-0.5 bg-white text-[10px] font-bold text-slate-600 rounded-md border border-slate-200">Thu</span>
+                        <span class="px-2 py-0.5 bg-white text-[10px] font-bold text-slate-600 rounded-md border border-slate-200">Fri</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="flex-1 h-12 bg-slate-900 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2">
+                            <iconify-icon icon="lucide:external-link"></iconify-icon>
+                            View Details
+                        </button>
+                        <button class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-rose-500">
+                            <iconify-icon icon="lucide:slash" class="text-xl"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Invitation Card 3 -->
+                <div class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                <iconify-icon icon="lucide:party-popper" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Dinner Party</h3>
+                                <p class="text-xs text-slate-500 font-medium">Event Access (12 Guests)</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-lg">Scheduled</span>
+                    </div>
+                    <div class="flex items-center gap-2 py-2">
+                        <iconify-icon icon="lucide:map-pin" class="text-slate-400"></iconify-icon>
+                        <span class="text-xs font-medium text-slate-600 truncate">Clubhouse Rooftop Terrace</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="flex-1 h-12 bg-slate-900 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2">
+                            <iconify-icon icon="lucide:users"></iconify-icon>
+                            Guest List
+                        </button>
+                        <button class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-rose-500">
+                            <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Action Button for Create -->
+            <div class="fixed bottom-28 right-6">
+                <a href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" id="cta-create-invite" class="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 active:scale-90 transition-transform">
+                    <iconify-icon icon="lucide:plus" class="text-2xl"></iconify-icon>
+                </a>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation (Persistent) -->
+        <nav style="view-transition-name: bottom-nav" class="shrink-0 glass-nav pb-[34px] pt-4 px-8">
+            <div class="flex items-center justify-between">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-blue-600">
+                    <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Guests</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:message-circle" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Social</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Profile</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+</body>
+</html>

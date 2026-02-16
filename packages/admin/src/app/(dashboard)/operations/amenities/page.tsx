@@ -22,9 +22,10 @@ const amenityTypeLabel: Record<string, string> = {
   pool: 'Alberca',
   gym: 'Gimnasio',
   salon: 'Salon',
-  court: 'Cancha',
+  rooftop: 'Rooftop',
   bbq: 'Asador',
-  playground: 'Area de juegos',
+  court: 'Cancha',
+  room: 'Sala',
   parking: 'Estacionamiento',
   other: 'Otro',
 };
@@ -33,14 +34,15 @@ const amenityTypeVariant: Record<string, 'success' | 'info' | 'warning' | 'neutr
   pool: 'info',
   gym: 'success',
   salon: 'warning',
-  court: 'info',
+  rooftop: 'info',
   bbq: 'warning',
-  playground: 'success',
+  court: 'info',
+  room: 'success',
   parking: 'neutral',
   other: 'neutral',
 };
 
-const AMENITY_TYPES = ['pool', 'gym', 'salon', 'court', 'bbq', 'playground', 'parking', 'other'];
+const AMENITY_TYPES = ['pool', 'gym', 'salon', 'rooftop', 'bbq', 'court', 'room', 'parking', 'other'];
 
 /* ------------------------------------------------------------------ */
 /*  Amenity card component                                            */
@@ -70,11 +72,8 @@ function AmenityCard({
           {amenity.capacity != null && <p>Capacidad: {amenity.capacity} personas</p>}
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {amenity.is_reservable && (
+          {amenity.requires_reservation && (
             <Badge variant="info">Reservable</Badge>
-          )}
-          {amenity.requires_approval && (
-            <Badge variant="warning">Requiere aprobacion</Badge>
           )}
         </div>
       </div>
@@ -82,11 +81,11 @@ function AmenityCard({
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
             type="checkbox"
-            checked={amenity.is_active ?? false}
+            checked={amenity.status === 'active'}
             onChange={(e) => onToggleActive(amenity.id, e.target.checked)}
             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
           />
-          {amenity.is_active ? 'Activa' : 'Inactiva'}
+          {amenity.status === 'active' ? 'Activa' : 'Inactiva'}
         </label>
         <Link
           href={`/operations/amenities/${amenity.id}`}
@@ -113,7 +112,6 @@ export default function AmenitiesPage() {
   const [formLocation, setFormLocation] = useState('');
   const [formCapacity, setFormCapacity] = useState('');
   const [formReservable, setFormReservable] = useState(true);
-  const [formApproval, setFormApproval] = useState(false);
 
   const { data: amenities, isLoading } = useAmenities();
   const createAmenity = useCreateAmenity();
@@ -126,7 +124,6 @@ export default function AmenitiesPage() {
     setFormLocation('');
     setFormCapacity('');
     setFormReservable(true);
-    setFormApproval(false);
   }, []);
 
   const handleCreate = useCallback(() => {
@@ -138,8 +135,7 @@ export default function AmenitiesPage() {
         amenity_type: formType,
         location: formLocation || undefined,
         capacity: formCapacity ? parseInt(formCapacity, 10) : undefined,
-        is_reservable: formReservable,
-        requires_approval: formApproval,
+        requires_reservation: formReservable,
       },
       {
         onSuccess: () => {
@@ -148,11 +144,11 @@ export default function AmenitiesPage() {
         },
       }
     );
-  }, [formName, formDescription, formType, formLocation, formCapacity, formReservable, formApproval, createAmenity, resetForm]);
+  }, [formName, formDescription, formType, formLocation, formCapacity, formReservable, createAmenity, resetForm]);
 
   const handleToggleActive = useCallback(
     (id: string, active: boolean) => {
-      updateAmenity.mutate({ id, is_active: active });
+      updateAmenity.mutate({ id, status: active ? 'active' : 'inactive' });
     },
     [updateAmenity]
   );
@@ -265,16 +261,7 @@ export default function AmenitiesPage() {
                   onChange={(e) => setFormReservable(e.target.checked)}
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                Reservable
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={formApproval}
-                  onChange={(e) => setFormApproval(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Requiere aprobacion
+                Requiere reservacion
               </label>
             </div>
             <div className="flex justify-end gap-3 sm:col-span-2">

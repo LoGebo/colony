@@ -26,16 +26,16 @@ const electionStatusVariants = {
 
 const electionTypeVariants = {
   board_election: 'info' as const,
-  budget_approval: 'warning' as const,
-  rules_amendment: 'neutral' as const,
-  general_vote: 'success' as const,
+  extraordinary_expense: 'warning' as const,
+  bylaw_amendment: 'neutral' as const,
+  general_decision: 'success' as const,
 };
 
 const electionTypeLabels: Record<string, string> = {
   board_election: 'Elección de Mesa',
-  budget_approval: 'Aprobación Presupuesto',
-  rules_amendment: 'Enmienda Reglamento',
-  general_vote: 'Votación General',
+  extraordinary_expense: 'Gasto Extraordinario',
+  bylaw_amendment: 'Enmienda Reglamento',
+  general_decision: 'Decisión General',
 };
 
 const statusLabels: Record<string, string> = {

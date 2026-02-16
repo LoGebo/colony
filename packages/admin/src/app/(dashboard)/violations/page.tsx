@@ -21,28 +21,38 @@ import { formatDate } from '@/lib/formatters';
 const severityVariant: Record<string, 'info' | 'warning' | 'danger'> = {
   minor: 'info',
   moderate: 'warning',
-  serious: 'danger',
-  critical: 'danger',
+  major: 'danger',
+  severe: 'danger',
 };
 
 const severityLabel: Record<string, string> = {
   minor: 'Menor',
   moderate: 'Moderada',
-  serious: 'Grave',
-  critical: 'Critica',
+  major: 'Grave',
+  severe: 'Critica',
 };
 
 const statusVariant: Record<string, 'warning' | 'info' | 'success' | 'neutral'> = {
-  open: 'warning',
+  reported: 'warning',
   under_review: 'info',
-  resolved: 'success',
+  confirmed: 'info',
+  sanctioned: 'danger' as 'warning',
+  appealed: 'warning',
+  appeal_denied: 'neutral',
+  appeal_granted: 'success',
+  closed: 'success',
   dismissed: 'neutral',
 };
 
 const statusLabel: Record<string, string> = {
-  open: 'Abierta',
+  reported: 'Reportada',
   under_review: 'En revision',
-  resolved: 'Resuelta',
+  confirmed: 'Confirmada',
+  sanctioned: 'Sancionada',
+  appealed: 'Apelada',
+  appeal_denied: 'Apelacion denegada',
+  appeal_granted: 'Apelacion aprobada',
+  closed: 'Cerrada',
   dismissed: 'Desestimada',
 };
 
@@ -177,8 +187,8 @@ export default function ViolationsPage() {
           <option value="">Todas las severidades</option>
           <option value="minor">Menor</option>
           <option value="moderate">Moderada</option>
-          <option value="serious">Grave</option>
-          <option value="critical">Critica</option>
+          <option value="major">Grave</option>
+          <option value="severe">Critica</option>
         </select>
         <select
           value={statusFilter}
@@ -189,9 +199,12 @@ export default function ViolationsPage() {
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         >
           <option value="">Todos los estados</option>
-          <option value="open">Abierta</option>
+          <option value="reported">Reportada</option>
           <option value="under_review">En revision</option>
-          <option value="resolved">Resuelta</option>
+          <option value="confirmed">Confirmada</option>
+          <option value="sanctioned">Sancionada</option>
+          <option value="appealed">Apelada</option>
+          <option value="closed">Cerrada</option>
           <option value="dismissed">Desestimada</option>
         </select>
         <select
@@ -354,8 +367,8 @@ function CreateViolationModal({
               <option value="">Seleccionar...</option>
               <option value="minor">Menor</option>
               <option value="moderate">Moderada</option>
-              <option value="serious">Grave</option>
-              <option value="critical">Critica</option>
+              <option value="major">Grave</option>
+              <option value="severe">Critica</option>
             </select>
           </div>
 

@@ -72,11 +72,21 @@ export default function CreateIncidentScreen() {
         location_description: locationDescription.trim() || undefined,
       });
 
-      Alert.alert('Incident Reported', 'Your incident report has been submitted.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      if (Platform.OS === 'web') {
+        window.alert('Your incident report has been submitted.');
+        router.back();
+      } else {
+        Alert.alert('Incident Reported', 'Your incident report has been submitted.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
     } catch (error: any) {
-      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+      const msg = error?.message ?? 'Something went wrong. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 

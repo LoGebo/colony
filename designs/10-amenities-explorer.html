@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Amenities Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Transitions */
+        @view-transition {
+            navigation: auto;
+        }
+
+        html {
+            background-color: #F1F5F9;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .slot-pill.active {
+            background: #1E293B;
+            color: white;
+            border-color: #1E293B;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Ambiance (Persistent) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full min-h-screen flex flex-col">
+        <!-- Dynamic Main Content -->
+        <main style="view-transition-name: main-content" class="flex-1 flex flex-col pt-14 pb-32">
+            <!-- Header -->
+            <div class="px-6 mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">Amenities</h1>
+                    <p class="text-slate-500 text-sm">Book spaces for your lifestyle</p>
+                </div>
+                <button class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-sm">
+                    <iconify-icon icon="lucide:history" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Category Selection -->
+            <div class="flex gap-4 px-6 overflow-x-auto no-scrollbar pb-4 mb-2">
+                <button class="shrink-0 flex flex-col items-center gap-2 group">
+                    <div class="w-16 h-16 rounded-2xl bg-white border-2 border-blue-600 text-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/10 transition-all">
+                        <iconify-icon icon="lucide:waves" class="text-2xl"></iconify-icon>
+                    </div>
+                    <span class="text-xs font-bold text-slate-900">Pool</span>
+                </button>
+                <button class="shrink-0 flex flex-col items-center gap-2 group opacity-50">
+                    <div class="w-16 h-16 rounded-2xl bg-white border border-slate-100 text-slate-400 flex items-center justify-center transition-all">
+                        <iconify-icon icon="lucide:dumbbell" class="text-2xl"></iconify-icon>
+                    </div>
+                    <span class="text-xs font-medium text-slate-500">Gym</span>
+                </button>
+                <button class="shrink-0 flex flex-col items-center gap-2 group opacity-50">
+                    <div class="w-16 h-16 rounded-2xl bg-white border border-slate-100 text-slate-400 flex items-center justify-center transition-all">
+                        <iconify-icon icon="lucide:scissors" class="text-2xl"></iconify-icon>
+                    </div>
+                    <span class="text-xs font-medium text-slate-500">Salon</span>
+                </button>
+                <button class="shrink-0 flex flex-col items-center gap-2 group opacity-50">
+                    <div class="w-16 h-16 rounded-2xl bg-white border border-slate-100 text-slate-400 flex items-center justify-center transition-all">
+                        <iconify-icon icon="lucide:flame" class="text-2xl"></iconify-icon>
+                    </div>
+                    <span class="text-xs font-medium text-slate-500">Grill</span>
+                </button>
+                <button class="shrink-0 flex flex-col items-center gap-2 group opacity-50">
+                    <div class="w-16 h-16 rounded-2xl bg-white border border-slate-100 text-slate-400 flex items-center justify-center transition-all">
+                        <iconify-icon icon="lucide:clapperboard" class="text-2xl"></iconify-icon>
+                    </div>
+                    <span class="text-xs font-medium text-slate-500">Cinema</span>
+                </button>
+            </div>
+
+            <!-- Amenity Details Card -->
+            <div class="px-6 mb-8">
+                <div class="relative h-48 w-full rounded-[28px] overflow-hidden shadow-xl mb-4">
+                    <img src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=800" alt="Infinity Pool" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="absolute bottom-4 left-5">
+                        <div class="flex items-center gap-2 bg-white/20 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 mb-1 w-fit">
+                            <iconify-icon icon="lucide:users" class="text-xs text-white"></iconify-icon>
+                            <span class="text-[10px] font-bold text-white uppercase tracking-wider">Capacity: 20</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">Olympic Infinity Pool</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-panel p-4 rounded-2xl">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Hourly Rate</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xl font-bold text-slate-900">$12</span>
+                            <span class="text-xs text-slate-500 font-medium">/hr</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Deposit</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-xl font-bold text-slate-900">$50</span>
+                            <span class="text-xs text-slate-500 font-medium">ref.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Availability Calendar -->
+            <div class="px-6 mb-6">
+                <h3 class="text-sm font-bold text-slate-900 mb-4">Select Date</h3>
+                <div class="flex justify-between">
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Sun</span>
+                        <button class="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600">14</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Mon</span>
+                        <button class="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-blue-500/20">15</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Tue</span>
+                        <button class="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600">16</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase text-rose-400">Wed</span>
+                        <button class="w-11 h-11 rounded-full border border-slate-100 flex items-center justify-center text-sm font-bold text-slate-300" disabled>17</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Thu</span>
+                        <button class="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600">18</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Fri</span>
+                        <button class="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600">19</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Slot Selection -->
+            <div class="px-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-slate-900">Available Slots</h3>
+                    <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">8 MORNING SLOTS</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 active:bg-slate-100 transition-colors">09:00 AM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">10:00 AM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">11:00 AM</button>
+                    <button class="slot-pill active h-10 border border-slate-200 rounded-xl text-xs font-bold shadow-md">12:00 PM</button>
+                    <button class="slot-pill h-10 border border-slate-100 rounded-xl text-xs font-bold text-slate-300" disabled>01:00 PM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">02:00 PM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">03:00 PM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">04:00 PM</button>
+                    <button class="slot-pill h-10 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">05:00 PM</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Navigation -->
+        <nav style="view-transition-name: main-nav" class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 pb-[34px] pt-3 z-50">
+            <div class="flex justify-between items-center">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                    <iconify-icon icon="lucide:layout-dashboard" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase">Home</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                    <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase">Visitors</span>
+                </a>
+                <div class="relative -mt-10">
+                    <button class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-900/20 active:scale-90 transition-transform">
+                        <iconify-icon icon="lucide:plus" class="text-2xl"></iconify-icon>
+                    </button>
+                </div>
+                <a href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" id="nav-amenities" class="flex flex-col items-center gap-1 text-blue-600 transition-colors">
+                    <iconify-icon icon="lucide:palmtree" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase">Explore</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                    <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold uppercase">Profile</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- CTA Floating Button -->
+        <div class="fixed bottom-[100px] left-0 right-0 px-6 z-40">
+            <button class="w-full h-14 bg-slate-900 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-3 shadow-2xl shadow-slate-900/30 active:scale-[0.98] transition-all">
+                <span>Book for $12.00</span>
+                <iconify-icon icon="lucide:chevron-right" class="text-xl opacity-50"></iconify-icon>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Interactive slot selection logic
+        document.querySelectorAll('.slot-pill:not([disabled])').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.slot-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

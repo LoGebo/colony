@@ -1,18 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   StyleSheet,
   RefreshControl,
   Alert,
+  Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useActiveInvitations, useCancelInvitation } from '@/hooks/useVisitors';
-import { formatDate, formatTime, DAY_LABELS } from '@/lib/dates';
+import { useActiveInvitations, useCancelInvitation, useVisitorHistory } from '@/hooks/useVisitors';
+import { formatDate, formatTime, isExpired, DAY_LABELS } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
@@ -24,6 +27,32 @@ export default function VisitorsIndexScreen() {
   const { data: invitations, isLoading, refetch } = useActiveInvitations();
   const cancelMutation = useCancelInvitation();
 
+  // History data
+  const [historySearch, setHistorySearch] = useState('');
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: refetchHistory,
+  } = useVisitorHistory(20);
+
+  const allHistory = useMemo(() => {
+    if (!historyData?.pages) return [];
+    return historyData.pages.flatMap((page) => page.data);
+  }, [historyData]);
+
+  const filteredHistory = useMemo(() => {
+    if (!historySearch.trim()) return allHistory;
+    const lower = historySearch.toLowerCase();
+    return allHistory.filter((inv: any) => inv.visitor_name?.toLowerCase().includes(lower));
+  }, [allHistory, historySearch]);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const filtered = (invitations ?? []).filter((inv) => {
     if (activeTab === 'active') return inv.status === 'approved';
     if (activeTab === 'pending') return inv.status === 'pending';
@@ -31,18 +60,24 @@ export default function VisitorsIndexScreen() {
   });
 
   const handleCancel = (id: string, name: string) => {
-    Alert.alert(
-      'Cancel Invitation',
-      `Are you sure you want to cancel the invitation for ${name}?`,
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => cancelMutation.mutate(id),
-        },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to cancel the invitation for ${name}?`)) {
+        cancelMutation.mutate(id);
+      }
+    } else {
+      Alert.alert(
+        'Cancel Invitation',
+        `Are you sure you want to cancel the invitation for ${name}?`,
+        [
+          { text: 'No', style: 'cancel' },
+          {
+            text: 'Yes, Cancel',
+            style: 'destructive',
+            onPress: () => cancelMutation.mutate(id),
+          },
+        ]
+      );
+    }
   };
 
   const getInvitationIcon = (type: string): { name: keyof typeof Ionicons.glyphMap; bg: string; color: string } => {
@@ -58,12 +93,23 @@ export default function VisitorsIndexScreen() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, invitation?: any) => {
+    if (invitation?.cancelled_at) {
+      return { label: 'CANCELLED', bg: colors.dangerBg, color: colors.dangerText };
+    }
+    if (invitation?.times_used && invitation?.max_uses && invitation.times_used >= invitation.max_uses) {
+      return { label: 'USED', bg: colors.successBg, color: colors.successText };
+    }
+    if (status === 'approved' && invitation?.valid_until && isExpired(invitation.valid_until)) {
+      return { label: 'EXPIRED', bg: 'rgba(226,232,240,0.5)', color: colors.textMuted };
+    }
     switch (status) {
       case 'approved':
         return { label: 'ACTIVE', bg: colors.successBg, color: colors.successText };
       case 'pending':
         return { label: 'PENDING', bg: colors.warningBg, color: colors.warningText };
+      case 'cancelled':
+        return { label: 'CANCELLED', bg: colors.dangerBg, color: colors.dangerText };
       default:
         return { label: status.toUpperCase(), bg: colors.border, color: colors.textCaption };
     }
@@ -100,13 +146,7 @@ export default function VisitorsIndexScreen() {
             <TouchableOpacity
               key={tab}
               style={[styles.filterTab, activeTab === tab && styles.filterTabActive]}
-              onPress={() => {
-                if (tab === 'history') {
-                  router.push('/(resident)/visitors/history');
-                } else {
-                  setActiveTab(tab);
-                }
-              }}
+              onPress={() => setActiveTab(tab)}
             >
               <Text style={[styles.filterTabText, activeTab === tab && styles.filterTabTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -116,43 +156,177 @@ export default function VisitorsIndexScreen() {
         </View>
       </View>
 
-      {/* Content */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />}
-      >
-        {isLoading ? (
+      {/* History Search Bar */}
+      {activeTab === 'history' && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search-outline" size={18} color={colors.textCaption} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search visitor name..."
+              placeholderTextColor={colors.textCaption}
+              value={historySearch}
+              onChangeText={setHistorySearch}
+            />
+            {historySearch.length > 0 && (
+              <TouchableOpacity onPress={() => setHistorySearch('')}>
+                <Ionicons name="close-circle" size={18} color={colors.textCaption} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Content: Active/Pending tabs */}
+      {activeTab !== 'history' && (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.primary} />}
+        >
+          {isLoading ? (
+            <View style={styles.centerMessage}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : filtered.length === 0 ? (
+            <View style={styles.centerMessage}>
+              <Ionicons name="people-outline" size={48} color={colors.textDisabled} />
+              <Text style={styles.emptyTitle}>No {activeTab} invitations</Text>
+              <Text style={styles.emptySubtitle}>Tap the + button to create a new invitation.</Text>
+            </View>
+          ) : (
+            <View style={styles.invitationsList}>
+              {filtered.map((invitation) => {
+                const iconConfig = getInvitationIcon(invitation.invitation_type);
+                const badge = getStatusBadge(invitation.status);
+                const recurringDays = Array.isArray(invitation.recurring_days)
+                  ? invitation.recurring_days
+                  : [];
+
+                return (
+                  <View key={invitation.id} style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderLeft}>
+                        <View style={[styles.cardIcon, { backgroundColor: iconConfig.bg }]}>
+                          <Ionicons name={iconConfig.name as any} size={24} color={iconConfig.color} />
+                        </View>
+                        <View>
+                          <Text style={styles.cardName}>{invitation.visitor_name}</Text>
+                          <Text style={styles.cardType}>{getTypeLabel(invitation.invitation_type)}</Text>
+                        </View>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                        <Text style={[styles.statusBadgeText, { color: badge.color }]}>{badge.label}</Text>
+                      </View>
+                    </View>
+
+                    {invitation.invitation_type !== 'recurring' && (
+                      <View style={styles.cardInfoRow}>
+                        <View style={styles.cardInfoItem}>
+                          <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+                          <Text style={styles.cardInfoText}>
+                            {invitation.valid_from ? formatDate(invitation.valid_from) : 'Today'}
+                          </Text>
+                        </View>
+                        {invitation.recurring_start_time && (
+                          <View style={styles.cardInfoItem}>
+                            <Ionicons name="time-outline" size={14} color={colors.textCaption} />
+                            <Text style={styles.cardInfoText}>
+                              {formatTime(invitation.recurring_start_time)}
+                              {invitation.recurring_end_time ? ` - ${formatTime(invitation.recurring_end_time)}` : ''}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {invitation.invitation_type === 'recurring' && recurringDays.length > 0 && (
+                      <View style={styles.recurringDaysContainer}>
+                        <View style={styles.recurringDaysRow}>
+                          {recurringDays.map((day: number) => (
+                            <View key={day} style={styles.dayPill}>
+                              <Text style={styles.dayPillText}>
+                                {(DAY_LABELS[day] ?? '').slice(0, 3)}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.cardActions}>
+                      <TouchableOpacity
+                        style={styles.cardPrimaryAction}
+                        onPress={() => router.push(`/(resident)/visitors/${invitation.id}`)}
+                      >
+                        <Ionicons name="qr-code-outline" size={16} color={colors.textOnDark} />
+                        <Text style={styles.cardPrimaryActionText}>
+                          {invitation.invitation_type === 'recurring' ? 'View Details' : 'Share QR'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.cardSecondaryAction}
+                        onPress={() => handleCancel(invitation.id, invitation.visitor_name)}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      )}
+
+      {/* Content: History tab (inline FlatList with pagination) */}
+      {activeTab === 'history' && (
+        historyLoading ? (
           <View style={styles.centerMessage}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ) : filtered.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <View style={styles.centerMessage}>
             <Ionicons name="people-outline" size={48} color={colors.textDisabled} />
-            <Text style={styles.emptyTitle}>No {activeTab} invitations</Text>
-            <Text style={styles.emptySubtitle}>Tap the + button to create a new invitation.</Text>
+            <Text style={styles.emptyTitle}>No visitor history</Text>
+            <Text style={styles.emptySubtitle}>
+              {historySearch ? 'No results match your search.' : 'Your visitor history will appear here.'}
+            </Text>
           </View>
         ) : (
-          <View style={styles.invitationsList}>
-            {filtered.map((invitation) => {
-              const iconConfig = getInvitationIcon(invitation.invitation_type);
-              const badge = getStatusBadge(invitation.status);
-              const recurringDays = Array.isArray(invitation.recurring_days)
-                ? invitation.recurring_days
-                : [];
+          <FlatList
+            data={filteredHistory}
+            keyExtractor={(item: any) => item.id}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl refreshing={false} onRefresh={() => refetchHistory()} tintColor={colors.primary} />
+            }
+            renderItem={({ item }: { item: any }) => {
+              const badge = getStatusBadge(item.status, item);
+              const iconConfig = getInvitationIcon(item.invitation_type);
+              const isCancelled = !!item.cancelled_at;
+              const isExpiredStatus = badge.label === 'EXPIRED';
+              const dimmed = isCancelled || isExpiredStatus;
+              const recurringDays = Array.isArray(item.recurring_days) ? item.recurring_days : [];
 
               return (
-                <View key={invitation.id} style={styles.card}>
-                  {/* Card Header */}
+                <TouchableOpacity
+                  style={[styles.card, dimmed && styles.cardDimmed]}
+                  onPress={() => router.push(`/(resident)/visitors/${item.id}`)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.cardHeader}>
                     <View style={styles.cardHeaderLeft}>
                       <View style={[styles.cardIcon, { backgroundColor: iconConfig.bg }]}>
                         <Ionicons name={iconConfig.name as any} size={24} color={iconConfig.color} />
                       </View>
                       <View>
-                        <Text style={styles.cardName}>{invitation.visitor_name}</Text>
-                        <Text style={styles.cardType}>{getTypeLabel(invitation.invitation_type)}</Text>
+                        <Text style={styles.cardName}>{item.visitor_name}</Text>
+                        <Text style={styles.cardType}>{getTypeLabel(item.invitation_type)}</Text>
                       </View>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
@@ -160,29 +334,25 @@ export default function VisitorsIndexScreen() {
                     </View>
                   </View>
 
-                  {/* Date/Time Info */}
-                  {invitation.invitation_type !== 'recurring' && (
+                  {item.invitation_type !== 'recurring' && item.valid_from && (
                     <View style={styles.cardInfoRow}>
                       <View style={styles.cardInfoItem}>
                         <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
-                        <Text style={styles.cardInfoText}>
-                          {invitation.valid_from ? formatDate(invitation.valid_from) : 'Today'}
-                        </Text>
+                        <Text style={styles.cardInfoText}>{formatDate(item.valid_from)}</Text>
                       </View>
-                      {invitation.recurring_start_time && (
+                      {item.recurring_start_time && (
                         <View style={styles.cardInfoItem}>
                           <Ionicons name="time-outline" size={14} color={colors.textCaption} />
                           <Text style={styles.cardInfoText}>
-                            {formatTime(invitation.recurring_start_time)}
-                            {invitation.recurring_end_time ? ` - ${formatTime(invitation.recurring_end_time)}` : ''}
+                            {formatTime(item.recurring_start_time)}
+                            {item.recurring_end_time ? ` - ${formatTime(item.recurring_end_time)}` : ''}
                           </Text>
                         </View>
                       )}
                     </View>
                   )}
 
-                  {/* Recurring Days */}
-                  {invitation.invitation_type === 'recurring' && recurringDays.length > 0 && (
+                  {item.invitation_type === 'recurring' && recurringDays.length > 0 && (
                     <View style={styles.recurringDaysContainer}>
                       <View style={styles.recurringDaysRow}>
                         {recurringDays.map((day: number) => (
@@ -196,30 +366,29 @@ export default function VisitorsIndexScreen() {
                     </View>
                   )}
 
-                  {/* Actions */}
                   <View style={styles.cardActions}>
                     <TouchableOpacity
                       style={styles.cardPrimaryAction}
-                      onPress={() => router.push(`/(resident)/visitors/${invitation.id}`)}
+                      onPress={() => router.push(`/(resident)/visitors/${item.id}`)}
                     >
-                      <Ionicons name="qr-code-outline" size={16} color={colors.textOnDark} />
-                      <Text style={styles.cardPrimaryActionText}>
-                        {invitation.invitation_type === 'recurring' ? 'View Details' : 'Share QR'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cardSecondaryAction}
-                      onPress={() => handleCancel(invitation.id, invitation.visitor_name)}
-                    >
-                      <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                      <Ionicons name="eye-outline" size={16} color={colors.textOnDark} />
+                      <Text style={styles.cardPrimaryActionText}>View Details</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
-            })}
-          </View>
-        )}
-      </ScrollView>
+            }}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={styles.loadingMore}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View>
+              ) : null
+            }
+          />
+        )
+      )}
 
       {/* FAB */}
       <TouchableOpacity
@@ -445,6 +614,47 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Search
+  searchContainer: {
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 44,
+    gap: spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textPrimary,
+    height: '100%',
+  },
+  // Dimmed card
+  cardDimmed: {
+    opacity: 0.6,
+  },
+  // Loading more
+  loadingMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing['3xl'],
+    gap: spacing.md,
+  },
+  loadingMoreText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textCaption,
   },
   // FAB
   fab: {

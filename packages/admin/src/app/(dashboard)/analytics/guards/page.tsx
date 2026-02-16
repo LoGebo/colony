@@ -22,9 +22,9 @@ export default function GuardAnalyticsPage() {
   const [dateFrom, setDateFrom] = useState(fmt(thirtyDaysAgo));
   const [dateTo, setDateTo] = useState(fmt(today));
 
-  const { data: metrics, isLoading } = useGuardPerformance(dateFrom, dateTo);
+  const { data: metrics, isLoading, isPending } = useGuardPerformance(dateFrom, dateTo);
 
-  if (isLoading) {
+  if (isLoading || isPending) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

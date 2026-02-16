@@ -7,6 +7,7 @@ import {
   Animated,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,7 +52,11 @@ export default function PatrolScanScreen() {
 
   const handleSimulatedScan = useCallback(async () => {
     if (!activePatrol || !allCheckpoints || allCheckpoints.length === 0) {
-      Alert.alert('No Active Patrol', 'Start a patrol first before scanning checkpoints.');
+      if (Platform.OS === 'web') {
+        window.alert('Start a patrol first before scanning checkpoints.');
+      } else {
+        Alert.alert('No Active Patrol', 'Start a patrol first before scanning checkpoints.');
+      }
       return;
     }
 
@@ -63,7 +68,11 @@ export default function PatrolScanScreen() {
       const nextCheckpoint = allCheckpoints[visitedCount % allCheckpoints.length];
 
       if (!nextCheckpoint) {
-        Alert.alert('All Done', 'All checkpoints have been scanned.');
+        if (Platform.OS === 'web') {
+          window.alert('All checkpoints have been scanned.');
+        } else {
+          Alert.alert('All Done', 'All checkpoints have been scanned.');
+        }
         setScanning(false);
         return;
       }
@@ -78,13 +87,23 @@ export default function PatrolScanScreen() {
         sequenceOrder: visitedCount + 1,
       });
 
-      Alert.alert(
-        'Checkpoint Scanned',
-        `${nextCheckpoint.name} has been recorded.`,
-        [{ text: 'OK', onPress: () => router.back() }],
-      );
+      if (Platform.OS === 'web') {
+        window.alert(`${nextCheckpoint.name} has been recorded.`);
+        router.back();
+      } else {
+        Alert.alert(
+          'Checkpoint Scanned',
+          `${nextCheckpoint.name} has been recorded.`,
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      }
     } catch (error: any) {
-      Alert.alert('Scan Error', error?.message ?? 'Failed to record checkpoint scan.');
+      const msg = error?.message ?? 'Failed to record checkpoint scan.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Scan Error', msg);
+      }
     } finally {
       setScanning(false);
     }

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Announcements Feed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #F1F5F9;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* View Transitions */
+        @view-transition { navigation: auto; }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        ::view-transition-old(root), ::view-transition-new(root) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 w-full min-h-screen flex flex-col">
+        <!-- HEADER (Persistent Style) -->
+        <header class="shrink-0 pt-14 px-6 pb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-slate-500 text-sm font-medium mb-1 uppercase tracking-wider">Lumina Central</p>
+                    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Announcements</h1>
+                </div>
+                <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile-link" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
+                    <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" class="w-full h-full object-cover">
+                </a>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT (Dynamic) -->
+        <main class="flex-1 px-6 pb-24 overflow-y-auto" style="view-transition-name: main-content">
+            <!-- Filters -->
+            <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar py-1">
+                <button class="px-5 h-10 rounded-full bg-slate-900 text-white text-sm font-bold whitespace-nowrap">All Posts</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium whitespace-nowrap">Unread</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium whitespace-nowrap">Urgent</button>
+                <button class="px-5 h-10 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium whitespace-nowrap">Official</button>
+            </div>
+
+            <!-- Announcement List -->
+            <div class="space-y-4">
+                <!-- Urgent/Mandatory Announcement -->
+                <div class="relative bg-white rounded-3xl p-5 border-l-4 border-rose-500 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 bg-rose-50 text-rose-600 text-[10px] font-black uppercase rounded-lg">Critical</span>
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">10m ago</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">Mandatory Elevator Maintenance: Tower A</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">Both elevators in Tower A will be offline for emergency repairs between 2:00 PM and 5:00 PM today. Please plan accordingly.</p>
+                    
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400">
+                            <iconify-icon icon="lucide:file-text" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Action Required</p>
+                            <p class="text-xs text-slate-700 font-medium">Read Acknowledgment</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.classList.add('opacity-50'); this.disabled=true; this.innerHTML='Confirmed'" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl active:scale-95 transition-all">
+                            Accept
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Standard Announcement (Unread) -->
+                <div class="bg-white rounded-3xl p-5 shadow-sm relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4">
+                         <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+                    </div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg">Community</span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium pr-4">2h ago</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">Annual Resident General Assembly</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-4">The 2024 general assembly is scheduled for next Saturday at the clubhouse. Please review the attached agenda.</p>
+                    <div class="flex items-center gap-2 text-blue-600 text-sm font-bold cursor-pointer group-hover:underline">
+                        <span>View Agenda</span>
+                        <iconify-icon icon="lucide:arrow-up-right"></iconify-icon>
+                    </div>
+                </div>
+
+                <!-- Low Priority (Read) -->
+                <div class="bg-white/60 rounded-3xl p-5 border border-slate-100 shadow-sm opacity-80">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-black uppercase rounded-lg">Info</span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">Yesterday</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">New Recycling Bins in P1</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">The administration has installed new specialized recycling bins in parking level P1 for glass and batteries. Thank you for your cooperation.</p>
+                </div>
+
+                <!-- Event Announcement -->
+                <div class="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl p-6 text-white shadow-lg shadow-teal-500/20">
+                    <div class="flex items-center gap-2 mb-4">
+                        <iconify-icon icon="lucide:sparkles" class="text-xl text-teal-200"></iconify-icon>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-teal-100">Coming Soon</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Summer Splash Party</h3>
+                    <p class="text-teal-50 text-sm mb-4 leading-relaxed">Join us for the opening of the pool season. Music, catering, and drinks for the whole family.</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex -space-x-2">
+                            <img src="https://i.pravatar.cc/100?u=1" class="w-8 h-8 rounded-full border-2 border-teal-500">
+                            <img src="https://i.pravatar.cc/100?u=2" class="w-8 h-8 rounded-full border-2 border-teal-500">
+                            <img src="https://i.pravatar.cc/100?u=3" class="w-8 h-8 rounded-full border-2 border-teal-500">
+                            <div class="w-8 h-8 rounded-full bg-teal-400/50 border-2 border-teal-500 flex items-center justify-center text-[10px] font-bold">+42</div>
+                        </div>
+                        <button class="px-4 py-2 bg-white text-teal-600 text-xs font-bold rounded-xl">I'm Going</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- BOTTOM NAV (Persistent) -->
+        <nav class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200 px-6 pt-3 pb-[34px] flex justify-between items-center z-50" style="view-transition-name: main-nav">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Home</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Visitors</span>
+            </a>
+            <div class="relative">
+                <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-900/20 text-white cursor-pointer">
+                    <iconify-icon icon="lucide:plus" class="text-2xl"></iconify-icon>
+                </div>
+            </div>
+            <a href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" id="nav-announcements" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:megaphone" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Alerts</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold">Social</span>
+            </a>
+        </nav>
+    </div>
+</body>
+</html>

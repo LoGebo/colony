@@ -19,6 +19,7 @@ import {
   useToggleReaction,
   useCreateComment,
   useVotePoll,
+  useMyPostReactions,
 } from '@/hooks/usePosts';
 import { formatRelative } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -60,6 +61,8 @@ export default function PostDetailScreen() {
   const toggleReaction = useToggleReaction();
   const createComment = useCreateComment();
   const votePoll = useVotePoll();
+  const { data: myLikedPosts } = useMyPostReactions();
+  const userHasLiked = myLikedPosts?.has(id!) ?? false;
 
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -307,14 +310,14 @@ export default function PostDetailScreen() {
                   onPress={handleToggleLike}
                 >
                   <Ionicons
-                    name={likeCount > 0 ? 'heart' : 'heart-outline'}
+                    name={userHasLiked ? 'heart' : 'heart-outline'}
                     size={22}
-                    color={likeCount > 0 ? '#F43F5E' : colors.textCaption}
+                    color={userHasLiked ? '#F43F5E' : colors.textCaption}
                   />
                   <Text
                     style={[
                       styles.reactionCount,
-                      likeCount > 0 && styles.reactionCountActive,
+                      userHasLiked && styles.reactionCountActive,
                     ]}
                   >
                     {likeCount}
@@ -874,7 +877,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingHorizontal: spacing.pagePaddingX,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.safeAreaBottom,
+    paddingBottom: spacing.bottomNavClearance,
   },
   replyIndicator: {
     flexDirection: 'row',

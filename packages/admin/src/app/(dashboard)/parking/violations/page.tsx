@@ -51,7 +51,7 @@ const STATUS_VARIANTS: Record<string, 'warning' | 'success' | 'danger' | 'neutra
 export default function ViolationsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ status: '', fine_amount: '' });
+  const [editForm, setEditForm] = useState({ status: '' });
 
   const { data: violations, isLoading } = useParkingViolations(statusFilter || undefined);
   const updateViolation = useUpdateParkingViolation();
@@ -60,14 +60,12 @@ export default function ViolationsPage() {
     setEditingId(violation.id);
     setEditForm({
       status: violation.status,
-      fine_amount: violation.fine_amount?.toString() ?? '',
     });
   };
 
   const handleSave = (id: string) => {
-    const updates: { status?: string; fine_amount?: number } = {};
+    const updates: { status?: string } = {};
     if (editForm.status) updates.status = editForm.status;
-    if (editForm.fine_amount) updates.fine_amount = parseFloat(editForm.fine_amount);
 
     updateViolation.mutate(
       { id, ...updates },
@@ -82,10 +80,10 @@ export default function ViolationsPage() {
   const columns = useMemo<ColumnDef<ParkingViolationRow, unknown>[]>(
     () => [
       {
-        accessorKey: 'reported_at',
+        accessorKey: 'observed_at',
         header: 'Fecha',
         cell: ({ row }) =>
-          format(parseISO(row.original.reported_at), 'dd/MM/yyyy HH:mm', { locale: es }),
+          format(parseISO(row.original.observed_at), 'dd/MM/yyyy HH:mm', { locale: es }),
       },
       {
         accessorKey: 'violation_type',
@@ -108,10 +106,10 @@ export default function ViolationsPage() {
         cell: ({ row }) => row.original.parking_spots?.spot_number ?? '-',
       },
       {
-        accessorKey: 'vehicle_plate',
+        accessorKey: 'vehicle_plates',
         header: 'Placa',
         cell: ({ row }) => (
-          <span className="font-mono text-sm">{row.original.vehicle_plate ?? '-'}</span>
+          <span className="font-mono text-sm">{row.original.vehicle_plates ?? '-'}</span>
         ),
       },
       {
@@ -137,31 +135,6 @@ export default function ViolationsPage() {
             <Badge variant={STATUS_VARIANTS[row.original.status] ?? 'neutral'}>
               {STATUS_LABELS[row.original.status] ?? row.original.status}
             </Badge>
-          );
-        },
-      },
-      {
-        accessorKey: 'fine_amount',
-        header: 'Multa',
-        cell: ({ row }) => {
-          if (editingId === row.original.id && editForm.status === 'fined') {
-            return (
-              <input
-                type="number"
-                step="0.01"
-                value={editForm.fine_amount}
-                onChange={(e) => setEditForm({ ...editForm, fine_amount: e.target.value })}
-                className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
-                placeholder="0.00"
-              />
-            );
-          }
-          return row.original.fine_amount ? (
-            <span className="font-semibold text-gray-900">
-              ${row.original.fine_amount.toFixed(2)}
-            </span>
-          ) : (
-            '-'
           );
         },
       },

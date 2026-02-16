@@ -17,9 +17,8 @@ export interface AmenityRow {
   amenity_type: string | null;
   location: string | null;
   capacity: number | null;
-  is_reservable: boolean | null;
-  requires_approval: boolean | null;
-  is_active: boolean | null;
+  requires_reservation: boolean | null;
+  status: string;
   created_at: string;
 }
 
@@ -48,8 +47,7 @@ export interface CreateAmenityInput {
   amenity_type: string;
   location?: string;
   capacity?: number;
-  is_reservable: boolean;
-  requires_approval: boolean;
+  requires_reservation: boolean;
 }
 
 export interface UpdateAmenityInput {
@@ -59,9 +57,8 @@ export interface UpdateAmenityInput {
   amenity_type?: string;
   location?: string;
   capacity?: number;
-  is_reservable?: boolean;
-  requires_approval?: boolean;
-  is_active?: boolean;
+  requires_reservation?: boolean;
+  status?: string;
 }
 
 export interface CreateAmenityRuleInput {
@@ -97,7 +94,7 @@ export function useAmenities() {
       const { data, error } = await supabase
         .from('amenities')
         .select(
-          'id, name, description, amenity_type, location, capacity, is_reservable, requires_approval, is_active, created_at'
+          'id, name, description, amenity_type, location, capacity, requires_reservation, status, created_at'
         )
         .eq('community_id', communityId!)
         .is('deleted_at', null)
@@ -195,9 +192,8 @@ export function useCreateAmenity() {
           amenity_type: input.amenity_type as never,
           location: input.location || null,
           capacity: input.capacity ?? null,
-          is_reservable: input.is_reservable,
-          requires_approval: input.requires_approval,
-          is_active: true,
+          requires_reservation: input.requires_reservation,
+          status: 'active' as never,
         })
         .select()
         .single();

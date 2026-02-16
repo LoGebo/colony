@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useChannels, usePosts, useToggleReaction } from '@/hooks/usePosts';
+import { useChannels, usePosts, useToggleReaction, useMyPostReactions } from '@/hooks/usePosts';
 import { formatRelative } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
@@ -47,6 +47,7 @@ export default function CommunityIndexScreen() {
   const { data: channels } = useChannels();
   const { data: posts, isLoading, refetch } = usePosts(selectedChannel);
   const toggleReaction = useToggleReaction();
+  const { data: myLikedPosts } = useMyPostReactions();
 
   const handleToggleLike = useCallback(
     (postId: string) => {
@@ -159,6 +160,13 @@ export default function CommunityIndexScreen() {
           <Text style={styles.headerTitle}>Community</Text>
           <Text style={styles.headerSubtitle}>Social Feed</Text>
         </View>
+        <TouchableOpacity
+          style={styles.amenitiesButton}
+          onPress={() => router.push('/(resident)/community/amenities/')}
+        >
+          <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+          <Text style={styles.amenitiesButtonText}>Amenities</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Channel Filter Pills */}
@@ -338,26 +346,32 @@ export default function CommunityIndexScreen() {
                         }}
                       >
                         <Ionicons
-                          name={likeCount > 0 ? 'heart' : 'heart-outline'}
+                          name={myLikedPosts?.has(post.id) ? 'heart' : 'heart-outline'}
                           size={20}
-                          color={likeCount > 0 ? '#F43F5E' : colors.textCaption}
+                          color={myLikedPosts?.has(post.id) ? '#F43F5E' : colors.textCaption}
                         />
                         <Text
                           style={[
                             styles.reactionCount,
-                            likeCount > 0 && styles.reactionCountActive,
+                            myLikedPosts?.has(post.id) && styles.reactionCountActive,
                           ]}
                         >
                           {likeCount}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.reactionButton}>
+                      <TouchableOpacity
+                        style={styles.reactionButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          router.push(`/(resident)/community/post/${post.id}`);
+                        }}
+                      >
                         <Ionicons
                           name="chatbubble-outline"
                           size={20}
-                          color={colors.textCaption}
+                          color={colors.primary}
                         />
-                        <Text style={styles.reactionCount}>
+                        <Text style={[styles.reactionCount, styles.reactionCountBlue]}>
                           {post.comment_count ?? 0}
                         </Text>
                       </TouchableOpacity>
@@ -399,6 +413,9 @@ const styles = StyleSheet.create({
   },
   // Header
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: spacing.safeAreaTop,
     paddingHorizontal: spacing.pagePaddingX,
     paddingBottom: spacing.xl,
@@ -670,6 +687,26 @@ const styles = StyleSheet.create({
   },
   reactionCountActive: {
     color: '#F43F5E',
+  },
+  reactionCountBlue: {
+    color: colors.primary,
+  },
+  // Amenities button
+  amenitiesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(37,99,235,0.15)',
+  },
+  amenitiesButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.primary,
   },
   // FAB
   fab: {

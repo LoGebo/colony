@@ -118,6 +118,12 @@ export const marketplace = createQueryKeys('marketplace', {
   myListings: (residentId: string) => [{ residentId }],
 });
 
+export const pets = createQueryKeys('pets', {
+  all: null,
+  list: (residentId: string) => [{ residentId }],
+  detail: (id: string) => [id],
+});
+
 export const vehicles = createQueryKeys('vehicles', {
   all: null,
   list: (residentId: string) => [{ residentId }],
@@ -269,6 +275,7 @@ export const queryKeys = mergeQueryKeys(
   parking,
   patrols,
   payments,
+  pets,
   posts,
   providers,
   residents,

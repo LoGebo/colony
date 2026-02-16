@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Resident Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html {
+            background-color: #F1F5F9;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition {
+            background-color: #F1F5F9;
+        }
+
+        /* Persistent elements stay static */
+        ::view-transition-old(bottom-nav),
+        ::view-transition-new(bottom-nav),
+        ::view-transition-old(bg-ambiance),
+        ::view-transition-new(bg-ambiance),
+        ::view-transition-old(app-header),
+        ::view-transition-new(app-header) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        /* Dynamic content fades */
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="w-full h-screen flex flex-col bg-[#F1F5F9] relative overflow-hidden">
+        
+        <!-- Background Ambiance (Persistent) -->
+        <div style="view-transition-name: bg-ambiance" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+            <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+            <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+        </div>
+
+        <!-- App Header (Persistent Context) -->
+        <header style="view-transition-name: app-header" class="relative z-20 shrink-0 pt-14 px-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-teal-400 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/10">
+                    <iconify-icon icon="lucide:building-2" class="text-white text-xl"></iconify-icon>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Highland Towers</p>
+                    <p class="text-sm font-bold text-slate-800">Unit 402B</p>
+                </div>
+            </div>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="header-profile-link" class="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden">
+                <img src="https://i.pravatar.cc/150?u=jane" alt="Profile" class="w-full h-full object-cover">
+            </a>
+        </header>
+
+        <!-- Main Content (Dynamic) -->
+        <main style="view-transition-name: main-content" class="relative z-10 flex-1 overflow-y-auto pt-6 px-6 pb-24">
+            
+            <!-- Greeting -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Good morning, Jane</h1>
+                <p class="text-slate-500 text-sm">Everything looks great in your community today.</p>
+            </div>
+
+            <!-- Balance Card -->
+            <div class="p-6 bg-[#1E293B] rounded-[28px] text-white shadow-xl shadow-slate-900/10 relative overflow-hidden mb-6">
+                <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-widest mb-1">Current Balance</p>
+                        <h2 class="text-3xl font-bold">$1,240.00</h2>
+                    </div>
+                    <span class="px-2.5 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-lg border border-amber-500/30 backdrop-blur-sm">
+                        DUE IN 3 DAYS
+                    </span>
+                </div>
+                
+                <div class="mt-8 flex items-center justify-between">
+                    <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="cta-pay-now" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl text-xs font-bold flex items-center gap-2">
+                        Pay Now
+                        <iconify-icon icon="lucide:chevron-right"></iconify-icon>
+                    </a>
+                    <p class="text-slate-400 text-[10px] italic">Last paid: May 12, 2024</p>
+                </div>
+            </div>
+
+            <!-- Quick Stats Row -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="glass-panel p-4 rounded-2xl flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center">
+                        <iconify-icon icon="lucide:users" class="text-xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Visitors</p>
+                        <p class="text-sm font-bold text-slate-800">2 Active</p>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <iconify-icon icon="lucide:bell" class="text-xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Alerts</p>
+                        <p class="text-sm font-bold text-slate-800">1 New</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Grid -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Quick Actions</h3>
+                </div>
+                <div class="grid grid-cols-4 gap-4">
+                    <a href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" id="action-visitors" class="flex flex-col items-center gap-2">
+                        <div class="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 active:scale-95 transition-transform border border-slate-100">
+                            <iconify-icon icon="lucide:user-plus" class="text-2xl"></iconify-icon>
+                        </div>
+                        <span class="text-[11px] font-bold text-slate-600">Invite</span>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="action-payments" class="flex flex-col items-center gap-2">
+                        <div class="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-teal-600 active:scale-95 transition-transform border border-slate-100">
+                            <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>                        </div>
+                        <span class="text-[11px] font-bold text-slate-600">Payments</span>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="action-community" class="flex flex-col items-center gap-2">
+                        <div class="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-amber-600 active:scale-95 transition-transform border border-slate-100">
+                            <iconify-icon icon="lucide:message-circle" class="text-2xl"></iconify-icon>
+                        </div>
+                        <span class="text-[11px] font-bold text-slate-600">Social</span>
+                    </a>
+                    <a href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" id="action-report" class="flex flex-col items-center gap-2">
+                        <div class="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-rose-600 active:scale-95 transition-transform border border-slate-100">
+                            <iconify-icon icon="lucide:wrench" class="text-2xl"></iconify-icon>
+                        </div>
+                        <span class="text-[11px] font-bold text-slate-600">Report</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Recent Activity</h3>
+                    <a href="#history" id="view-all-history" class="text-[11px] font-bold text-blue-600 uppercase">See All</a>
+                </div>
+                <div class="space-y-3">
+                    <!-- Notification Item -->
+                    <div class="glass-panel p-4 rounded-2xl flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <iconify-icon icon="lucide:megaphone" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-sm font-bold text-slate-800">Elevator Maintenance</h4>
+                                <span class="text-[10px] text-slate-400">2h ago</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">East wing elevators will be out of service from 2 PM to 4 PM tomorrow.</p>
+                            <div class="mt-3">
+                                <a href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" id="announcement-link-1" class="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                                    Read full notice
+                                    <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Item -->
+                    <div class="glass-panel p-4 rounded-2xl flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                            <iconify-icon icon="lucide:log-in" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <h4 class="text-sm font-bold text-slate-800">Visitor Arrived</h4>
+                                <span class="text-[10px] text-slate-400">1h ago</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">Mark Thompson has checked in via Lobby A.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation (Persistent) -->
+        <footer style="view-transition-name: bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t-0 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] px-8 pb-[34px] pt-4">
+            <div class="flex justify-between items-center">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-blue-600">
+                    <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold">Home</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold">Visitors</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:layout-grid" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold">Social</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" id="nav-amenities" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:calendar-check" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold">Booking</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400">
+                    <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                    <span class="text-[10px] font-bold">Profile</span>
+                </a>
+            </div>
+        </footer>
+
+    </div>
+</body>
+</html>

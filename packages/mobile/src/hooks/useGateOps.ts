@@ -44,12 +44,27 @@ export function useGuardAccessPoint() {
 export function useVerifyQR() {
   return useMutation({
     mutationFn: async (payload: string) => {
-      const { data, error } = await supabase.functions.invoke('verify-qr', {
-        body: { qr_payload: payload },
+      // Use direct fetch to bypass supabase.functions.invoke apikey issues
+      // with publishable keys (sb_publishable_...) that the edge function relay may reject.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated — please sign in again');
+      }
+
+      const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/verify-qr`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ qr_payload: payload }),
       });
 
-      if (error) {
-        throw new Error(error.message ?? 'Error al verificar el codigo QR');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? `Verification failed (${response.status})`);
       }
 
       return data as {
@@ -59,6 +74,11 @@ export function useVerifyQR() {
           qr_code_id?: string;
           visitor_name?: string;
           community_id?: string;
+          invitation_type?: string;
+          unit_number?: string;
+          valid_from?: string;
+          valid_until?: string;
+          vehicle_plate?: string;
         };
         error?: string;
       };

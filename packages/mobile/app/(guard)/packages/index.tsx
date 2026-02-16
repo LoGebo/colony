@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,24 +105,34 @@ export default function PackagesIndexScreen() {
   }, [refetch]);
 
   const handleConfirmPickup = useCallback(
-    (packageId: string, recipientName: string) => {
-      Alert.alert(
-        'Confirm Pickup',
-        `Confirm package pickup for ${recipientName}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: async () => {
-              try {
-                await confirmPickup.mutateAsync({ packageId });
-              } catch (error: any) {
-                Alert.alert('Error', error?.message ?? 'Failed to confirm pickup.');
-              }
-            },
-          },
-        ],
-      );
+    async (packageId: string, recipientName: string) => {
+      const doConfirm = async () => {
+        try {
+          await confirmPickup.mutateAsync({ packageId });
+        } catch (error: any) {
+          const msg = error?.message ?? 'Failed to confirm pickup.';
+          if (Platform.OS === 'web') {
+            window.alert(msg);
+          } else {
+            Alert.alert('Error', msg);
+          }
+        }
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm(`Confirm package pickup for ${recipientName}?`)) {
+          await doConfirm();
+        }
+      } else {
+        Alert.alert(
+          'Confirm Pickup',
+          `Confirm package pickup for ${recipientName}?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Confirm', onPress: doConfirm },
+          ],
+        );
+      }
     },
     [confirmPickup],
   );

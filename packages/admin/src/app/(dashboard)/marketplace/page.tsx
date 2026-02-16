@@ -266,7 +266,7 @@ export default function ModerationPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="warning">
-                    {STATUS_LABELS[item.status] ?? item.status}
+                    {item.assigned_to ? 'En revision' : item.resolution ? STATUS_LABELS[item.resolution] ?? item.resolution : 'Pendiente'}
                   </Badge>
                   {item.assigned_to && (
                     <span className="text-xs text-gray-500">

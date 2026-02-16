@@ -58,7 +58,7 @@ function getStatusBadge(invitation: HistoryInvitation) {
   return { label: invitation.status?.toUpperCase() ?? 'UNKNOWN', bg: colors.border, color: colors.textCaption };
 }
 
-function getTypeIcon(type: string): { name: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
+function getInvitationIcon(type: string): { name: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
   switch (type) {
     case 'recurring':
       return { name: 'repeat-outline', bg: colors.tealLight, color: colors.tealDark };
@@ -81,36 +81,6 @@ function getTypeLabel(type: string): string {
   }
 }
 
-/** Group invitations by date for timeline display */
-function groupByDate(items: HistoryInvitation[]): { title: string; data: HistoryInvitation[] }[] {
-  const map = new Map<string, HistoryInvitation[]>();
-
-  for (const item of items) {
-    const dateStr = item.created_at ? item.created_at.slice(0, 10) : 'unknown';
-    const group = map.get(dateStr);
-    if (group) {
-      group.push(item);
-    } else {
-      map.set(dateStr, [item]);
-    }
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-
-  return Array.from(map.entries()).map(([dateStr, data]) => {
-    let title: string;
-    if (dateStr === today) {
-      title = 'Today';
-    } else if (dateStr === yesterday) {
-      title = 'Yesterday';
-    } else {
-      title = formatDate(dateStr);
-    }
-    return { title, data };
-  });
-}
-
 export default function VisitorHistoryScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -130,20 +100,6 @@ export default function VisitorHistoryScreen() {
     );
   }, [allInvitations, search]);
 
-  const groupedData = useMemo(() => groupByDate(filtered), [filtered]);
-
-  // Flatten groups into a list with section headers for FlatList
-  const flatData = useMemo(() => {
-    const items: ({ type: 'header'; title: string; id: string } | { type: 'item'; invitation: HistoryInvitation; id: string })[] = [];
-    for (const group of groupedData) {
-      items.push({ type: 'header', title: group.title, id: `header-${group.title}` });
-      for (const inv of group.data) {
-        items.push({ type: 'item', invitation: inv, id: inv.id });
-      }
-    }
-    return items;
-  }, [groupedData]);
-
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -151,91 +107,79 @@ export default function VisitorHistoryScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(
-    ({ item }: { item: (typeof flatData)[number] }) => {
-      if (item.type === 'header') {
-        return (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>{item.title}</Text>
-          </View>
-        );
-      }
-
-      const inv = item.invitation;
-      const badge = getStatusBadge(inv);
-      const iconConfig = getTypeIcon(inv.invitation_type);
-      const isCancelled = !!inv.cancelled_at;
+    ({ item }: { item: HistoryInvitation }) => {
+      const badge = getStatusBadge(item);
+      const iconConfig = getInvitationIcon(item.invitation_type);
+      const isCancelled = !!item.cancelled_at;
       const isExpiredStatus = badge.label === 'EXPIRED';
       const dimmed = isCancelled || isExpiredStatus;
+      const recurringDays = Array.isArray(item.recurring_days) ? item.recurring_days : [];
 
       return (
         <TouchableOpacity
-          style={styles.timelineRow}
-          onPress={() => router.push(`/(resident)/visitors/${inv.id}`)}
+          style={[styles.card, dimmed && styles.cardDimmed]}
+          onPress={() => router.push(`/(resident)/visitors/${item.id}`)}
           activeOpacity={0.7}
         >
-          {/* Timeline dot */}
-          <View
-            style={[
-              styles.timelineDot,
-              { backgroundColor: dimmed ? colors.border : iconConfig.bg },
-            ]}
-          >
-            <Ionicons
-              name={iconConfig.name as any}
-              size={20}
-              color={dimmed ? colors.textCaption : iconConfig.color}
-            />
-          </View>
-
-          {/* Card */}
-          <View style={[styles.historyCard, dimmed && styles.historyCardDimmed]}>
-            <View style={styles.cardTopRow}>
-              <Text style={styles.cardName}>{inv.visitor_name}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                <Text style={[styles.statusBadgeText, { color: badge.color }]}>{badge.label}</Text>
+          {/* Card Header */}
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <View style={[styles.cardIcon, { backgroundColor: iconConfig.bg }]}>
+                <Ionicons name={iconConfig.name as any} size={24} color={iconConfig.color} />
+              </View>
+              <View>
+                <Text style={styles.cardName}>{item.visitor_name}</Text>
+                <Text style={styles.cardType}>{getTypeLabel(item.invitation_type)}</Text>
               </View>
             </View>
+            <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+              <Text style={[styles.statusBadgeText, { color: badge.color }]}>{badge.label}</Text>
+            </View>
+          </View>
 
-            <Text style={styles.cardSubtitle}>
-              {inv.units?.unit_number ? `Unit ${inv.units.unit_number} \u2022 ` : ''}
-              {getTypeLabel(inv.invitation_type)}
-            </Text>
-
-            {/* Recurring days */}
-            {inv.invitation_type === 'recurring' && Array.isArray(inv.recurring_days) && inv.recurring_days.length > 0 && (
-              <View style={styles.recurringRow}>
-                {inv.recurring_days.map((day: number) => (
-                  <View key={day} style={styles.miniDayPill}>
-                    <Text style={styles.miniDayPillText}>{(DAY_LABELS[day] ?? '').slice(0, 3)}</Text>
-                  </View>
-                ))}
+          {/* Date/Time Info */}
+          {item.invitation_type !== 'recurring' && item.valid_from && (
+            <View style={styles.cardInfoRow}>
+              <View style={styles.cardInfoItem}>
+                <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+                <Text style={styles.cardInfoText}>{formatDate(item.valid_from)}</Text>
               </View>
-            )}
-
-            {/* Date info */}
-            <View style={styles.dateInfoRow}>
-              {inv.valid_from && (
-                <View style={styles.dateInfoItem}>
-                  <Ionicons name="calendar-outline" size={12} color={colors.textCaption} />
-                  <Text style={styles.dateInfoText}>{formatDate(inv.valid_from)}</Text>
-                </View>
-              )}
-              {inv.recurring_start_time && (
-                <View style={styles.dateInfoItem}>
-                  <Ionicons name="time-outline" size={12} color={colors.textCaption} />
-                  <Text style={styles.dateInfoText}>
-                    {formatTime(inv.recurring_start_time)}
-                    {inv.recurring_end_time ? ` - ${formatTime(inv.recurring_end_time)}` : ''}
+              {item.recurring_start_time && (
+                <View style={styles.cardInfoItem}>
+                  <Ionicons name="time-outline" size={14} color={colors.textCaption} />
+                  <Text style={styles.cardInfoText}>
+                    {formatTime(item.recurring_start_time)}
+                    {item.recurring_end_time ? ` - ${formatTime(item.recurring_end_time)}` : ''}
                   </Text>
                 </View>
               )}
-              {inv.vehicle_plate && (
-                <View style={styles.dateInfoItem}>
-                  <Ionicons name="car-outline" size={12} color={colors.textCaption} />
-                  <Text style={styles.dateInfoText}>{inv.vehicle_plate}</Text>
-                </View>
-              )}
             </View>
+          )}
+
+          {/* Recurring Days */}
+          {item.invitation_type === 'recurring' && recurringDays.length > 0 && (
+            <View style={styles.recurringDaysContainer}>
+              <View style={styles.recurringDaysRow}>
+                {recurringDays.map((day: number) => (
+                  <View key={day} style={styles.dayPill}>
+                    <Text style={styles.dayPillText}>
+                      {(DAY_LABELS[day] ?? '').slice(0, 3)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* View Details action */}
+          <View style={styles.cardActions}>
+            <TouchableOpacity
+              style={styles.cardPrimaryAction}
+              onPress={() => router.push(`/(resident)/visitors/${item.id}`)}
+            >
+              <Ionicons name="eye-outline" size={16} color={colors.textOnDark} />
+              <Text style={styles.cardPrimaryActionText}>View Details</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       );
@@ -247,32 +191,33 @@ export default function VisitorHistoryScreen() {
     <View style={styles.container}>
       <AmbientBackground />
 
-      {/* Header */}
+      {/* Header - matches index */}
       <View style={styles.header}>
-        <View style={styles.headerRow}>
+        <View style={styles.headerLeft}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color={colors.textBody} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Visitor History</Text>
-          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Invitations</Text>
         </View>
+      </View>
 
-        {/* Sub-navigation tabs */}
-        <View style={styles.subNav}>
+      {/* Filter Tabs - matches index */}
+      <View style={styles.filterContainer}>
+        <View style={styles.filterRow}>
           <TouchableOpacity
-            style={styles.subNavTab}
-            onPress={() => router.replace('/(resident)/visitors/create')}
-          >
-            <Text style={styles.subNavTabText}>New</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.subNavTab}
+            style={styles.filterTab}
             onPress={() => router.replace('/(resident)/visitors/')}
           >
-            <Text style={styles.subNavTabText}>Active</Text>
+            <Text style={styles.filterTabText}>Active</Text>
           </TouchableOpacity>
-          <View style={[styles.subNavTab, styles.subNavTabActive]}>
-            <Text style={styles.subNavTabTextActive}>History</Text>
+          <TouchableOpacity
+            style={styles.filterTab}
+            onPress={() => router.replace('/(resident)/visitors/')}
+          >
+            <Text style={styles.filterTabText}>Pending</Text>
+          </TouchableOpacity>
+          <View style={[styles.filterTab, styles.filterTabActive]}>
+            <Text style={styles.filterTabTextActive}>History</Text>
           </View>
         </View>
       </View>
@@ -288,7 +233,11 @@ export default function VisitorHistoryScreen() {
             value={search}
             onChangeText={setSearch}
           />
-          <Ionicons name="calendar-outline" size={18} color={colors.textCaption} />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textCaption} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -297,9 +246,9 @@ export default function VisitorHistoryScreen() {
         <View style={styles.centerMessage}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : flatData.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <View style={styles.centerMessage}>
-          <Ionicons name="time-outline" size={48} color={colors.textDisabled} />
+          <Ionicons name="people-outline" size={48} color={colors.textDisabled} />
           <Text style={styles.emptyTitle}>No visitor history</Text>
           <Text style={styles.emptySubtitle}>
             {search ? 'No results match your search.' : 'Your visitor history will appear here.'}
@@ -307,7 +256,7 @@ export default function VisitorHistoryScreen() {
         </View>
       ) : (
         <FlatList
-          data={flatData}
+          data={filtered}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
@@ -336,82 +285,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Header
+  // Header - matches index
   header: {
-    paddingTop: spacing.safeAreaTop,
-    paddingHorizontal: spacing.pagePaddingX,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.glass,
-    borderBottomWidth: 0,
-  },
-  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    paddingTop: spacing.safeAreaTop,
+    paddingHorizontal: spacing.pagePaddingX,
+    paddingBottom: spacing.xl,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.sm,
   },
   headerTitle: {
     fontFamily: fonts.bold,
-    fontSize: 18,
+    fontSize: 24,
     color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
-  headerSpacer: {
-    width: 40,
+  // Filter - matches index
+  filterContainer: {
+    paddingHorizontal: spacing.pagePaddingX,
+    marginBottom: spacing.md,
   },
-  // Sub-navigation
-  subNav: {
+  filterRow: {
     flexDirection: 'row',
     backgroundColor: 'rgba(226,232,240,0.5)',
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     padding: 4,
-    marginTop: spacing.xl,
   },
-  subNavTab: {
+  filterTab: {
     flex: 1,
-    paddingVertical: spacing.md,
+    paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
   },
-  subNavTabActive: {
+  filterTabActive: {
     backgroundColor: colors.surface,
     ...shadows.sm,
   },
-  subNavTabText: {
+  filterTabText: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textMuted,
   },
-  subNavTabTextActive: {
+  filterTabTextActive: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   // Search
   searchContainer: {
     paddingHorizontal: spacing.pagePaddingX,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(226,232,240,0.4)',
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.xl,
-    height: 48,
-    gap: spacing.md,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
+    height: 44,
+    gap: spacing.md,
   },
   searchInput: {
     flex: 1,
@@ -424,61 +373,51 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing.pagePaddingX,
     paddingBottom: spacing.bottomNavClearance + 20,
-  },
-  // Section Headers
-  sectionHeader: {
-    marginTop: spacing['3xl'],
-    marginBottom: spacing.xl,
-  },
-  sectionHeaderText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: colors.textCaption,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  // Timeline items
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: spacing.xl,
-    marginBottom: spacing.xl,
   },
-  timelineDot: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  historyCard: {
-    flex: 1,
+  // Cards - matches index design
+  card: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.cardPadding,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: spacing.xl,
     ...shadows.sm,
   },
-  historyCardDimmed: {
-    opacity: 0.7,
+  cardDimmed: {
+    opacity: 0.6,
   },
-  cardTopRow: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  cardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardName: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textPrimary,
-    flex: 1,
+  },
+  cardType: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    marginLeft: spacing.md,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
   },
   statusBadgeText: {
     fontFamily: fonts.bold,
@@ -486,48 +425,71 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  cardSubtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
+  // Info Row - matches index
+  cardInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing['3xl'],
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
   },
-  recurringRow: {
+  cardInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  cardInfoText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  // Recurring Days - matches index
+  recurringDaysContainer: {
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+  },
+  recurringDaysRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.md,
+    gap: spacing.md,
   },
-  miniDayPill: {
+  dayPill: {
     paddingHorizontal: spacing.md,
     paddingVertical: 2,
     backgroundColor: colors.surface,
-    borderRadius: spacing.xs,
+    borderRadius: spacing.sm,
     borderWidth: 1,
     borderColor: colors.borderMedium,
   },
-  miniDayPillText: {
+  dayPillText: {
     fontFamily: fonts.bold,
     fontSize: 10,
     color: colors.textBody,
   },
-  dateInfoRow: {
+  // Actions - matches index
+  cardActions: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  cardPrimaryAction: {
+    flex: 1,
+    height: spacing.smallButtonHeight,
+    backgroundColor: colors.dark,
+    borderRadius: borderRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xl,
-    marginTop: spacing.lg,
+    justifyContent: 'center',
+    gap: spacing.md,
   },
-  dateInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  cardPrimaryActionText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textOnDark,
   },
-  dateInfoText: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textCaption,
-  },
-  // Empty State
+  // Empty / Loading
   centerMessage: {
     flex: 1,
     alignItems: 'center',

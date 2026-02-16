@@ -340,7 +340,7 @@ export default function TicketDetailPage() {
                   <div key={a.id} className="text-xs text-gray-400">
                     <span className="font-mono">{a.assigned_to.slice(0, 8)}</span>
                     {' - '}
-                    {relativeTime(a.created_at)}
+                    {relativeTime(a.assigned_at)}
                     {a.notes && <span className="italic"> ({a.notes})</span>}
                   </div>
                 ))}

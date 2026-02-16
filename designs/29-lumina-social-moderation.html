@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Social Moderation</title>
+    <meta name="view-transition" content="same-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/40ecf9a5-a52f-4a74-9fc8-246c62e2cfb9" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/744adc10-7a6f-47ff-8452-20d29779d86c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/f5cc5b52-0197-4347-b5b3-04f97f144b20" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/1b7aee07-1e5d-4100-b50a-27def102b328" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/530871f6-da24-4a01-b2fe-2f6b1a225648" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2912f268-f4b4-4cc8-967d-48a21e4d174c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/1b810641-9955-4a33-8f34-fb5774f72514" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/19647916-7368-4ce0-85f5-5f2b52e5766e" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/02bb5db3-9c45-4a29-80f0-e877fe1af581" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/78859f94-b514-475f-b2c5-13911a2a0191" as="document">
+
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+    <!-- Background Ambiance (Persistent Style) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full h-screen flex flex-col overflow-hidden">
+        <!-- Dynamic Header Area -->
+        <header class="shrink-0 pt-14 px-6 mb-6" style="view-transition-name: page-header;">
+            <div class="flex items-center justify-between mb-2">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="back-to-dashboard-link" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-900 shadow-sm">
+                    <iconify-icon icon="lucide:chevron-left" class="text-xl"></iconify-icon>
+                </a>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Moderation</h1>
+                <div class="w-10"></div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto px-6 pb-32" style="view-transition-name: main-content;">
+            <!-- Tab Selector -->
+            <div class="flex p-1 bg-slate-200/50 backdrop-blur-md rounded-2xl mb-6">
+                <button class="flex-1 h-10 bg-white rounded-xl shadow-sm text-xs font-bold text-slate-900">Pending</button>
+                <button class="flex-1 h-10 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors">Reports</button>
+                <button class="flex-1 h-10 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors">Guidelines</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <div class="glass-panel p-4 rounded-[20px] flex flex-col">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
+                    <span class="text-2xl font-black text-blue-600">14</span>
+                </div>
+                <div class="glass-panel p-4 rounded-[20px] flex flex-col">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Flagged</span>
+                    <span class="text-2xl font-black text-rose-500">03</span>
+                </div>
+            </div>
+
+            <!-- Posts List -->
+            <div class="space-y-4">
+                <!-- Moderation Item 1 -->
+                <div class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/150?u=sarah" alt="Sarah" class="w-10 h-10 rounded-full object-cover">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-slate-900">Sarah Jenkins</h4>
+                            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight">Unit 402 • 12m ago</p>
+                        </div>
+                        <div class="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold">Events</div>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                        Does anyone know if the swimming pool will be open this Sunday? The maintenance schedule says yes, but I saw workers today.
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="h-12 bg-slate-900 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:check-circle" class="text-lg"></iconify-icon>
+                            Approve
+                        </button>
+                        <button class="h-12 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:x-circle" class="text-lg"></iconify-icon>
+                            Reject
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Moderation Item 2 -->
+                <div class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/150?u=robert" alt="Robert" class="w-10 h-10 rounded-full object-cover">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-slate-900">Robert Chen</h4>
+                            <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight">Unit 105 • 45m ago</p>
+                        </div>
+                        <div class="px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-bold">Marketplace</div>
+                    </div>
+                    <div class="aspect-video w-full rounded-2xl overflow-hidden mb-4 bg-slate-100">
+                        <img src="https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&q=80&w=400" alt="Item" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                        Selling my mountain bike. Perfect condition, used only twice. $450 OBO. DM me if interested!
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="h-12 bg-slate-900 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:check-circle" class="text-lg"></iconify-icon>
+                            Approve
+                        </button>
+                        <button class="h-12 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                            <iconify-icon icon="lucide:x-circle" class="text-lg"></iconify-icon>
+                            Reject
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Report Summary (Context) -->
+                <div class="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center">
+                        <iconify-icon icon="lucide:shield-alert" class="text-xl"></iconify-icon>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-rose-900">3 Reports Flagged</h4>
+                        <p class="text-xs text-rose-600 font-medium">Requires immediate attention for policy violations.</p>
+                    </div>
+                    <iconify-icon icon="lucide:chevron-right" class="ml-auto text-rose-300 text-xl"></iconify-icon>
+                </div>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Navigation -->
+        <div class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200/60 px-6 py-4 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]" style="view-transition-name: main-nav;">
+            <a id="nav-home-link" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Home</span>
+            </a>
+            <a id="nav-social-link" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Social</span>
+            </a>
+            <a id="nav-billing-link" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Billing</span>
+            </a>
+            <a id="nav-profile-link" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Profile</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

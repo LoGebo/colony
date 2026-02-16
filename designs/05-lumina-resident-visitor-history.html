@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Visitor History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        html {
+            background-color: #F1F5F9;
+        }
+        @view-transition {
+            navigation: auto;
+        }
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .ios-search:focus-within {
+            border-color: #3B82F6;
+            background: white;
+        }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body>
+    <div class="w-full h-screen flex flex-col bg-[#F1F5F9] relative overflow-hidden">
+        <!-- Background Ambiance -->
+        <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+            <div class="absolute bottom-[20%] right-[-10%] w-[350px] h-[350px] bg-blue-300/10 rounded-full blur-[90px]"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="shrink-0 pt-14 px-6 pb-4 relative z-20 glass-panel border-b-0">
+            <div class="flex items-center justify-between mb-2">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="back-to-dash" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+                    <iconify-icon icon="lucide:chevron-left" class="text-xl"></iconify-icon>
+                </a>
+                <h1 class="text-lg font-bold text-slate-900">Visitor History</h1>
+                <button id="filter-toggle" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 active:scale-90 transition-transform">
+                    <iconify-icon icon="lucide:sliders-horizontal" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- Sub-navigation -->
+            <div class="flex gap-1 mt-6 p-1 bg-slate-200/50 rounded-xl">
+                <a href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" class="flex-1 py-2 text-center text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors" id="sub-nav-invite">New</a>
+                <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" class="flex-1 py-2 text-center text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors" id="sub-nav-active">Active</a>
+                <a href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" class="flex-1 py-2 bg-white rounded-lg shadow-sm text-center text-xs font-bold text-slate-900" id="sub-nav-history">History</a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main style="view-transition-name: main-content" class="flex-1 overflow-y-auto px-6 relative z-10">
+            <!-- Search & Filtering Section -->
+            <div class="pt-6 pb-4">
+                <div class="ios-search flex items-center bg-slate-200/40 rounded-2xl px-4 h-12 transition-all duration-300 border border-transparent">
+                    <iconify-icon icon="lucide:search" class="text-slate-400 text-lg mr-2"></iconify-icon>
+                    <input type="text" placeholder="Search visitor name..." class="flex-1 bg-transparent border-none outline-none text-slate-900 text-sm font-medium">
+                    <iconify-icon icon="lucide:calendar" class="text-slate-400 text-lg ml-2 cursor-pointer"></iconify-icon>
+                </div>
+            </div>
+
+            <!-- Timeline History -->
+            <div class="space-y-6 pt-2 pb-10">
+                <!-- Day Header -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Today, Oct 24</h3>
+                    <div class="relative space-y-4">
+                        <div class="absolute left-[19px] top-4 bottom-0 w-px bg-slate-200"></div>
+                        
+                        <!-- Log Item 1: Active -->
+                        <div class="relative flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 z-10">
+                                <iconify-icon icon="lucide:user" class="text-xl"></iconify-icon>
+                            </div>
+                            <div class="flex-1 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="text-sm font-bold text-slate-900">Sofia Rodriguez</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">IN RESIDENCE</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Unit 402 • Guest</p>
+                                <div class="mt-3 flex items-center gap-4 text-[11px] font-medium text-slate-400">
+                                    <div class="flex items-center gap-1">
+                                        <iconify-icon icon="lucide:arrow-down-right" class="text-green-500"></iconify-icon>
+                                        <span>Entry 10:30 AM</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 opacity-50">
+                                        <iconify-icon icon="lucide:arrow-up-right"></iconify-icon>
+                                        <span>Exit --:--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Log Item 2: Completed -->
+                        <div class="relative flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 z-10">
+                                <iconify-icon icon="lucide:truck" class="text-xl"></iconify-icon>
+                            </div>
+                            <div class="flex-1 bg-white p-4 rounded-2xl shadow-sm border border-slate-100 opacity-80">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="text-sm font-bold text-slate-900">Amazon Logistics</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">COMPLETED</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Unit 402 • Express Entry</p>
+                                <div class="mt-3 flex items-center gap-4 text-[11px] font-medium text-slate-500">
+                                    <div class="flex items-center gap-1">
+                                        <iconify-icon icon="lucide:clock" class="text-slate-400"></iconify-icon>
+                                        <span>Duration: 4 mins</span>
+                                    </div>
+                                    <span class="ml-auto text-slate-400">08:15 AM - 08:19 AM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day Header -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Yesterday, Oct 23</h3>
+                    <div class="relative space-y-4">
+                        <div class="absolute left-[19px] top-4 bottom-0 w-px bg-slate-200"></div>
+                        
+                        <!-- Log Item 3 -->
+                        <div class="relative flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 z-10">
+                                <img src="https://i.pravatar.cc/100?u=mark" class="w-full h-full rounded-full object-cover" alt="Mark">
+                            </div>
+                            <div class="flex-1 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="text-sm font-bold text-slate-900">Mark Stevens</h4>
+                                    <iconify-icon icon="lucide:check-circle-2" class="text-green-500 text-lg"></iconify-icon>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Unit 402 • Maintenance</p>
+                                <div class="mt-3 p-2 bg-slate-50 rounded-lg flex items-center justify-between text-[11px]">
+                                    <div class="text-slate-500 uppercase font-bold text-[9px]">Vehicle</div>
+                                    <div class="text-slate-900 font-bold">Toyota Hilux • 992-KLR</div>
+                                </div>
+                                <div class="mt-3 flex justify-between text-[11px] font-medium text-slate-400">
+                                    <span>Entry: 02:30 PM</span>
+                                    <span>Exit: 05:45 PM</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Log Item 4: Rejected -->
+                        <div class="relative flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 shrink-0 z-10 border border-rose-100">
+                                <iconify-icon icon="lucide:user-x" class="text-xl"></iconify-icon>
+                            </div>
+                            <div class="flex-1 bg-rose-50/30 p-4 rounded-2xl border border-rose-100">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="text-sm font-bold text-slate-900">Unidentified Courier</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white">DENIED</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Access denied by Guard (Invalid QR)</p>
+                                <p class="mt-2 text-[11px] text-slate-400">Attempted entry at 11:20 AM</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Navigation Bar -->
+        <footer style="view-transition-name: main-nav" class="shrink-0 pb-[34px] glass-panel border-t border-slate-200/50 z-30">
+            <nav class="flex justify-around items-center pt-3 px-2">
+                <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 group">
+                    <iconify-icon icon="lucide:layout-dashboard" class="text-2xl text-slate-400 group-hover:text-blue-600 transition-colors"></iconify-icon>
+                    <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Home</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" id="nav-visitors" class="flex flex-col items-center gap-1 group">
+                    <iconify-icon icon="lucide:users" class="text-2xl text-blue-600"></iconify-icon>
+                    <span class="text-[10px] font-bold text-blue-600">Visitors</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-payments" class="flex flex-col items-center gap-1 group">
+                    <iconify-icon icon="lucide:credit-card" class="text-2xl text-slate-400 group-hover:text-blue-600 transition-colors"></iconify-icon>
+                    <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Billing</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 group">
+                    <iconify-icon icon="lucide:messages-square" class="text-2xl text-slate-400 group-hover:text-blue-600 transition-colors"></iconify-icon>
+                    <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Feed</span>
+                </a>
+                <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 group">
+                    <div class="w-6 h-6 rounded-full overflow-hidden border border-slate-200">
+                        <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" class="w-full h-full object-cover" alt="User">
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400">Profile</span>
+                </a>
+            </nav>
+        </footer>
+    </div>
+</body>
+</html>

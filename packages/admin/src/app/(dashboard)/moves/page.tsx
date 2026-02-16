@@ -70,10 +70,10 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
     move_type: 'move_in',
     unit_id: '',
     resident_id: '',
-    scheduled_date: new Date().toISOString().split('T')[0],
-    moving_company: '',
-    contact_phone: '',
-    notes: '',
+    requested_date: new Date().toISOString().split('T')[0],
+    moving_company_name: '',
+    moving_company_phone: '',
+    resident_notes: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -84,10 +84,10 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
         move_type: form.move_type,
         unit_id: form.unit_id,
         resident_id: form.resident_id,
-        scheduled_date: form.scheduled_date,
-        moving_company: form.moving_company.trim() || undefined,
-        contact_phone: form.contact_phone.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        requested_date: form.requested_date,
+        moving_company_name: form.moving_company_name.trim() || undefined,
+        moving_company_phone: form.moving_company_phone.trim() || undefined,
+        resident_notes: form.resident_notes.trim() || undefined,
       },
       {
         onSuccess: () => {
@@ -96,10 +96,10 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
             move_type: 'move_in',
             unit_id: '',
             resident_id: '',
-            scheduled_date: new Date().toISOString().split('T')[0],
-            moving_company: '',
-            contact_phone: '',
-            notes: '',
+            requested_date: new Date().toISOString().split('T')[0],
+            moving_company_name: '',
+            moving_company_phone: '',
+            resident_notes: '',
           });
         },
       }
@@ -184,8 +184,8 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
             <input
               type="date"
               required
-              value={form.scheduled_date}
-              onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })}
+              value={form.requested_date}
+              onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
               className={inputClass}
             />
           </div>
@@ -193,8 +193,8 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-sm font-medium text-gray-700">Empresa de Mudanza</label>
             <input
               type="text"
-              value={form.moving_company}
-              onChange={(e) => setForm({ ...form, moving_company: e.target.value })}
+              value={form.moving_company_name}
+              onChange={(e) => setForm({ ...form, moving_company_name: e.target.value })}
               className={inputClass}
               placeholder="Nombre de la empresa"
             />
@@ -203,8 +203,8 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
             <label className="mb-1 block text-sm font-medium text-gray-700">Telefono de Contacto</label>
             <input
               type="tel"
-              value={form.contact_phone}
-              onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
+              value={form.moving_company_phone}
+              onChange={(e) => setForm({ ...form, moving_company_phone: e.target.value })}
               className={inputClass}
               placeholder="+52 ..."
             />
@@ -212,8 +212,8 @@ function CreateMoveForm({ onClose }: { onClose: () => void }) {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="mb-1 block text-sm font-medium text-gray-700">Notas</label>
             <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              value={form.resident_notes}
+              onChange={(e) => setForm({ ...form, resident_notes: e.target.value })}
               className={inputClass}
               rows={2}
               placeholder="Notas adicionales..."
@@ -285,17 +285,17 @@ export default function MovesPage() {
         ),
       },
       {
-        accessorKey: 'scheduled_date',
+        accessorKey: 'requested_date',
         header: 'Fecha',
         cell: ({ row }) =>
-          format(parseISO(row.original.scheduled_date), 'dd/MM/yyyy', { locale: es }),
+          format(parseISO(row.original.requested_date), 'dd/MM/yyyy', { locale: es }),
       },
       {
-        accessorKey: 'moving_company',
+        accessorKey: 'moving_company_name',
         header: 'Empresa',
         cell: ({ row }) => (
           <span className="text-sm text-gray-600">
-            {row.original.moving_company ?? '-'}
+            {row.original.moving_company_name ?? '-'}
           </span>
         ),
       },

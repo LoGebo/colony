@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Visitor Queue</title>
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b2241c31-9631-4870-90cc-b4c6c3405009" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/299b7c74-6739-4874-8ae6-0e248e209b1a" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/fd7e0571-00be-4a63-90af-22128a834134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/bfe82a67-f200-428c-8db4-04f3c670ce38" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/cf51ff25-7e63-4b29-84c8-1889866485e1" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/67d9e19b-2841-497d-aab9-948d660f67d2" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/766d1f6d-24ec-41fc-b2ec-19418a5bac78" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/92941e0b-ae15-4b10-a794-2a77f6ccdfa5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/d2816504-2202-4bd3-b74c-c7760781c6f8" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/dea53bf8-d572-4df4-b8df-f37140eef6c9" as="document">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #F1F5F9;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        @view-transition { navigation: auto; }
+        ::view-transition-old(main-content) { animation: 0.25s ease-out both fade-out; }
+        ::view-transition-new(main-content) { animation: 0.25s ease-in 0.1s both fade-in; }
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .status-dot-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .queue-item {
+            animation: slideUp 0.5s ease-out backwards;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div id="root-container" class="relative z-10 w-full min-h-screen flex flex-col pt-14 pb-[34px]" style="view-transition-name: main-content;">
+        <main class="flex-1 flex flex-col px-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 status-dot-pulse"></div>
+                        <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Live Queue</span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-slate-900">Visitor Entry</h1>
+                </div>
+                <a id="back-to-dashboard-link" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 border border-slate-200">
+                    <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
+                </a>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <div class="glass-panel rounded-2xl p-3 flex flex-col items-center justify-center">
+                    <span class="text-xl font-black text-blue-600">04</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Waiting</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-3 flex flex-col items-center justify-center">
+                    <span class="text-xl font-black text-emerald-600">12</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Accepted</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-3 flex flex-col items-center justify-center">
+                    <span class="text-xl font-black text-rose-500">01</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Flagged</span>
+                </div>
+            </div>
+
+            <!-- Search & Filter Bar -->
+            <div class="relative mb-6">
+                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <iconify-icon icon="lucide:search" class="text-slate-400"></iconify-icon>
+                </div>
+                <input type="text" placeholder="Search unit or name..." class="w-full h-12 bg-white rounded-xl border border-slate-200 pl-11 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+            </div>
+
+            <!-- Queue List -->
+            <div class="flex-1 space-y-4">
+                <!-- Queue Card 1 -->
+                <div class="queue-item bg-white rounded-[24px] p-5 shadow-sm border border-slate-100" style="animation-delay: 0.1s;">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">Marcus Thompson</h3>
+                                <p class="text-xs text-slate-500">Unit 402 • <span class="text-blue-600 font-semibold">Guest</span></p>
+                            </div>
+                        </div>
+                        <div class="px-3 py-1 bg-amber-50 border border-amber-100 rounded-full">
+                            <span class="text-[10px] font-bold text-amber-600 uppercase tracking-tight">4m waiting</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 items-center mb-5 p-3 bg-slate-50 rounded-xl">
+                        <iconify-icon icon="lucide:car" class="text-slate-400"></iconify-icon>
+                        <span class="text-xs font-bold text-slate-600">Black SUV • Plate: LX-9244</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="h-12 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <iconify-icon icon="lucide:x-circle"></iconify-icon>
+                            DENY
+                        </button>
+                        <button class="h-12 bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <iconify-icon icon="lucide:check-circle"></iconify-icon>
+                            APPROVE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Queue Card 2 -->
+                <div class="queue-item bg-white rounded-[24px] p-5 shadow-sm border border-slate-100" style="animation-delay: 0.2s;">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                <iconify-icon icon="lucide:package" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">Amazon Logistics</h3>
+                                <p class="text-xs text-slate-500">Unit 215 • <span class="text-indigo-600 font-semibold">Delivery</span></p>
+                            </div>
+                        </div>
+                        <div class="px-3 py-1 bg-blue-50 border border-blue-100 rounded-full">
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tight">2m waiting</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 items-center mb-5 p-3 bg-slate-50 rounded-xl">
+                        <iconify-icon icon="lucide:alert-circle" class="text-amber-500"></iconify-icon>
+                        <span class="text-xs font-bold text-slate-600">Requires signature for drop-off</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="h-12 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+                            MESSAGE
+                        </button>
+                        <button class="h-12 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+                            GRANT ACCESS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Queue Card 3 -->
+                <div class="queue-item bg-white rounded-[24px] p-5 shadow-sm border border-slate-100 opacity-60" style="animation-delay: 0.3s;">
+                    <div class="flex items-start justify-between">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300">
+                                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-400">Elena Rodriguez</h3>
+                                <p class="text-xs text-slate-300">Unit 108 • Friend</p>
+                            </div>
+                        </div>
+                        <div class="px-3 py-1 bg-slate-100 rounded-full">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Verifying ID</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Persistent Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-200/60 px-6 py-4 flex justify-between items-center z-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+            <a id="nav-home-link" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Home</span>
+            </a>
+            <a id="nav-social-link" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:message-square" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Social</span>
+            </a>
+            <a id="nav-billing-link" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Billing</span>
+            </a>
+            <a id="nav-profile-link" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition-colors">
+                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-extrabold uppercase tracking-tighter">Profile</span>
+            </a>
+        </nav>
+    </div>
+</body>
+</html>

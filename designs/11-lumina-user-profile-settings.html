@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - User Profile</title>
+    <meta name="view-transition" content="same-origin">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html {
+            background-color: #F1F5F9;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav),
+        ::view-transition-old(bg-ambiance),
+        ::view-transition-new(bg-ambiance) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .ios-toggle:checked ~ .toggle-bg {
+            background-color: #2563EB;
+        }
+
+        .ios-toggle:checked ~ .toggle-circle {
+            transform: translateX(20px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+    <!-- Background Ambiance (Persistent) -->
+    <div style="view-transition-name: bg-ambiance;" class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div id="root-container" class="relative z-10 w-full min-h-screen flex flex-col">
+        
+        <!-- Main Content Area -->
+        <main style="view-transition-name: main-content;" class="flex-1 overflow-y-auto pt-14 pb-[120px] px-6">
+            
+            <!-- Header Section -->
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Profile</h1>
+                <button class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 shadow-sm">
+                    <iconify-icon icon="lucide:settings-2" class="text-xl"></iconify-icon>
+                </button>
+            </div>
+
+            <!-- User Hero Card -->
+            <div class="glass-panel rounded-[24px] p-6 mb-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-600/5 rounded-full blur-2xl"></div>
+                <div class="flex items-center gap-5">
+                    <div class="relative group">
+                        <div class="w-20 h-20 rounded-[20px] bg-slate-100 overflow-hidden border-2 border-white shadow-md transition-transform active:scale-95">
+                            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Administrator" class="w-full h-full object-cover">
+                        </div>
+                        <button class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center border-2 border-white shadow-lg active:scale-90 transition-all">
+                            <iconify-icon icon="lucide:camera" class="text-sm"></iconify-icon>
+                        </button>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Alex Rodriguez</h2>
+                        <p class="text-sm font-medium text-slate-500 mb-2">Resident • Unit 402</p>
+                        <div class="flex gap-2">
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase tracking-wider">Verified</span>
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded uppercase tracking-wider">Admin Role</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Group 1: Personal Details -->
+            <div class="space-y-3 mb-8">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Personal Details</h3>
+                <div class="bg-white rounded-[20px] overflow-hidden border border-slate-100">
+                    <div class="flex items-center gap-4 p-4 border-b border-slate-50">
+                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                            <iconify-icon icon="lucide:phone" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs text-slate-400 font-medium">Phone Number</p>
+                            <p class="text-sm font-bold text-slate-800">+1 (555) 123-4567</p>
+                        </div>
+                        <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 border-b border-slate-50">
+                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                            <iconify-icon icon="lucide:mail" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs text-slate-400 font-medium">Email Address</p>
+                            <p class="text-sm font-bold text-slate-800">admin@lumina.com</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 p-4">
+                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                            <iconify-icon icon="lucide:building-2" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs text-slate-400 font-medium">Unit Information</p>
+                            <p class="text-sm font-bold text-slate-800">The Highland Towers, Floor 4, #402</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Group 2: Security & Contacts -->
+            <div class="space-y-3 mb-8">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Emergency Contacts</h3>
+                <div class="bg-white rounded-[20px] overflow-hidden border border-slate-100">
+                    <div class="flex items-center gap-4 p-4 border-b border-slate-50">
+                        <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
+                            <iconify-icon icon="lucide:heart" class="text-lg"></iconify-icon>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs text-slate-400 font-medium">Primary Contact</p>
+                            <p class="text-sm font-bold text-slate-800">Maria Rodriguez (Spouse)</p>
+                        </div>
+                        <iconify-icon icon="lucide:phone" class="text-blue-600 text-lg"></iconify-icon>
+                    </div>
+                    <div class="p-4">
+                        <button class="w-full h-11 border-2 border-dashed border-slate-100 rounded-xl text-slate-400 text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                            <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
+                            <span>Add Emergency Contact</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Group 3: Preferences -->
+            <div class="space-y-3 mb-8">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Notification Preferences</h3>
+                <div class="bg-white rounded-[20px] overflow-hidden border border-slate-100">
+                    <div class="flex items-center justify-between p-4 border-b border-slate-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                                <iconify-icon icon="lucide:bell"></iconify-icon>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700">Visitor Alerts</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer ios-toggle" checked>
+                            <div class="w-11 h-6 bg-slate-200 rounded-full toggle-bg transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle transition-transform"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-4 border-b border-slate-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center">
+                                <iconify-icon icon="lucide:message-square"></iconify-icon>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700">Community Announcements</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer ios-toggle" checked>
+                            <div class="w-11 h-6 bg-slate-200 rounded-full toggle-bg transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full toggle-circle transition-transform"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
+                                <iconify-icon icon="lucide:moon"></iconify-icon>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700">Quiet Hours</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400">22:00 - 08:00</span>
+                            <iconify-icon icon="lucide:chevron-right" class="text-slate-300"></iconify-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign Out -->
+            <button class="w-full h-14 bg-white border border-rose-100 text-rose-500 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm mb-4">
+                <iconify-icon icon="lucide:log-out" class="text-xl"></iconify-icon>
+                <span>Log Out</span>
+            </button>
+            <p class="text-center text-[10px] text-slate-300 uppercase tracking-[0.2em] font-black">Lumina v2.4.1 Build 892</p>
+
+        </main>
+
+        <!-- Persistent Bottom Navigation -->
+        <nav style="view-transition-name: main-nav;" class="fixed bottom-0 left-0 right-0 h-[84px] glass-panel border-t border-slate-200/50 px-6 pb-[24px] flex items-center justify-between z-50">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Home</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:user-check" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Guests</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-payments" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:wallet" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Wallet</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-slate-400">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Social</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-blue-600">
+                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Profile</span>
+            </a>
+        </nav>
+
+    </div>
+</body>
+</html>

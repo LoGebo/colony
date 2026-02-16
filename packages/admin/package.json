@@ -6,9 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion": "remotion studio src/remotion/index.ts",
+    "remotion:render": "remotion render src/remotion/index.ts ColonyAd out/colony-ad.mp4"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.420",
+    "@remotion/google-fonts": "^4.0.420",
+    "@remotion/player": "^4.0.420",
+    "@remotion/renderer": "^4.0.420",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-query": "^5.90.20",
@@ -20,6 +26,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "recharts": "^3.7.0",
+    "remotion": "^4.0.420",
     "sonner": "^2.0.7",
     "xlsx": "^0.18.5"
   },

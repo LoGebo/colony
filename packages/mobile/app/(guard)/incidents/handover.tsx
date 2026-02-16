@@ -84,19 +84,32 @@ export default function HandoverScreen() {
         pending_items: pendingItems.length > 0 ? pendingItems : undefined,
       });
 
-      Alert.alert('Handover Created', 'Your shift handover notes have been submitted.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setShowForm(false);
-            setNotes('');
-            setPriority('normal');
-            setPendingItems([]);
+      if (Platform.OS === 'web') {
+        window.alert('Your shift handover notes have been submitted.');
+        setShowForm(false);
+        setNotes('');
+        setPriority('normal');
+        setPendingItems([]);
+      } else {
+        Alert.alert('Handover Created', 'Your shift handover notes have been submitted.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              setShowForm(false);
+              setNotes('');
+              setPriority('normal');
+              setPendingItems([]);
+            },
           },
-        },
-      ]);
+        ]);
+      }
     } catch (error: any) {
-      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+      const msg = error?.message ?? 'Something went wrong. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 
@@ -105,7 +118,12 @@ export default function HandoverScreen() {
       try {
         await acknowledgeMutation.mutateAsync(handoverId);
       } catch (error: any) {
-        Alert.alert('Error', error?.message ?? 'Failed to acknowledge handover.');
+        const msg = error?.message ?? 'Failed to acknowledge handover.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Error', msg);
+        }
       }
     },
     [acknowledgeMutation],

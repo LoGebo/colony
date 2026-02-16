@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Community Social</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+    <meta name="view-transition" content="same-origin">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c6843c32-7c38-41c2-82c2-dc47929810cc" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/2f00bfda-080c-4fdc-9690-2fe63ed007b0" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/b8372f2e-0936-47a8-a73c-7b048187c134" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/8fbb09a4-ab58-4630-8300-1d33715e0e0f" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/364dab1d-ad42-46bb-bfb2-322cbc8e2d18" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/96f3ecf2-25eb-4fdd-a467-5506e2ea383b" as="document">
+    <link rel="prefetch" href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" as="document">
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        @view-transition {
+            navigation: auto;
+        }
+
+        ::view-transition-old(main-nav),
+        ::view-transition-new(main-nav) {
+            animation: none;
+            mix-blend-mode: normal;
+        }
+
+        ::view-transition-old(main-content) {
+            animation: 0.25s ease-out both fade-out;
+        }
+
+        ::view-transition-new(main-content) {
+            animation: 0.25s ease-in 0.1s both fade-in;
+        }
+
+        @keyframes fade-out {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(10px); }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9]">
+    <!-- Background Ambiance (Persistent) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-blue-100/50 via-teal-50/30 to-transparent blur-3xl"></div>
+        <div class="absolute top-[10%] right-[-20%] w-[300px] h-[300px] bg-blue-400/10 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[20%] left-[-10%] w-[350px] h-[350px] bg-teal-300/10 rounded-full blur-[90px]"></div>
+    </div>
+
+    <div class="relative z-10 w-full h-screen flex flex-col">
+        <!-- Header -->
+        <header class="shrink-0 pt-14 px-6 flex items-center justify-between pb-4 bg-white/30 backdrop-blur-md">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Community</h1>
+                <p class="text-slate-500 text-xs font-medium uppercase tracking-widest">Social Feed</p>
+            </div>
+            <div class="flex gap-3">
+                <button class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-600 shadow-sm">
+                    <iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>
+                </button>
+                <button class="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-md">
+                    <img src="https://i.pravatar.cc/100?u=resident1" alt="Profile">
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto px-4" style="view-transition-name: main-content">
+            <!-- Channel Filter (Horizontal Scroll) -->
+            <div class="flex gap-3 overflow-x-auto py-6 no-scrollbar">
+                <button class="px-6 h-10 rounded-full bg-slate-900 text-white font-bold text-sm shrink-0 shadow-lg shadow-slate-900/10">All</button>
+                <button class="px-6 h-10 rounded-full glass-panel text-slate-600 font-bold text-sm shrink-0 border-slate-200">General</button>
+                <button class="px-6 h-10 rounded-full glass-panel text-slate-600 font-bold text-sm shrink-0 border-slate-200">Events</button>
+                <button class="px-6 h-10 rounded-full glass-panel text-slate-600 font-bold text-sm shrink-0 border-slate-200">Lost & Found</button>
+            </div>
+
+            <!-- Social Feed Posts -->
+            <div class="space-y-6 pb-24">
+                
+                <!-- Poll Post (General) -->
+                <article class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <iconify-icon icon="lucide:megaphone" class="text-blue-600 text-xl"></iconify-icon>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-black text-slate-900">Lumina Admin</h4>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">General Channel • 2h ago</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-slate-800 font-medium leading-relaxed mb-6">Which weekend works best for the annual Summer BBQ in the park area?</p>
+                    
+                    <!-- Poll Options -->
+                    <div class="space-y-3 mb-6">
+                        <button class="w-full text-left">
+                            <div class="flex justify-between items-center mb-1 px-1">
+                                <span class="text-xs font-bold text-slate-700">July 15 - 16</span>
+                                <span class="text-xs font-bold text-blue-600">64%</span>
+                            </div>
+                            <div class="h-10 w-full bg-slate-50 rounded-xl relative overflow-hidden border border-slate-100">
+                                <div class="absolute top-0 left-0 h-full bg-blue-500/20 w-[64%] rounded-r-lg border-r border-blue-200"></div>
+                                <div class="absolute inset-0 flex items-center px-4">
+                                    <iconify-icon icon="lucide:check-circle" class="text-blue-600 text-lg"></iconify-icon>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="w-full text-left group">
+                            <div class="flex justify-between items-center mb-1 px-1">
+                                <span class="text-xs font-bold text-slate-500">July 22 - 23</span>
+                                <span class="text-xs font-bold text-slate-400">36%</span>
+                            </div>
+                            <div class="h-10 w-full bg-slate-50 rounded-xl relative overflow-hidden border border-slate-100 group-hover:bg-slate-100 transition-colors">
+                                <div class="absolute top-0 left-0 h-full bg-slate-200 w-[36%] rounded-r-lg"></div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Reactions & Comments -->
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                        <div class="flex gap-4">
+                            <button class="flex items-center gap-1.5 text-slate-400 group">
+                                <iconify-icon icon="lucide:heart" class="text-xl group-hover:text-rose-500 transition-colors"></iconify-icon>
+                                <span class="text-xs font-bold">42</span>
+                            </button>
+                            <button class="flex items-center gap-1.5 text-blue-600">
+                                <iconify-icon icon="lucide:message-circle" class="text-xl"></iconify-icon>
+                                <span class="text-xs font-bold">12</span>
+                            </button>
+                        </div>
+                        <button class="flex items-center gap-1 text-slate-400">
+                            <iconify-icon icon="lucide:share-2" class="text-lg"></iconify-icon>
+                        </button>
+                    </div>
+                </article>
+
+                <!-- Photo Post (Events) -->
+                <article class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/100?u=sarahj" class="w-10 h-10 rounded-full border border-slate-100" alt="User">
+                        <div>
+                            <h4 class="text-sm font-black text-slate-900">Sarah Jenkins</h4>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Events • 5h ago</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-slate-800 font-medium leading-relaxed mb-4">Had an amazing time at the morning Yoga session today! Thanks everyone for coming out. ✨</p>
+                    
+                    <div class="relative rounded-[20px] overflow-hidden aspect-[4/3] mb-6">
+                        <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover" alt="Yoga Session">
+                        <div class="absolute top-3 right-3 glass-panel rounded-full px-3 py-1 flex items-center gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <span class="text-[10px] font-bold text-slate-700">Social Event</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                        <div class="flex gap-4">
+                            <button class="flex items-center gap-1.5 text-rose-500">
+                                <iconify-icon icon="lucide:heart" class="text-xl"></iconify-icon>
+                                <span class="text-xs font-bold">108</span>
+                            </button>
+                            <button class="flex items-center gap-1.5 text-slate-400">
+                                <iconify-icon icon="lucide:message-circle" class="text-xl"></iconify-icon>
+                                <span class="text-xs font-bold">8</span>
+                            </button>
+                        </div>
+                        <button class="flex items-center gap-1 text-slate-400">
+                            <iconify-icon icon="lucide:share-2" class="text-lg"></iconify-icon>
+                        </button>
+                    </div>
+
+                    <!-- Nested Comments Simulation -->
+                    <div class="mt-4 pl-4 border-l-2 border-slate-50 space-y-4">
+                        <div class="flex gap-3">
+                            <img src="https://i.pravatar.cc/100?u=mark" class="w-7 h-7 rounded-full" alt="User">
+                            <div class="flex-1 bg-slate-50 p-3 rounded-2xl rounded-tl-none">
+                                <h5 class="text-[11px] font-black text-slate-900 mb-0.5">Mark Thompson</h5>
+                                <p class="text-xs text-slate-600">Looks amazing! So sad I missed it this time.</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Lost & Found Post -->
+                <article class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="https://i.pravatar.cc/100?u=dave" class="w-10 h-10 rounded-full border border-slate-100" alt="User">
+                        <div>
+                            <h4 class="text-sm font-black text-slate-900">David Chen</h4>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Lost & Found • 1d ago</p>
+                        </div>
+                        <span class="ml-auto bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Pending</span>
+                    </div>
+                    
+                    <p class="text-slate-800 font-medium leading-relaxed mb-4">Found these keys near the North entrance lobby. Left them with the security desk!</p>
+                    
+                    <div class="flex gap-2 mb-6">
+                        <div class="flex-1 h-32 rounded-2xl overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1548142723-aae7678afd54?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover" alt="Found keys">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-50">
+                        <div class="flex gap-4">
+                            <button class="flex items-center gap-1.5 text-slate-400">
+                                <iconify-icon icon="lucide:heart" class="text-xl"></iconify-icon>
+                                <span class="text-xs font-bold">3</span>
+                            </button>
+                            <button class="flex items-center gap-1.5 text-slate-400">
+                                <iconify-icon icon="lucide:message-circle" class="text-xl"></iconify-icon>
+                                <span class="text-xs font-bold">1</span>
+                            </button>
+                        </div>
+                        <button class="px-4 h-8 bg-blue-50 text-blue-600 rounded-full text-xs font-black">Contact David</button>
+                    </div>
+                </article>
+            </div>
+        </main>
+
+        <!-- Create Post FAB -->
+        <button class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 rounded-full text-white shadow-2xl shadow-blue-500/40 flex items-center justify-center active:scale-95 transition-transform z-30">
+            <iconify-icon icon="lucide:plus" class="text-3xl"></iconify-icon>
+        </button>
+
+        <!-- Bottom Navigation (Persistent) -->
+        <nav class="shrink-0 h-[88px] bg-white border-t border-slate-100 px-6 flex items-center justify-between pb-[34px]" style="view-transition-name: main-nav">
+            <a href="https://p.superdesign.dev/draft/ddcad9de-e4e9-428d-9760-1a000213005c" id="nav-home" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:home" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Home</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/26c5bbcb-5365-4869-8258-317f134c14a5" id="nav-visitors" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:qr-code" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Guests</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/7a31d81c-233d-43bf-88f1-ce9c3f60c160" id="nav-payments" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:credit-card" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Pay</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/4b2e4ea0-eda0-4655-a976-ada345ba97ee" id="nav-social" class="flex flex-col items-center gap-1 text-blue-600 transition-colors active">
+                <iconify-icon icon="lucide:users" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Social</span>
+            </a>
+            <a href="https://p.superdesign.dev/draft/c51716d3-af56-4b12-b421-07490d1b5c93" id="nav-profile" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
+                <iconify-icon icon="lucide:user" class="text-2xl"></iconify-icon>
+                <span class="text-[10px] font-bold uppercase tracking-tight">Profile</span>
+            </a>
+        </nav>
+    </div>
+</body>
+</html>

@@ -128,7 +128,7 @@ export default function MoveDetailPage() {
     updateValidation.mutate({
       id: validationId,
       status,
-      validated_by: user?.id,
+      checked_by: user?.id,
       notes: validationNotes[validationId] || undefined,
     });
   };
@@ -139,6 +139,8 @@ export default function MoveDetailPage() {
     createDeposit.mutate(
       {
         move_request_id: move.id,
+        unit_id: move.unit_id,
+        resident_id: move.resident_id,
         amount: parseFloat(depositForm.amount),
         collection_date: depositForm.collection_date,
       },
@@ -242,22 +244,22 @@ export default function MoveDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Fecha Programada:</span>
-                <span>{format(parseISO(move.scheduled_date), 'dd/MM/yyyy', { locale: es })}</span>
+                <span>{format(parseISO(move.requested_date), 'dd/MM/yyyy', { locale: es })}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Empresa de Mudanza:</span>
-                <span>{move.moving_company ?? '-'}</span>
+                <span>{move.moving_company_name ?? '-'}</span>
               </div>
-              {move.contact_phone && (
+              {move.moving_company_phone && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Telefono:</span>
-                  <span>{move.contact_phone}</span>
+                  <span>{move.moving_company_phone}</span>
                 </div>
               )}
-              {move.notes && (
+              {move.resident_notes && (
                 <div>
                   <span className="text-gray-600">Notas:</span>
-                  <p className="mt-1 text-gray-900">{move.notes}</p>
+                  <p className="mt-1 text-gray-900">{move.resident_notes}</p>
                 </div>
               )}
             </div>
@@ -321,21 +323,13 @@ export default function MoveDetailPage() {
                         <span className="font-semibold text-gray-900">
                           {val.validation_type}
                         </span>
-                        {val.is_required && (
-                          <Badge variant="danger">
-                            Requerido
-                          </Badge>
-                        )}
                         <Badge variant={VALIDATION_STATUS_VARIANTS[val.status] ?? 'neutral'}>
                           {VALIDATION_STATUS_LABELS[val.status] ?? val.status}
                         </Badge>
                       </div>
-                      {val.description && (
-                        <p className="mt-1 text-sm text-gray-600">{val.description}</p>
-                      )}
-                      {val.validated_at && (
+                      {val.checked_at && (
                         <p className="mt-1 text-xs text-gray-500">
-                          Validado: {format(parseISO(val.validated_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                          Validado: {format(parseISO(val.checked_at), 'dd/MM/yyyy HH:mm', { locale: es })}
                         </p>
                       )}
                       {val.notes && (
@@ -357,15 +351,13 @@ export default function MoveDetailPage() {
                         >
                           Rechazar
                         </Button>
-                        {!val.is_required && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleValidationAction(val.id, 'waived')}
-                          >
-                            Eximir
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleValidationAction(val.id, 'waived')}
+                        >
+                          Eximir
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -450,7 +442,7 @@ export default function MoveDetailPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Monto:</span>
                     <span className="font-semibold">
-                      ${deposit.amount.toFixed(2)} {deposit.currency}
+                      ${deposit.amount.toFixed(2)} MXN
                     </span>
                   </div>
                   <div className="flex justify-between">

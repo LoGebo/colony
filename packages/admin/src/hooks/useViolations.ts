@@ -51,7 +51,7 @@ export interface ViolationDetailRow {
   resolved_at: string | null;
   units: { unit_number: string } | null;
   violation_types: { name: string; category: string; default_severity: string } | null;
-  residents: { first_name: string; last_name: string } | null;
+  residents: { first_name: string; paternal_surname: string } | null;
 }
 
 export interface ViolationFilters {
@@ -151,7 +151,7 @@ export function useViolationDetail(id: string) {
       const { data, error } = await supabase
         .from('violations')
         .select(
-          '*, units(unit_number), violation_types(name, category, default_severity), residents(first_name, last_name)'
+          '*, units(unit_number), violation_types(name, category, default_severity), residents(first_name, paternal_surname)'
         )
         .eq('id', id)
         .single();
@@ -340,7 +340,7 @@ export function useUpdateViolationStatus() {
         updateData.resolution_notes = payload.resolution_notes;
       }
 
-      if (payload.status === 'resolved') {
+      if (payload.status === 'closed') {
         updateData.resolved_at = new Date().toISOString();
       }
 
