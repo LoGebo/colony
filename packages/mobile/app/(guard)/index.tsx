@@ -6,10 +6,10 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -69,7 +69,7 @@ export default function GuardDashboard() {
         }
       }
     } else {
-      Alert.alert(
+      showAlert(
         'Emergency Alert',
         'This will trigger an emergency alert for the entire community. Are you sure?',
         [
@@ -78,7 +78,7 @@ export default function GuardDashboard() {
             text: 'TRIGGER EMERGENCY',
             style: 'destructive',
             onPress: () => {
-              Alert.alert(
+              showAlert(
                 'Select Emergency Type',
                 '',
                 [
@@ -277,8 +277,9 @@ export default function GuardDashboard() {
           ) : (
             <View style={styles.visitorList}>
               {expectedVisitors?.map((visitor) => {
-                const residentName = visitor.residents
-                  ? `${(visitor.residents as { first_name: string }).first_name} ${(visitor.residents as { paternal_surname: string }).paternal_surname}`
+                const res = visitor.residents as { first_name?: string; paternal_surname?: string } | null;
+                const residentName = res
+                  ? `${res.first_name ?? ''} ${res.paternal_surname ?? ''}`.trim()
                   : '';
                 const unitNumber = (visitor.units as { unit_number: string } | null)?.unit_number ?? '';
                 return (

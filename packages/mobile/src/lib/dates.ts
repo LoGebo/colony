@@ -4,14 +4,16 @@ import { es } from 'date-fns/locale';
 /**
  * Format a date string as "dd MMM yyyy" (e.g., "08 feb 2026")
  */
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
   return format(parseISO(dateStr), 'dd MMM yyyy', { locale: es });
 }
 
 /**
  * Format a date string as "dd MMM yyyy, HH:mm"
  */
-export function formatDateTime(dateStr: string): string {
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
   return format(parseISO(dateStr), 'dd MMM yyyy, HH:mm', { locale: es });
 }
 
@@ -31,7 +33,8 @@ export function formatTime(timeStr: string): string {
 /**
  * Format a date string as relative time in Spanish (e.g., "hace 5 minutos")
  */
-export function formatRelative(dateStr: string): string {
+export function formatRelative(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
   return formatDistanceToNow(parseISO(dateStr), { addSuffix: true, locale: es });
 }
 

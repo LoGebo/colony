@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { queryKeys } from '@upoe/shared';
+import { toastError } from '@/lib/toast-error';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -35,7 +37,7 @@ export function usePendingProofs() {
   const { communityId } = useAuth();
 
   return useQuery({
-    queryKey: ['payment-proofs', 'pending', communityId],
+    queryKey: [...queryKeys.financials.paymentProofs(communityId!).queryKey, 'pending'],
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -92,11 +94,11 @@ export function useApprovePaymentProof() {
     },
     onSuccess: () => {
       toast.success('Comprobante aprobado');
-      queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
-      queryClient.invalidateQueries({ queryKey: ['unit-balances'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.paymentProofs._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.unitBalances._def });
     },
     onError: (error: Error) => {
-      toast.error('Error al aprobar: ' + error.message);
+      toastError('Error al aprobar', error);
     },
   });
 }
@@ -127,11 +129,11 @@ export function useRejectPaymentProof() {
     },
     onSuccess: () => {
       toast.success('Comprobante rechazado');
-      queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
-      queryClient.invalidateQueries({ queryKey: ['unit-balances'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.paymentProofs._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.unitBalances._def });
     },
     onError: (error: Error) => {
-      toast.error('Error al rechazar: ' + error.message);
+      toastError('Error al rechazar', error);
     },
   });
 }
@@ -179,11 +181,11 @@ export function useBulkApproveProofs() {
         toast.success(`${fulfilled} comprobantes aprobados`);
         toast.error(`${rejected} comprobantes fallaron al aprobar`);
       }
-      queryClient.invalidateQueries({ queryKey: ['payment-proofs'] });
-      queryClient.invalidateQueries({ queryKey: ['unit-balances'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.paymentProofs._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.unitBalances._def });
     },
     onError: (error: Error) => {
-      toast.error('Error en aprobacion masiva: ' + error.message);
+      toastError('Error en aprobacion masiva', error);
     },
   });
 }

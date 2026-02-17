@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -153,7 +154,7 @@ export function useUpdateUnit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.units.detail(data.id).queryKey });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar unidad: ${error.message}`);
+      toastError('Error al actualizar unidad', error);
     },
   });
 }

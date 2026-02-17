@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -81,12 +82,12 @@ export function useProviderList(communityId: string | undefined, statusFilter?: 
         .order('company_name', { ascending: true });
 
       if (statusFilter) {
-        query = query.eq('status', statusFilter as never);
+        query = query.eq('status', statusFilter as any);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as ProviderRow[];
+      return (data ?? []) as ProviderRow[];
     },
     enabled: !!communityId,
   });
@@ -148,8 +149,8 @@ export function useCreateProvider() {
           rfc: input.rfc ?? null,
           address: input.address ?? null,
           notes: input.notes ?? null,
-          status: 'pending_approval' as never,
-        } as never)
+          status: 'pending_approval',
+        } as any)
         .select()
         .single();
 
@@ -161,7 +162,7 @@ export function useCreateProvider() {
       queryClient.invalidateQueries({ queryKey: queryKeys.providers._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear proveedor: ${error.message}`);
+      toastError('Error al crear proveedor', error);
     },
   });
 }
@@ -183,7 +184,7 @@ export function useUpdateProvider() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('providers')
-        .update(updates as never)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -196,7 +197,7 @@ export function useUpdateProvider() {
       queryClient.invalidateQueries({ queryKey: queryKeys.providers._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar proveedor: ${error.message}`);
+      toastError('Error al actualizar proveedor', error);
     },
   });
 }
@@ -219,7 +220,7 @@ export function useProviderDocuments(providerId: string | undefined) {
         .order('expires_at', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ProviderDocumentRow[];
+      return (data ?? []) as ProviderDocumentRow[];
     },
     enabled: !!providerId,
   });
@@ -256,10 +257,10 @@ export function useCreateProviderDocument() {
           issuing_authority: input.issuing_authority ?? null,
           issued_at: input.issued_at ?? null,
           expires_at: input.expires_at ?? null,
-          status: 'pending_verification' as never,
+          status: 'pending_verification',
           storage_path: '',
           file_name: '',
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -273,7 +274,7 @@ export function useCreateProviderDocument() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al agregar documento: ${error.message}`);
+      toastError('Error al agregar documento', error);
     },
   });
 }
@@ -296,7 +297,7 @@ export function useUpdateProviderDocument() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('provider_documents')
-        .update(updates as never)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -311,7 +312,7 @@ export function useUpdateProviderDocument() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar documento: ${error.message}`);
+      toastError('Error al actualizar documento', error);
     },
   });
 }
@@ -334,7 +335,7 @@ export function useProviderPersonnel(providerId: string | undefined) {
         .order('paternal_surname', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ProviderPersonnelRow[];
+      return (data ?? []) as ProviderPersonnelRow[];
     },
     enabled: !!providerId,
   });
@@ -370,7 +371,7 @@ export function useCreateProviderPersonnel() {
           maternal_surname: input.maternal_surname ?? null,
           ine_number: input.ine_number ?? null,
           phone: input.phone ?? null,
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -384,7 +385,7 @@ export function useCreateProviderPersonnel() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al agregar personal: ${error.message}`);
+      toastError('Error al agregar personal', error);
     },
   });
 }
@@ -409,7 +410,7 @@ export function useTogglePersonnelActive() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('provider_personnel')
-        .update({ is_authorized: !is_authorized } as never)
+        .update({ is_authorized: !is_authorized } as any)
         .eq('id', id)
         .select()
         .single();
@@ -424,7 +425,7 @@ export function useTogglePersonnelActive() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al cambiar estado: ${error.message}`);
+      toastError('Error al cambiar estado', error);
     },
   });
 }
@@ -447,7 +448,7 @@ export function useProviderSchedules(providerId: string | undefined) {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ProviderScheduleRow[];
+      return (data ?? []) as ProviderScheduleRow[];
     },
     enabled: !!providerId,
   });
@@ -485,7 +486,7 @@ export function useCreateProviderSchedule() {
           end_time: input.end_time,
           effective_from: input.effective_from,
           effective_until: input.effective_until ?? null,
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -499,7 +500,7 @@ export function useCreateProviderSchedule() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al agregar horario: ${error.message}`);
+      toastError('Error al agregar horario', error);
     },
   });
 }
@@ -528,7 +529,7 @@ export function useDeleteProviderSchedule() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al eliminar horario: ${error.message}`);
+      toastError('Error al eliminar horario', error);
     },
   });
 }
@@ -553,7 +554,7 @@ export function useExpiringDocuments(communityId: string | undefined) {
         )
         .eq('providers.community_id', communityId!)
         .lte('expires_at', cutoff)
-        .neq('status', 'rejected' as never)
+        .neq('status', 'rejected')
         .order('expires_at', { ascending: true });
 
       if (error) throw error;

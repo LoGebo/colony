@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -115,15 +116,15 @@ export function useMoveList(statusFilter?: string, typeFilter?: string) {
         .order('created_at', { ascending: false });
 
       if (statusFilter) {
-        query = query.eq('status', statusFilter as never);
+        query = query.eq('status', statusFilter as any);
       }
       if (typeFilter) {
-        query = query.eq('move_type', typeFilter as never);
+        query = query.eq('move_type', typeFilter as any);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as MoveRequestRow[];
+      return (data ?? []) as MoveRequestRow[];
     },
     enabled: !!communityId,
   });
@@ -149,7 +150,7 @@ export function useMoveDetail(id: string) {
         .single();
 
       if (error) throw error;
-      return data as unknown as MoveRequestDetail;
+      return data as MoveRequestDetail;
     },
     enabled: !!communityId && !!id,
   });
@@ -172,7 +173,7 @@ export function useMoveValidations(moveId: string) {
         .order('validation_type', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as MoveValidationRow[];
+      return (data ?? []) as MoveValidationRow[];
     },
     enabled: !!moveId,
   });
@@ -202,7 +203,7 @@ export function useMoveDeposits(moveRequestId?: string) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as MoveDepositRow[];
+      return (data ?? []) as MoveDepositRow[];
     },
     enabled: !!communityId,
   });
@@ -234,7 +235,7 @@ export function useCreateMove() {
           moving_company_phone: input.moving_company_phone ?? null,
           resident_notes: input.resident_notes ?? null,
           status: 'requested',
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -246,7 +247,7 @@ export function useCreateMove() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear mudanza: ${error.message}`);
+      toastError('Error al crear mudanza', error);
     },
   });
 }
@@ -262,7 +263,7 @@ export function useUpdateMoveStatus() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('move_requests')
-        .update({ status } as never)
+        .update({ status } as any)
         .eq('id', id)
         .select()
         .single();
@@ -275,7 +276,7 @@ export function useUpdateMoveStatus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar estado: ${error.message}`);
+      toastError('Error al actualizar estado', error);
     },
   });
 }
@@ -298,7 +299,7 @@ export function useUpdateValidation() {
 
       const { data, error } = await supabase
         .from('move_validations')
-        .update(payload as never)
+        .update(payload as any)
         .eq('id', id)
         .select()
         .single();
@@ -311,7 +312,7 @@ export function useUpdateValidation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar validacion: ${error.message}`);
+      toastError('Error al actualizar validacion', error);
     },
   });
 }
@@ -337,7 +338,7 @@ export function useCreateDeposit() {
           status: 'collected',
           collected_at: input.collection_date,
           deposit_type: 'move',
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -349,7 +350,7 @@ export function useCreateDeposit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al registrar deposito: ${error.message}`);
+      toastError('Error al registrar deposito', error);
     },
   });
 }
@@ -370,8 +371,8 @@ export function useProcessDepositRefund() {
       const { data, error } = await supabase.rpc('process_deposit_refund', {
         p_deposit_id: input.depositId,
         p_deduction_amount: input.deductionAmount,
-        p_deduction_reason: input.deductionReason,
-      } as never);
+        p_reason: input.deductionReason,
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
@@ -381,7 +382,7 @@ export function useProcessDepositRefund() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al procesar deducciones: ${error.message}`);
+      toastError('Error al procesar deducciones', error);
     },
   });
 }
@@ -397,7 +398,7 @@ export function useApproveDepositRefund() {
       const supabase = createClient();
       const { data, error } = await supabase.rpc('approve_deposit_refund', {
         p_deposit_id: depositId,
-      } as never);
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
@@ -407,7 +408,7 @@ export function useApproveDepositRefund() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al aprobar reembolso: ${error.message}`);
+      toastError('Error al aprobar reembolso', error);
     },
   });
 }
@@ -429,7 +430,7 @@ export function useCompleteDepositRefund() {
         p_deposit_id: input.depositId,
         p_method: input.method,
         p_reference: input.reference,
-      } as never);
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
@@ -439,7 +440,7 @@ export function useCompleteDepositRefund() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al completar reembolso: ${error.message}`);
+      toastError('Error al completar reembolso', error);
     },
   });
 }
@@ -456,7 +457,7 @@ export function useForfeitDeposit() {
       const { data, error } = await supabase.rpc('forfeit_deposit', {
         p_deposit_id: input.depositId,
         p_reason: input.reason,
-      } as never);
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
@@ -466,7 +467,7 @@ export function useForfeitDeposit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.moves._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al retener deposito: ${error.message}`);
+      toastError('Error al retener deposito', error);
     },
   });
 }

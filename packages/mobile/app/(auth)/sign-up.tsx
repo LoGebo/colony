@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { showAlert } from '@/lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -42,7 +42,7 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     if (!firstName || !email || !password) {
-      Alert.alert('Error', 'Please fill in all required fields.');
+      showAlert('Error', 'Please fill in all required fields.');
       return;
     }
     setLoading(true);
@@ -59,7 +59,7 @@ export default function SignUpScreen() {
     });
     setLoading(false);
     if (error) {
-      Alert.alert('Sign Up Failed', error.message);
+      showAlert('Sign Up Failed', error.message);
     } else {
       router.replace('/');
     }

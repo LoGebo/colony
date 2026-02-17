@@ -6,8 +6,8 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -118,7 +118,7 @@ export default function ReservationDetailScreen() {
     if (!reservation) return;
     const amenityData = reservation.amenities as { name: string } | null;
 
-    Alert.alert(
+    showAlert(
       'Cancel Reservation',
       `Are you sure you want to cancel your reservation at ${amenityData?.name ?? 'this amenity'}?`,
       [
@@ -131,12 +131,12 @@ export default function ReservationDetailScreen() {
               { reservationId: reservation.id },
               {
                 onSuccess: () => {
-                  Alert.alert('Cancelled', 'Your reservation has been cancelled.', [
+                  showAlert('Cancelled', 'Your reservation has been cancelled.', [
                     { text: 'OK', onPress: () => router.back() },
                   ]);
                 },
                 onError: (error: any) => {
-                  Alert.alert('Error', error?.message ?? 'Could not cancel reservation.');
+                  showAlert('Error', error?.message ?? 'Could not cancel reservation.');
                 },
               }
             );

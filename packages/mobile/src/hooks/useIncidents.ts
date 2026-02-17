@@ -126,7 +126,7 @@ export function useCreateIncident() {
           location_description: input.location_description,
           gps_latitude: input.gps_latitude,
           gps_longitude: input.gps_longitude,
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -229,7 +229,7 @@ export function useUploadIncidentMedia() {
           media_type: input.mediaType,
           storage_path: storagePath,
           caption: input.caption,
-        } as never)
+        } as any)
         .select()
         .single();
 

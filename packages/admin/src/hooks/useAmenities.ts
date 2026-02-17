@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -101,7 +102,7 @@ export function useAmenities() {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as AmenityRow[];
+      return (data ?? []) as AmenityRow[];
     },
     enabled: !!communityId,
   });
@@ -128,7 +129,7 @@ export function useAmenity(id: string) {
         .single();
 
       if (error) throw error;
-      return data as unknown as AmenityDetail;
+      return data as AmenityDetail;
     },
     enabled: !!communityId && !!id,
   });
@@ -157,13 +158,13 @@ export function useAmenityUtilization(
         .from('reservations')
         .select('id, reserved_range, status, created_at')
         .eq('amenity_id', amenityId)
-        .in('status', ['confirmed', 'completed'] as never)
+        .in('status', ['confirmed', 'completed'])
         .gte('created_at', dateFrom)
         .lte('created_at', dateTo + 'T23:59:59')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ReservationRow[];
+      return (data ?? []) as ReservationRow[];
     },
     enabled: !!communityId && !!amenityId,
   });
@@ -189,11 +190,11 @@ export function useCreateAmenity() {
           community_id: communityId!,
           name: input.name,
           description: input.description || null,
-          amenity_type: input.amenity_type as never,
+          amenity_type: input.amenity_type as any,
           location: input.location || null,
           capacity: input.capacity ?? null,
           requires_reservation: input.requires_reservation,
-          status: 'active' as never,
+          status: 'active',
         })
         .select()
         .single();
@@ -206,7 +207,7 @@ export function useCreateAmenity() {
       queryClient.invalidateQueries({ queryKey: queryKeys.amenities._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear amenidad: ${error.message}`);
+      toastError('Error al crear amenidad', error);
     },
   });
 }
@@ -243,7 +244,7 @@ export function useUpdateAmenity() {
       queryClient.invalidateQueries({ queryKey: queryKeys.amenities._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar amenidad: ${error.message}`);
+      toastError('Error al actualizar amenidad', error);
     },
   });
 }
@@ -263,8 +264,8 @@ export function useCreateAmenityRule() {
         .insert({
           amenity_id: input.amenity_id,
           community_id: communityId!,
-          rule_type: input.rule_type as never,
-          rule_value: input.rule_value as never,
+          rule_type: input.rule_type as any,
+          rule_value: input.rule_value as any,
           priority: input.priority,
           is_active: input.is_active,
         })
@@ -279,7 +280,7 @@ export function useCreateAmenityRule() {
       queryClient.invalidateQueries({ queryKey: queryKeys.amenities._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear regla: ${error.message}`);
+      toastError('Error al crear regla', error);
     },
   });
 }
@@ -312,7 +313,7 @@ export function useUpdateAmenityRule() {
       queryClient.invalidateQueries({ queryKey: queryKeys.amenities._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar regla: ${error.message}`);
+      toastError('Error al actualizar regla', error);
     },
   });
 }

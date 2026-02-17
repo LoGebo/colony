@@ -14,6 +14,15 @@ export const dynamic = 'force-dynamic';
 
 type DeviceStatus = 'in_inventory' | 'assigned' | 'lost' | 'damaged' | 'deactivated' | 'retired';
 
+const STATUS_LABELS: Record<DeviceStatus, string> = {
+  in_inventory: 'En Inventario',
+  assigned: 'Asignado',
+  lost: 'Extraviado',
+  damaged: 'Danado',
+  deactivated: 'Desactivado',
+  retired: 'Retirado',
+};
+
 /**
  * Device Inventory Management Page.
  * List all access devices with filters and create new devices.
@@ -45,7 +54,7 @@ export default function DevicesPage() {
       Serial: d.serial_number,
       Codigo: d.internal_code || '-',
       Tipo: d.access_device_types?.name || '-',
-      Estado: d.status,
+      Estado: STATUS_LABELS[d.status as DeviceStatus] ?? d.status,
       Compra: d.purchased_at ? formatDate(d.purchased_at) : '-',
       Proveedor: d.vendor || '-',
       Lote: d.batch_number || '-',
@@ -84,7 +93,7 @@ export default function DevicesPage() {
         };
         return (
           <Badge variant={statusVariantMap[row.original.status as DeviceStatus]}>
-            {row.original.status}
+            {STATUS_LABELS[row.original.status as DeviceStatus] ?? row.original.status}
           </Badge>
         );
       },
@@ -182,29 +191,8 @@ export default function DevicesPage() {
         pageCount={pageCount}
         pagination={{ pageIndex: page, pageSize }}
         onPaginationChange={(p) => setPage(p.pageIndex)}
+        onRowClick={(device) => router.push(`/devices/${device.id}`)}
         isLoading={isLoading}
-      />
-
-      {/* Row Click Handler */}
-      <style jsx global>{`
-        tbody tr {
-          cursor: pointer;
-        }
-      `}</style>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            document.addEventListener('DOMContentLoaded', function() {
-              document.querySelector('tbody')?.addEventListener('click', function(e) {
-                const row = e.target.closest('tr');
-                if (row) {
-                  const deviceId = row.getAttribute('data-device-id');
-                  if (deviceId) window.location.href = '/devices/' + deviceId;
-                }
-              });
-            });
-          `,
-        }}
       />
 
       {/* Create Device Modal */}

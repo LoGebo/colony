@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -174,7 +175,7 @@ export function useCreateWorkOrder() {
       queryClient.invalidateQueries({ queryKey: queryKeys['work-orders']._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear orden: ${error.message}`);
+      toastError('Error al crear orden', error);
     },
   });
 }
@@ -209,7 +210,7 @@ export function useUpdateWorkOrder() {
       queryClient.invalidateQueries({ queryKey: queryKeys['work-orders']._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar orden: ${error.message}`);
+      toastError('Error al actualizar orden', error);
     },
   });
 }
@@ -251,7 +252,7 @@ export function useRateWorkOrder() {
       queryClient.invalidateQueries({ queryKey: queryKeys.providers._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al calificar: ${error.message}`);
+      toastError('Error al calificar', error);
     },
   });
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLE_LABELS, type SystemRole } from '@upoe/shared';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 interface NavItem {
   href: string;
@@ -303,38 +304,42 @@ function SidebarUser() {
   );
 }
 
+const ADMIN_ROLES = ['super_admin', 'community_admin', 'manager', 'admin'];
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col bg-gray-900 text-white">
-        {/* Branding */}
-        <div className="flex h-16 items-center gap-3 border-b border-gray-800 px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold">
-            U
+    <RoleGuard allowedRoles={ADMIN_ROLES}>
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col bg-gray-900 text-white">
+          {/* Branding */}
+          <div className="flex h-16 items-center gap-3 border-b border-gray-800 px-6">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold">
+              U
+            </div>
+            <span className="text-lg font-semibold">UPOE Admin</span>
           </div>
-          <span className="text-lg font-semibold">UPOE Admin</span>
-        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => (
-            <NavLink key={item.href} item={item} />
-          ))}
-        </nav>
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 px-3 py-4">
+            {navItems.map((item) => (
+              <NavLink key={item.href} item={item} />
+            ))}
+          </nav>
 
-        {/* User info + logout */}
-        <SidebarUser />
-      </aside>
+          {/* User info + logout */}
+          <SidebarUser />
+        </aside>
 
-      {/* Main content */}
-      <main className="ml-64 min-h-screen flex-1 bg-gray-50 p-6">
-        {children}
-      </main>
-    </div>
+        {/* Main content */}
+        <main className="ml-64 min-h-screen flex-1 bg-gray-50 p-6">
+          {children}
+        </main>
+      </div>
+    </RoleGuard>
   );
 }

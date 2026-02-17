@@ -6,9 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,7 +55,7 @@ export default function PatrolDetailScreen() {
         if (Platform.OS === 'web') {
           window.alert(msg);
         } else {
-          Alert.alert('Error', msg);
+          showAlert('Error', msg);
         }
       }
     };
@@ -65,7 +65,7 @@ export default function PatrolDetailScreen() {
         await doAbandon();
       }
     } else {
-      Alert.alert(
+      showAlert(
         'Abandon Patrol',
         'Are you sure you want to abandon this patrol? Progress will be lost.',
         [

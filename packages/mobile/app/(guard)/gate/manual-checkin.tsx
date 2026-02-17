@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useManualCheckIn } from '@/hooks/useGateOps';
@@ -41,7 +41,7 @@ export default function ManualCheckInScreen() {
         if (Platform.OS === 'web') {
           window.alert('Please enter the visitor name.');
         } else {
-          Alert.alert('Required', 'Please enter the visitor name.');
+          showAlert('Required', 'Please enter the visitor name.');
         }
         return;
       }
@@ -63,7 +63,7 @@ export default function ManualCheckInScreen() {
               window.alert(msg);
               router.replace('/(guard)');
             } else {
-              Alert.alert(
+              showAlert(
                 decision === 'allowed' ? 'Entry Logged' : 'Entry Denied',
                 msg,
                 [{ text: 'OK', onPress: () => router.replace('/(guard)') }],
@@ -74,7 +74,7 @@ export default function ManualCheckInScreen() {
             if (Platform.OS === 'web') {
               window.alert(err.message);
             } else {
-              Alert.alert('Error', err.message);
+              showAlert('Error', err.message);
             }
           },
         },

@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -52,7 +53,7 @@ export function useModerationQueue() {
         .order('queued_at', { ascending: true });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ModerationQueueItem[];
+      return (data ?? []) as ModerationQueueItem[];
     },
     enabled: !!communityId,
   });
@@ -171,16 +172,16 @@ export function useClaimModerationItem() {
       const supabase = createClient();
       const { data, error } = await supabase.rpc('claim_moderation_item', {
         p_community_id: communityId!,
-      } as never);
+      }) as { data: { id: string; item_id: string; item_type: string } | null; error: any };
 
       if (error) throw error;
-      return data as unknown as { id: string; item_id: string; item_type: string } | null;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.moderation._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al reclamar item: ${error.message}`);
+      toastError('Error al reclamar item', error);
     },
   });
 }
@@ -201,8 +202,8 @@ export function useResolveModeration() {
       const { data, error } = await supabase.rpc('resolve_moderation', {
         p_queue_id: input.queueId,
         p_resolution: input.resolution,
-        p_notes: input.notes ?? null,
-      } as never);
+        p_notes: input.notes ?? undefined,
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
@@ -213,7 +214,7 @@ export function useResolveModeration() {
       queryClient.invalidateQueries({ queryKey: queryKeys.marketplace._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al resolver moderacion: ${error.message}`);
+      toastError('Error al resolver moderacion', error);
     },
   });
 }

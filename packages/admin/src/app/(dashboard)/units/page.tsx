@@ -26,7 +26,13 @@ export default function UnitsPage() {
 
   const { data, isLoading, error } = useUnits(search, page, pageSize);
 
-  const columns = useMemo<ColumnDef<(typeof rows)[number]>[]>(
+  const rows = data?.data ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  type UnitRow = (typeof rows)[number];
+
+  const columns = useMemo<ColumnDef<UnitRow>[]>(
     () => [
       {
         accessorKey: 'unit_number',
@@ -88,10 +94,6 @@ export default function UnitsPage() {
     ],
     []
   );
-
-  const rows = data?.data ?? [];
-  const totalCount = data?.count ?? 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6">

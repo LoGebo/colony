@@ -41,8 +41,11 @@ export function formatPercent(value: number): string {
  * Format a date string in Spanish locale.
  * Example: "2026-02-08" -> "8 feb 2026"
  */
-export function formatDate(dateStr: string): string {
-  return dateFormatter.format(new Date(dateStr));
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return dateFormatter.format(d);
 }
 
 /**

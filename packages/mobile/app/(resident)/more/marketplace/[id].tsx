@@ -8,9 +8,8 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
-  Alert,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -66,16 +65,10 @@ export default function MarketplaceDetailScreen() {
       });
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('This will remove the listing from the marketplace. Mark as sold?')) {
-        doMarkSold();
-      }
-    } else {
-      Alert.alert('Mark as Sold', 'This will remove the listing from the marketplace.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark Sold', onPress: doMarkSold },
-      ]);
-    }
+    showAlert('Mark as Sold', 'This will remove the listing from the marketplace.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Mark Sold', onPress: doMarkSold },
+    ]);
   };
 
   const handleDelete = () => {
@@ -85,25 +78,15 @@ export default function MarketplaceDetailScreen() {
       });
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm('Delete this listing? This action cannot be undone.')) {
-        doDelete();
-      }
-    } else {
-      Alert.alert('Delete Listing', 'This action cannot be undone.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: doDelete },
-      ]);
-    }
+    showAlert('Delete Listing', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: doDelete },
+    ]);
   };
 
   const handleContact = () => {
     if (!resident?.phone) {
-      if (Platform.OS === 'web') {
-        window.alert('The seller has not shared their phone number.');
-      } else {
-        Alert.alert('No Phone', 'The seller has not shared their phone number.');
-      }
+      showAlert('No Phone', 'The seller has not shared their phone number.');
       return;
     }
     handleContactSeller(resident.phone, listing.title, listing.id);

@@ -111,7 +111,7 @@ export function useAllEmergencyContacts(page: number, pageSize: number) {
 
       if (error) throw error;
       return {
-        data: (data ?? []) as unknown as EmergencyContactWithResident[],
+        data: (data ?? []) as EmergencyContactWithResident[],
         count: count ?? 0,
       };
     },
@@ -138,7 +138,7 @@ export function useMedicalConditions() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as unknown as MedicalConditionWithResident[];
+      return (data ?? []) as MedicalConditionWithResident[];
     },
     enabled: !!communityId,
   });
@@ -166,7 +166,7 @@ export function useAccessibilityNeeds() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as unknown as AccessibilityNeedWithResident[];
+      return (data ?? []) as AccessibilityNeedWithResident[];
     },
     enabled: !!communityId,
   });

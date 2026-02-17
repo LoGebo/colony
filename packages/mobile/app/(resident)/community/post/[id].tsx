@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,8 +20,10 @@ import {
   useCreateComment,
   useVotePoll,
   useMyPostReactions,
+  useMyPollVotes,
 } from '@/hooks/usePosts';
 import { formatRelative } from '@/lib/dates';
+import { showAlert } from '@/lib/alert';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
@@ -62,10 +64,22 @@ export default function PostDetailScreen() {
   const createComment = useCreateComment();
   const votePoll = useVotePoll();
   const { data: myLikedPosts } = useMyPostReactions();
+  const { data: myPollVotes } = useMyPollVotes();
   const userHasLiked = myLikedPosts?.has(id!) ?? false;
+  const myVotedOption = myPollVotes?.get(id!) ?? undefined;
 
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
+
+  // ── Stable callback refs (prevents re-renders from mutation identity changes) ──
+  const toggleRef = useRef(toggleReaction);
+  toggleRef.current = toggleReaction;
+  const votePollRef = useRef(votePoll);
+  votePollRef.current = votePoll;
+  const myPollVotesRef = useRef(myPollVotes);
+  myPollVotesRef.current = myPollVotes;
+  const pendingLike = useRef(false);
+  const pendingVote = useRef(false);
 
   const handleSendComment = useCallback(() => {
     if (!commentText.trim() || !id) return;
@@ -85,16 +99,32 @@ export default function PostDetailScreen() {
   }, [commentText, id, replyTo, createComment]);
 
   const handleToggleLike = useCallback(() => {
-    if (!id) return;
-    toggleReaction.mutate({ postId: id, reactionType: 'like' });
-  }, [id, toggleReaction]);
+    if (!id || pendingLike.current) return;
+    pendingLike.current = true;
+    toggleRef.current.mutate(
+      { postId: id, reactionType: 'like', isLiked: myLikedPosts?.has(id) ?? false },
+      { onSettled: () => { pendingLike.current = false; } },
+    );
+  }, [id, myLikedPosts]);
 
   const handleVote = useCallback(
     (optionIndex: number) => {
-      if (!id) return;
-      votePoll.mutate({ postId: id, optionIndex });
+      if (!id || pendingVote.current) return;
+      // Skip if tapping the same option the user already voted for
+      if (myPollVotesRef.current?.get(id) === optionIndex) return;
+      pendingVote.current = true;
+      votePollRef.current.mutate(
+        { postId: id, optionIndex },
+        {
+          onError: (err: any) => {
+            const msg = err?.message ?? 'Could not register your vote.';
+            showAlert('Vote Failed', msg);
+          },
+          onSettled: () => { pendingVote.current = false; },
+        },
+      );
     },
-    [id, votePoll]
+    [id]
   );
 
   if (postLoading || !post) {
@@ -138,6 +168,7 @@ export default function PostDetailScreen() {
   const optionVotes = pollOptions.map((_, i) => pollResults[String(i)] ?? 0);
   const totalVotes = optionVotes.reduce((sum, v) => sum + v, 0);
   const maxVotes = Math.max(...optionVotes, 0);
+  const isPollExpired = !!post.poll_ends_at && new Date(post.poll_ends_at) < new Date();
 
   // Organize comments into threads
   const rootComments = (comments ?? []).filter(
@@ -241,6 +272,12 @@ export default function PostDetailScreen() {
             {/* Poll */}
             {post.post_type === 'poll' && pollOptions.length > 0 && (
               <View style={styles.pollContainer}>
+                {isPollExpired && (
+                  <View style={styles.pollExpiredBadge}>
+                    <Ionicons name="lock-closed" size={12} color={colors.textCaption} />
+                    <Text style={styles.pollExpiredText}>Poll ended</Text>
+                  </View>
+                )}
                 {pollOptions.map((option, index) => {
                   const votes = optionVotes[index];
                   const percentage =
@@ -248,26 +285,44 @@ export default function PostDetailScreen() {
                       ? Math.round((votes / totalVotes) * 100)
                       : 0;
                   const isLeading = votes > 0 && votes === maxVotes;
+                  const isMyVote = myVotedOption === index;
+
+                  const OptionWrapper = isPollExpired ? View : TouchableOpacity;
+                  const wrapperProps = isPollExpired
+                    ? {}
+                    : { onPress: () => handleVote(index), activeOpacity: 0.6 };
 
                   return (
-                    <TouchableOpacity
+                    <OptionWrapper
                       key={index}
-                      style={styles.pollOption}
-                      onPress={() => handleVote(index)}
+                      style={[
+                        styles.pollOption,
+                        isMyVote && !isPollExpired && styles.pollOptionVoted,
+                      ]}
+                      {...(wrapperProps as any)}
                     >
                       <View style={styles.pollOptionHeader}>
-                        <Text
-                          style={[
-                            styles.pollOptionText,
-                            isLeading && styles.pollOptionTextLeading,
-                          ]}
-                        >
-                          {option.text}
-                        </Text>
+                        <View style={styles.pollOptionLabelRow}>
+                          {!isPollExpired && (
+                            <Ionicons
+                              name={isMyVote ? 'radio-button-on' : 'radio-button-off'}
+                              size={16}
+                              color={isMyVote ? colors.primary : colors.textCaption}
+                            />
+                          )}
+                          <Text
+                            style={[
+                              styles.pollOptionText,
+                              (isLeading || isMyVote) && styles.pollOptionTextLeading,
+                            ]}
+                          >
+                            {option.text}
+                          </Text>
+                        </View>
                         <Text
                           style={[
                             styles.pollPercentage,
-                            isLeading && styles.pollPercentageLeading,
+                            (isLeading || isMyVote) && styles.pollPercentageLeading,
                           ]}
                         >
                           {percentage}%
@@ -277,27 +332,23 @@ export default function PostDetailScreen() {
                         <View
                           style={[
                             styles.pollBarFill,
-                            isLeading
+                            (isLeading || isMyVote)
                               ? styles.pollBarFillLeading
                               : styles.pollBarFillDefault,
                             { width: `${percentage}%` },
                           ]}
                         />
-                        {isLeading && (
-                          <View style={styles.pollCheckContainer}>
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={18}
-                              color={colors.primary}
-                            />
-                          </View>
-                        )}
                       </View>
-                    </TouchableOpacity>
+                    </OptionWrapper>
                   );
                 })}
                 <Text style={styles.pollTotalVotes}>
                   {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+                  {isPollExpired
+                    ? '  ·  Final results'
+                    : myVotedOption !== undefined
+                      ? '  ·  You voted'
+                      : '  ·  Tap to vote'}
                 </Text>
               </View>
             )}
@@ -685,14 +736,43 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     marginBottom: spacing.xl,
   },
+  pollExpiredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+  },
+  pollExpiredText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: colors.textCaption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   pollOption: {
     gap: 4,
+  },
+  pollOptionVoted: {
+    backgroundColor: 'rgba(37,99,235,0.04)',
+    borderRadius: borderRadius.md,
+    padding: 4,
+    marginHorizontal: -4,
   },
   pollOptionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 4,
+  },
+  pollOptionLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
   },
   pollOptionText: {
     fontFamily: fonts.bold,
@@ -733,13 +813,6 @@ const styles = StyleSheet.create({
   },
   pollBarFillDefault: {
     backgroundColor: colors.borderMedium,
-  },
-  pollCheckContainer: {
-    position: 'absolute',
-    left: spacing.xl,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
   },
   pollTotalVotes: {
     fontFamily: fonts.medium,

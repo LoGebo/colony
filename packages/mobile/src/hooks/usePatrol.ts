@@ -22,7 +22,7 @@ export function usePatrolRoutes(communityId: string | undefined) {
           'id, name, description, checkpoint_sequence, estimated_duration_minutes, status'
         )
         .eq('community_id', communityId!)
-        .eq('status', 'active' as never)
+        .eq('status', 'active')
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -71,7 +71,7 @@ export function useActivePatrolLog(guardId: string | undefined) {
         .from('patrol_logs')
         .select('*')
         .eq('guard_id', guardId!)
-        .eq('status', 'in_progress' as never)
+        .eq('status', 'in_progress')
         .order('started_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -153,7 +153,7 @@ export function useStartPatrol() {
           guard_id: input.guardId,
           checkpoints_total: checkpointsTotal,
           status: 'in_progress',
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -196,7 +196,7 @@ export function useScanCheckpoint() {
           gps_lng: input.gpsLng,
           gps_accuracy_meters: input.gpsAccuracyMeters,
           sequence_order: input.sequenceOrder,
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -221,7 +221,7 @@ export function useAbandonPatrol() {
     mutationFn: async (patrolLogId: string) => {
       const { data, error } = await supabase
         .from('patrol_logs')
-        .update({ status: 'abandoned' } as never)
+        .update({ status: 'abandoned' } as any)
         .eq('id', patrolLogId)
         .select()
         .single();

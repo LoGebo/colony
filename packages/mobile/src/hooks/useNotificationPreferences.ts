@@ -108,7 +108,7 @@ export function useUpdateNotificationPreferences() {
       const { data, error } = await supabase
         .from('residents')
         .update({
-          notification_preferences: preferences as never as Json,
+          notification_preferences: preferences as unknown as Json,
         })
         .eq('id', residentId!)
         .select()

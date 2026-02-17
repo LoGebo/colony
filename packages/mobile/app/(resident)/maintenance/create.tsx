@@ -8,10 +8,10 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -116,11 +116,11 @@ export default function CreateTicketScreen() {
         photo_paths: photos.length > 0 ? photos : undefined,
       });
 
-      Alert.alert('Report Created', 'Your maintenance request has been submitted.', [
+      showAlert('Report Created', 'Your maintenance request has been submitted.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error?.message ?? 'Something went wrong. Please try again.');
+      showAlert('Error', error?.message ?? 'Something went wrong. Please try again.');
     }
   };
 

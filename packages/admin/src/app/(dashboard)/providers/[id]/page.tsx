@@ -261,7 +261,7 @@ function InfoTab({ provider }: { provider: Record<string, unknown> }) {
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">Especialidad</dt>
-              <dd className="mt-1 text-sm text-gray-900">{((provider.specialties as string[]) ?? []).join(', ') || '-'}</dd>
+              <dd className="mt-1 text-sm text-gray-900">{(Array.isArray(provider.specialties) ? provider.specialties : []).join(', ') || '-'}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">RFC</dt>
@@ -641,7 +641,7 @@ function PersonnelTab({ providerId }: { providerId: string }) {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-medium text-gray-600">
-                    {p.first_name.charAt(0)}{p.paternal_surname.charAt(0)}
+                    {p.first_name?.charAt(0) ?? '?'}{p.paternal_surname?.charAt(0) ?? '?'}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">

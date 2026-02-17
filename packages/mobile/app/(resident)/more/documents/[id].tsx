@@ -6,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Linking,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useDocumentDetail, useSignDocument } from '@/hooks/useDocuments';
@@ -62,14 +61,10 @@ export default function DocumentDetailScreen() {
       });
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(consentText)) doSign();
-    } else {
-      Alert.alert('Sign Document', consentText, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign', onPress: doSign },
-      ]);
-    }
+    showAlert('Sign Document', consentText, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign', onPress: doSign },
+    ]);
   };
 
   const handleDownload = async () => {
@@ -83,7 +78,7 @@ export default function DocumentDetailScreen() {
     if (data?.signedUrl) {
       Linking.openURL(data.signedUrl);
     } else {
-      Alert.alert('Error', 'Could not generate download link.');
+      showAlert('Error', 'Could not generate download link.');
     }
   };
 

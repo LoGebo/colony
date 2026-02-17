@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -59,11 +59,28 @@ export function useRealtimeSubscription({
   onEvent,
 }: UseRealtimeSubscriptionOptions) {
   const queryClient = useQueryClient();
+  const subscribedRef = useRef(false);
+
+  // Memoize queryKeys to produce a stable reference when the content hasn't changed
+  const stableQueryKeys = useMemo(
+    () => queryKeys,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(queryKeys)]
+  );
 
   useEffect(() => {
     if (!enabled) {
+      subscribedRef.current = false;
       return;
     }
+
+    // Prevent double-subscription if already subscribed with same params
+    if (subscribedRef.current) {
+      return;
+    }
+
+    subscribedRef.current = true;
+    let isUnsubscribed = false;
 
     // Create Realtime channel
     const channel: RealtimeChannel = supabase.channel(channelName);
@@ -78,13 +95,16 @@ export function useRealtimeSubscription({
         filter,
       },
       (payload) => {
+        // Guard against stale callbacks after cleanup
+        if (isUnsubscribed) return;
+
         // Call custom event handler if provided
         if (onEvent) {
           onEvent(payload);
         }
 
         // Invalidate all provided query keys to trigger refetch
-        queryKeys.forEach((queryKey) => {
+        stableQueryKeys.forEach((queryKey) => {
           queryClient.invalidateQueries({ queryKey });
         });
       }
@@ -95,7 +115,9 @@ export function useRealtimeSubscription({
 
     // Cleanup: unsubscribe on unmount or when dependencies change
     return () => {
+      isUnsubscribed = true;
+      subscribedRef.current = false;
       channel.unsubscribe();
     };
-  }, [channelName, table, event, filter, enabled, JSON.stringify(queryKeys), onEvent, queryClient]);
+  }, [channelName, table, event, filter, enabled, stableQueryKeys, onEvent, queryClient]);
 }

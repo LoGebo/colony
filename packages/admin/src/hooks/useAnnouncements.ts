@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -245,7 +246,7 @@ export function useCreateAnnouncement() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear aviso: ${error.message}`);
+      toastError('Error al crear aviso', error);
     },
   });
 }
@@ -273,7 +274,7 @@ export function useDeleteAnnouncement() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al eliminar aviso: ${error.message}`);
+      toastError('Error al eliminar aviso', error);
     },
   });
 }

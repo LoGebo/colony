@@ -8,11 +8,11 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Switch,
   Image,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreateListing } from '@/hooks/useMarketplace';
@@ -41,17 +41,6 @@ export default function CreateListingScreen() {
   const [negotiable, setNegotiable] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  const showAlert = (title: string, message: string, onOk?: () => void) => {
-    if (Platform.OS === 'web') {
-      window.alert(message);
-      onOk?.();
-    } else if (onOk) {
-      Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
 
   const handleAddImage = async () => {
     if (imageUrls.length >= 4) {
@@ -87,7 +76,9 @@ export default function CreateListingScreen() {
         price_negotiable: negotiable,
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
       });
-      showAlert('Success', 'Your listing has been submitted for review.', () => router.back());
+      showAlert('Success', 'Your listing has been submitted for review.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (err: any) {
       showAlert('Error', err.message ?? 'Failed to create listing.');
     }

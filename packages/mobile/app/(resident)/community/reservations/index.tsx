@@ -7,8 +7,8 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -87,7 +87,7 @@ export default function MyReservationsScreen() {
 
   const handleCancel = useCallback(
     (reservationId: string, amenityName: string) => {
-      Alert.alert(
+      showAlert(
         'Cancel Reservation',
         `Are you sure you want to cancel your reservation at ${amenityName}?`,
         [
@@ -96,15 +96,7 @@ export default function MyReservationsScreen() {
             text: 'Yes, Cancel',
             style: 'destructive',
             onPress: () => {
-              Alert.prompt
-                ? Alert.prompt(
-                    'Cancellation Reason',
-                    'Optionally provide a reason:',
-                    (reason) => {
-                      cancelMutation.mutate({ reservationId, reason: reason || undefined });
-                    }
-                  )
-                : cancelMutation.mutate({ reservationId });
+              cancelMutation.mutate({ reservationId });
             },
           },
         ]

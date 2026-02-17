@@ -181,7 +181,7 @@ export function useConfirmPickup() {
       for (const intermediateStatus of stateWalk) {
         const { error: walkError } = await supabase
           .from('packages')
-          .update({ status: intermediateStatus })
+          .update({ status: intermediateStatus as any })
           .eq('id', packageId);
         if (walkError) throw walkError;
       }

@@ -17,6 +17,7 @@ interface DataTableProps<T> {
   sorting?: SortingState;
   onPaginationChange?: (pagination: PaginationState) => void;
   onSortingChange?: (sorting: SortingState) => void;
+  onRowClick?: (row: T) => void;
   isLoading?: boolean;
 }
 
@@ -32,6 +33,7 @@ export function DataTable<T>({
   sorting,
   onPaginationChange,
   onSortingChange,
+  onRowClick,
   isLoading = false,
 }: DataTableProps<T>) {
   const defaultPagination: PaginationState = { pageIndex: 0, pageSize: 20 };
@@ -116,7 +118,11 @@ export function DataTable<T>({
             </tr>
           ) : (
             table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
+              <tr
+                key={row.id}
+                className={`hover:bg-gray-50${onRowClick ? ' cursor-pointer' : ''}`}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}

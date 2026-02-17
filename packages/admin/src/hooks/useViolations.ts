@@ -125,8 +125,8 @@ export function useViolations(filters: ViolationFilters) {
         .is('deleted_at', null)
         .order('occurred_at', { ascending: false });
 
-      if (severity) query = query.eq('severity', severity as never);
-      if (status) query = query.eq('status', status as never);
+      if (severity) query = query.eq('severity', severity as any);
+      if (status) query = query.eq('status', status);
       if (violationTypeId) query = query.eq('violation_type_id', violationTypeId);
 
       const from = page * pageSize;
@@ -134,7 +134,7 @@ export function useViolations(filters: ViolationFilters) {
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return { data: (data ?? []) as unknown as ViolationRow[], count: count ?? 0 };
+      return { data: (data ?? []) as ViolationRow[], count: count ?? 0 };
     },
     enabled: !!communityId,
   });
@@ -157,7 +157,7 @@ export function useViolationDetail(id: string) {
         .single();
 
       if (error) throw error;
-      return data as unknown as ViolationDetailRow;
+      return data as ViolationDetailRow;
     },
     enabled: !!id,
   });
@@ -261,8 +261,8 @@ export function useCreateViolation() {
           community_id: communityId!,
           violation_number: `VIOL-${Date.now()}`,
           ...payload,
-          severity: payload.severity as never,
-        })
+          severity: payload.severity as any,
+        } as any)
         .select()
         .single();
 
@@ -297,9 +297,9 @@ export function useCreateSanction() {
         .from('violation_sanctions')
         .insert({
           ...payload,
-          sanction_type: payload.sanction_type as never,
+          sanction_type: payload.sanction_type as any,
           issued_by: user!.id,
-        })
+        } as any)
         .select()
         .single();
 
@@ -332,7 +332,7 @@ export function useUpdateViolationStatus() {
     }) => {
       const supabase = createClient();
       const updateData: Record<string, unknown> = {
-        status: payload.status as never,
+        status: payload.status,
         resolved_by: user!.id,
       };
 
@@ -385,7 +385,7 @@ export function useResolveAppeal() {
       const { data, error } = await supabase
         .from('violation_appeals')
         .update({
-          decision: payload.decision as never,
+          decision: payload.decision,
           decided_at: new Date().toISOString(),
           decided_by: user!.id,
           hearing_notes: payload.hearing_notes,

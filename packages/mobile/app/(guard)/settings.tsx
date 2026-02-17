@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +28,7 @@ export default function GuardSettingsScreen() {
     if (Platform.OS === 'web') {
       if (window.confirm('Are you sure you want to sign out?')) signOut();
     } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      showAlert('Sign Out', 'Are you sure you want to sign out?', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
       ]);
@@ -45,7 +45,7 @@ export default function GuardSettingsScreen() {
         deleteAccount();
       }
     } else {
-      Alert.alert(
+      showAlert(
         'Delete Account',
         'This will permanently delete your account and all associated data. This action cannot be undone.',
         [
@@ -54,7 +54,7 @@ export default function GuardSettingsScreen() {
             text: 'Delete My Account',
             style: 'destructive',
             onPress: () => {
-              Alert.alert(
+              showAlert(
                 'Are you absolutely sure?',
                 'You will lose access to your guard account and all personal data.',
                 [
@@ -82,7 +82,7 @@ export default function GuardSettingsScreen() {
       if (Platform.OS === 'web') {
         window.alert(message);
       } else {
-        Alert.alert('Error', message);
+        showAlert('Error', message);
       }
     } finally {
       setIsDeletingAccount(false);

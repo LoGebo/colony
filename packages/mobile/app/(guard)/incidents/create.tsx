@@ -8,9 +8,9 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,7 +76,7 @@ export default function CreateIncidentScreen() {
         window.alert('Your incident report has been submitted.');
         router.back();
       } else {
-        Alert.alert('Incident Reported', 'Your incident report has been submitted.', [
+        showAlert('Incident Reported', 'Your incident report has been submitted.', [
           { text: 'OK', onPress: () => router.back() },
         ]);
       }
@@ -85,7 +85,7 @@ export default function CreateIncidentScreen() {
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
-        Alert.alert('Error', msg);
+        showAlert('Error', msg);
       }
     }
   };

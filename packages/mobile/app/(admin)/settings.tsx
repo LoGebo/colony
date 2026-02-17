@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { showAlert } from '@/lib/alert';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
@@ -37,24 +38,14 @@ export default function AdminSettings() {
   const { signOut, user } = useAuth();
 
   const handleSignOut = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to sign out of the admin panel?')) {
-        signOut();
-      }
-    } else {
-      Alert.alert(
-        'Sign Out',
-        'Are you sure you want to sign out of the admin panel?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Sign Out',
-            style: 'destructive',
-            onPress: () => signOut(),
-          },
-        ],
-      );
-    }
+    showAlert(
+      'Sign Out',
+      'Are you sure you want to sign out of the admin panel?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+      ],
+    );
   };
 
   const adminEmail = user?.email ?? '';

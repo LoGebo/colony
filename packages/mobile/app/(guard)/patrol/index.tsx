@@ -7,9 +7,9 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,7 +59,7 @@ export default function PatrolIndexScreen() {
         if (Platform.OS === 'web') {
           window.alert(msg);
         } else {
-          Alert.alert('Error', msg);
+          showAlert('Error', msg);
         }
       }
     },

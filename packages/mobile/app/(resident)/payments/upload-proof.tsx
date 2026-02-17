@@ -8,10 +8,10 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -69,7 +69,7 @@ export default function UploadPaymentProofScreen() {
 
     const parsedAmount = parseFloat(amount.replace(/,/g, ''));
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
+      showAlert('Invalid Amount', 'Please enter a valid amount greater than 0.');
       return;
     }
 
@@ -84,11 +84,11 @@ export default function UploadPaymentProofScreen() {
         unit_id: unitId,
       });
 
-      Alert.alert('Receipt Uploaded', 'Your payment proof has been submitted for review.', [
+      showAlert('Receipt Uploaded', 'Your payment proof has been submitted for review.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      Alert.alert('Upload Failed', error?.message ?? 'Something went wrong. Please try again.');
+      showAlert('Upload Failed', error?.message ?? 'Something went wrong. Please try again.');
     }
   };
 

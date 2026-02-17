@@ -5,6 +5,7 @@ import { queryKeys, STORAGE_BUCKETS } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -187,7 +188,7 @@ export function useCreateDocument() {
       queryClient.invalidateQueries({ queryKey: queryKeys.documents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al subir documento: ${error.message}`);
+      toastError('Error al subir documento', error);
     },
   });
 }
@@ -212,7 +213,7 @@ export function useUpdateDocumentVisibility() {
       queryClient.invalidateQueries({ queryKey: queryKeys.documents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar visibilidad: ${error.message}`);
+      toastError('Error al actualizar visibilidad', error);
     },
   });
 }
@@ -237,7 +238,7 @@ export function useDeleteDocument() {
       queryClient.invalidateQueries({ queryKey: queryKeys.documents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al eliminar documento: ${error.message}`);
+      toastError('Error al eliminar documento', error);
     },
   });
 }

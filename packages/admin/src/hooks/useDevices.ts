@@ -96,13 +96,13 @@ export function useDevices(filters: DeviceFilters) {
       const from = page * pageSize;
 
       let query = supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .select('*, access_device_types(name, device_type)', { count: 'exact' })
         .eq('community_id', communityId!)
         .order('created_at', { ascending: false })
         .range(from, from + pageSize - 1);
 
-      if (status) query = query.eq('status', status as never);
+      if (status) query = query.eq('status', status);
       if (deviceTypeId) query = query.eq('device_type_id', deviceTypeId);
 
       const { data, error, count } = await query;
@@ -127,7 +127,7 @@ export function useDeviceDetail(id: string) {
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .select('*, access_device_types(name, device_type)')
         .eq('id', id)
         .single();
@@ -151,7 +151,7 @@ export function useDeviceAssignments(deviceId: string) {
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('access_device_assignments' as never)
+        .from('access_device_assignments' as any)
         .select('*, units(unit_number), residents(first_name, paternal_surname)')
         .eq('access_device_id', deviceId)
         .order('assigned_at', { ascending: false });
@@ -174,7 +174,7 @@ export function useDeviceTypes() {
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('access_device_types' as never)
+        .from('access_device_types' as any)
         .select('*')
         .eq('community_id', communityId!)
         .eq('is_active', true)
@@ -198,6 +198,7 @@ export interface CreateDeviceInput {
   batch_number?: string;
   purchased_at?: string;
   vendor?: string;
+  notes?: string;
 }
 
 /**
@@ -211,7 +212,7 @@ export function useCreateDevice() {
     mutationFn: async (input: CreateDeviceInput) => {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .insert({
           community_id: communityId!,
           device_type_id: input.device_type_id,
@@ -220,8 +221,8 @@ export function useCreateDevice() {
           batch_number: input.batch_number ?? null,
           purchased_at: input.purchased_at ?? null,
           vendor: input.vendor ?? null,
-          status: 'in_inventory' as never,
-        } as never)
+          status: 'in_inventory',
+        } as any)
         .select()
         .single();
 
@@ -258,7 +259,7 @@ export function useAssignDevice() {
 
       // 1. Create assignment
       const { data: assignment, error: assignError } = await supabase
-        .from('access_device_assignments' as never)
+        .from('access_device_assignments' as any)
         .insert({
           access_device_id: input.device_id,
           unit_id: input.unit_id,
@@ -267,7 +268,7 @@ export function useAssignDevice() {
           deposit_amount: input.deposit_amount,
           condition_notes: input.condition_notes ?? null,
           assigned_by: user?.id ?? null,
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -275,11 +276,11 @@ export function useAssignDevice() {
 
       // 2. Update device status and current_assignment_id
       const { error: updateError } = await supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .update({
-          status: 'assigned' as never,
-          current_assignment_id: (assignment as { id: string }).id,
-        } as never)
+          status: 'assigned',
+          current_assignment_id: (assignment as unknown as { id: string }).id,
+        } as any)
         .eq('id', input.device_id);
 
       if (updateError) throw updateError;
@@ -321,25 +322,25 @@ export function useReturnDevice() {
 
       // 1. Update assignment as returned
       const { error: assignError } = await supabase
-        .from('access_device_assignments' as never)
+        .from('access_device_assignments' as any)
         .update({
           returned_at: new Date().toISOString(),
           deposit_returned_at: input.return_deposit ? new Date().toISOString() : null,
           returned_to: user?.id ?? null,
           condition_notes: input.condition_notes ?? null,
           is_active: false,
-        } as never)
+        } as any)
         .eq('id', input.assignment_id);
 
       if (assignError) throw assignError;
 
       // 2. Update device status back to in_inventory
       const { error: updateError } = await supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .update({
-          status: 'in_inventory' as never,
+          status: 'in_inventory',
           current_assignment_id: null,
-        } as never)
+        } as any)
         .eq('id', input.device_id);
 
       if (updateError) throw updateError;
@@ -379,11 +380,11 @@ export function useReportLost() {
       // 1. If assignment exists, charge replacement fee
       if (input.assignment_id && input.charge_replacement_fee) {
         const { error: feeError } = await supabase
-          .from('access_device_assignments' as never)
+          .from('access_device_assignments' as any)
           .update({
             replacement_fee_charged: true,
             is_active: false,
-          } as never)
+          } as any)
           .eq('id', input.assignment_id);
 
         if (feeError) throw feeError;
@@ -391,10 +392,10 @@ export function useReportLost() {
 
       // 2. Update device status to lost
       const { error: updateError } = await supabase
-        .from('access_devices' as never)
+        .from('access_devices' as any)
         .update({
-          status: 'lost' as never,
-        } as never)
+          status: 'lost',
+        } as any)
         .eq('id', input.device_id);
 
       if (updateError) throw updateError;

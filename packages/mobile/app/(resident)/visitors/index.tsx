@@ -8,10 +8,9 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  Alert,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useActiveInvitations, useCancelInvitation, useVisitorHistory } from '@/hooks/useVisitors';
@@ -60,24 +59,18 @@ export default function VisitorsIndexScreen() {
   });
 
   const handleCancel = (id: string, name: string) => {
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to cancel the invitation for ${name}?`)) {
-        cancelMutation.mutate(id);
-      }
-    } else {
-      Alert.alert(
-        'Cancel Invitation',
-        `Are you sure you want to cancel the invitation for ${name}?`,
-        [
-          { text: 'No', style: 'cancel' },
-          {
-            text: 'Yes, Cancel',
-            style: 'destructive',
-            onPress: () => cancelMutation.mutate(id),
-          },
-        ]
-      );
-    }
+    showAlert(
+      'Cancel Invitation',
+      `Are you sure you want to cancel the invitation for ${name}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: () => cancelMutation.mutate(id),
+        },
+      ]
+    );
   };
 
   const getInvitationIcon = (type: string): { name: keyof typeof Ionicons.glyphMap; bg: string; color: string } => {

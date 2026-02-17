@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef, memo } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
@@ -41,6 +42,304 @@ function getInitials(firstName?: string | null, surname?: string | null): string
   return f + s || '?';
 }
 
+function getChannelName(channelData: { id: string; name: string; icon?: string | null } | null): string {
+  if (!channelData) return '';
+  return channelData.name;
+}
+
+// ---- Type for a single post from usePosts ----
+type PostItem = {
+  id: string;
+  title: string | null;
+  content: string;
+  post_type: string;
+  media_urls: unknown;
+  poll_options: unknown;
+  poll_ends_at: string | null;
+  poll_results: unknown;
+  reaction_counts: unknown;
+  comment_count: number | null;
+  view_count: number | null;
+  is_pinned: boolean;
+  created_at: string;
+  channels: { id: string; name: string; icon: string | null } | null;
+  residents: {
+    id: string;
+    first_name: string;
+    paternal_surname: string;
+    photo_url: string | null;
+  } | null;
+};
+
+// ---- MediaThumbnails sub-component ----
+function MediaThumbnails({ mediaUrls }: { mediaUrls: string[] }) {
+  if (!mediaUrls || mediaUrls.length === 0) return null;
+
+  return (
+    <View style={styles.mediaContainer}>
+      {mediaUrls.length === 1 ? (
+        <View style={styles.singleMedia}>
+          <Image
+            source={{ uri: mediaUrls[0] }}
+            style={styles.singleMediaImage}
+            resizeMode="cover"
+          />
+        </View>
+      ) : (
+        <View style={styles.mediaGrid}>
+          {mediaUrls.slice(0, 3).map((url, index) => (
+            <View key={index} style={styles.mediaGridItem}>
+              <Image
+                source={{ uri: url }}
+                style={styles.mediaGridImage}
+                resizeMode="cover"
+              />
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---- PollOptions sub-component ----
+function PollOptions({ post }: { post: PostItem }) {
+  const { pollOptions, optionVotes, totalVotes, maxVotes, isPollExpired } = useMemo(() => {
+    const opts = (post.poll_options ?? []) as { text: string }[];
+    const results = (post.poll_results ?? {}) as Record<string, number>;
+    const votes = opts.map((_, i) => results[String(i)] ?? 0);
+    const total = votes.reduce((sum, v) => sum + v, 0);
+    const max = Math.max(...votes, 0);
+    const expired = !!post.poll_ends_at && new Date(post.poll_ends_at) < new Date();
+    return { pollOptions: opts, optionVotes: votes, totalVotes: total, maxVotes: max, isPollExpired: expired };
+  }, [post.poll_options, post.poll_results, post.poll_ends_at]);
+
+  return (
+    <View style={styles.pollContainer}>
+      {pollOptions.map((option, index) => {
+        const votes = optionVotes[index];
+        const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+        const isLeading = votes > 0 && votes === maxVotes;
+
+        return (
+          <View key={index} style={styles.pollOption}>
+            <View style={styles.pollOptionHeader}>
+              <Text
+                style={[
+                  styles.pollOptionText,
+                  isLeading && styles.pollOptionTextLeading,
+                ]}
+              >
+                {option.text}
+              </Text>
+              <Text
+                style={[
+                  styles.pollPercentage,
+                  isLeading && styles.pollPercentageLeading,
+                ]}
+              >
+                {percentage}%
+              </Text>
+            </View>
+            <View style={styles.pollBar}>
+              <View
+                style={[
+                  styles.pollBarFill,
+                  isLeading ? styles.pollBarFillLeading : styles.pollBarFillDefault,
+                  { width: `${percentage}%` },
+                ]}
+              />
+            </View>
+          </View>
+        );
+      })}
+      <Text style={styles.pollFooter}>
+        {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+        {isPollExpired ? '  ·  Ended' : ''}
+      </Text>
+    </View>
+  );
+}
+
+// ---- Memoized PostCard component ----
+interface PostCardProps {
+  post: PostItem;
+  isLiked: boolean;
+  onToggleLike: (postId: string) => void;
+  onNavigateToPost: (postId: string) => void;
+}
+
+const PostCard = memo(
+  function PostCard({ post, isLiked, onToggleLike, onNavigateToPost }: PostCardProps) {
+    const author = post.residents;
+    const channel = post.channels;
+    const authorName = author
+      ? `${author.first_name} ${author.paternal_surname}`
+      : 'Unknown';
+    const reactionCounts = (post.reaction_counts ?? {}) as Record<string, number>;
+    const likeCount = reactionCounts['like'] ?? 0;
+    const mediaUrls = (post.media_urls ?? []) as string[];
+
+    return (
+      <TouchableOpacity
+        style={styles.postCard}
+        activeOpacity={0.7}
+        onPress={() => onNavigateToPost(post.id)}
+      >
+        {/* Pinned indicator */}
+        {post.is_pinned && (
+          <View style={styles.pinnedBadge}>
+            <Ionicons name="pin" size={12} color={colors.primary} />
+            <Text style={styles.pinnedText}>Pinned</Text>
+          </View>
+        )}
+
+        {/* Author row */}
+        <View style={styles.authorRow}>
+          {author?.photo_url ? (
+            <Image
+              source={{ uri: author.photo_url }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View
+              style={[
+                styles.avatarPlaceholder,
+                {
+                  backgroundColor: getAvatarColor(authorName),
+                },
+              ]}
+            >
+              <Text style={styles.avatarInitials}>
+                {getInitials(
+                  author?.first_name,
+                  author?.paternal_surname
+                )}
+              </Text>
+            </View>
+          )}
+          <View style={styles.authorInfo}>
+            <Text style={styles.authorName}>{authorName}</Text>
+            <Text style={styles.authorMeta}>
+              {getChannelName(channel)}
+              {channel ? ' - ' : ''}
+              {formatRelative(post.created_at)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Post content */}
+        {post.title && (
+          <Text style={styles.postTitle}>{post.title}</Text>
+        )}
+        <Text style={styles.postContent} numberOfLines={4}>
+          {post.content}
+        </Text>
+
+        {/* Media thumbnails */}
+        {mediaUrls.length > 0 && <MediaThumbnails mediaUrls={mediaUrls} />}
+
+        {/* Poll */}
+        {post.post_type === 'poll' && <PollOptions post={post} />}
+
+        {/* Reaction bar */}
+        <View style={styles.reactionBar}>
+          <View style={styles.reactionLeft}>
+            <TouchableOpacity
+              style={styles.reactionButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onToggleLike(post.id);
+              }}
+            >
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isLiked ? '#F43F5E' : colors.textCaption}
+              />
+              <Text
+                style={[
+                  styles.reactionCount,
+                  isLiked && styles.reactionCountActive,
+                ]}
+              >
+                {likeCount}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.reactionButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onNavigateToPost(post.id);
+              }}
+            >
+              <Ionicons
+                name="chatbubble-outline"
+                size={20}
+                color={colors.primary}
+              />
+              <Text style={[styles.reactionCount, styles.reactionCountBlue]}>
+                {post.comment_count ?? 0}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.reactionButton}>
+              <Ionicons
+                name="eye-outline"
+                size={20}
+                color={colors.textCaption}
+              />
+              <Text style={styles.reactionCount}>
+                {post.view_count ?? 0}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Value-compare reaction_counts instead of reference equality.
+    // Optimistic updates create new objects, so === always fails.
+    const prevLike = ((prevProps.post.reaction_counts ?? {}) as Record<string, number>)['like'] ?? 0;
+    const nextLike = ((nextProps.post.reaction_counts ?? {}) as Record<string, number>)['like'] ?? 0;
+
+    return (
+      prevProps.post.id === nextProps.post.id &&
+      prevLike === nextLike &&
+      prevProps.post.comment_count === nextProps.post.comment_count &&
+      prevProps.post.view_count === nextProps.post.view_count &&
+      prevProps.post.is_pinned === nextProps.post.is_pinned &&
+      prevProps.post.poll_results === nextProps.post.poll_results &&
+      prevProps.isLiked === nextProps.isLiked &&
+      prevProps.onToggleLike === nextProps.onToggleLike &&
+      prevProps.onNavigateToPost === nextProps.onNavigateToPost
+    );
+  }
+);
+
+// ---- Separator between post cards ----
+function PostSeparator() {
+  return <View style={styles.postSeparator} />;
+}
+
+// ---- Empty state component ----
+function ListEmpty() {
+  return (
+    <View style={styles.centerMessage}>
+      <Ionicons
+        name="chatbubbles-outline"
+        size={48}
+        color={colors.textDisabled}
+      />
+      <Text style={styles.emptyTitle}>No posts yet</Text>
+      <Text style={styles.emptySubtitle}>
+        Be the first to share something with the community.
+      </Text>
+    </View>
+  );
+}
+
+// ---- Main screen component ----
 export default function CommunityIndexScreen() {
   const router = useRouter();
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -49,106 +348,74 @@ export default function CommunityIndexScreen() {
   const toggleReaction = useToggleReaction();
   const { data: myLikedPosts } = useMyPostReactions();
 
+  // ── Stable like-toggle callback via refs ──────────────────────
+  // Refs prevent the callback from changing identity on every render,
+  // which would cascade re-renders through FlatList → PostCard.
+  const toggleRef = useRef(toggleReaction);
+  toggleRef.current = toggleReaction;
+  const myLikedRef = useRef(myLikedPosts);
+  myLikedRef.current = myLikedPosts;
+  const pendingLikes = useRef(new Set<string>());
+
   const handleToggleLike = useCallback(
     (postId: string) => {
-      toggleReaction.mutate({ postId, reactionType: 'like' });
+      // Block concurrent mutations on the same post (prevents race conditions)
+      if (pendingLikes.current.has(postId)) return;
+      pendingLikes.current.add(postId);
+
+      const isLiked = myLikedRef.current?.has(postId) ?? false;
+      toggleRef.current.mutate(
+        { postId, reactionType: 'like', isLiked },
+        { onSettled: () => pendingLikes.current.delete(postId) },
+      );
     },
-    [toggleReaction]
+    [] // Stable – reads from refs, never changes identity
   );
 
-  const getChannelName = (channelData: { id: string; name: string; icon?: string | null } | null) => {
-    if (!channelData) return '';
-    return channelData.name;
-  };
+  const handleNavigateToPost = useCallback(
+    (postId: string) => {
+      router.push(`/(resident)/community/post/${postId}`);
+    },
+    [router]
+  );
 
-  const renderPollOptions = (post: NonNullable<typeof posts>[number]) => {
-    const pollOptions = (post.poll_options ?? []) as { text: string }[];
-    const pollResults = (post.poll_results ?? {}) as Record<string, number>;
-    const optionVotes = pollOptions.map((_, i) => pollResults[String(i)] ?? 0);
-    const totalVotes = optionVotes.reduce((sum, v) => sum + v, 0);
-    const maxVotes = Math.max(...optionVotes, 0);
+  const keyExtractor = useCallback((item: PostItem) => item.id, []);
 
-    return (
-      <View style={styles.pollContainer}>
-        {pollOptions.map((option, index) => {
-          const votes = optionVotes[index];
-          const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-          const isLeading = votes > 0 && votes === maxVotes;
+  const renderItem = useCallback(
+    ({ item }: { item: PostItem }) => (
+      <PostCard
+        post={item}
+        isLiked={myLikedPosts?.has(item.id) ?? false}
+        onToggleLike={handleToggleLike}
+        onNavigateToPost={handleNavigateToPost}
+      />
+    ),
+    [myLikedPosts, handleToggleLike, handleNavigateToPost]
+  );
 
-          return (
-            <View key={index} style={styles.pollOption}>
-              <View style={styles.pollOptionHeader}>
-                <Text
-                  style={[
-                    styles.pollOptionText,
-                    isLeading && styles.pollOptionTextLeading,
-                  ]}
-                >
-                  {option.text}
-                </Text>
-                <Text
-                  style={[
-                    styles.pollPercentage,
-                    isLeading && styles.pollPercentageLeading,
-                  ]}
-                >
-                  {percentage}%
-                </Text>
-              </View>
-              <View style={styles.pollBar}>
-                <View
-                  style={[
-                    styles.pollBarFill,
-                    isLeading ? styles.pollBarFillLeading : styles.pollBarFillDefault,
-                    { width: `${percentage}%` },
-                  ]}
-                />
-                {isLeading && (
-                  <View style={styles.pollCheckContainer}>
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={18}
-                      color={colors.primary}
-                    />
-                  </View>
-                )}
-              </View>
-            </View>
-          );
-        })}
+  const refreshControl = useMemo(
+    () => (
+      <RefreshControl
+        refreshing={false}
+        onRefresh={refetch}
+        tintColor={colors.primary}
+      />
+    ),
+    [refetch]
+  );
+
+  const listEmptyComponent = useMemo(
+    () => (isLoading ? (
+      <View style={styles.centerMessage}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
-    );
-  };
+    ) : (
+      <ListEmpty />
+    )),
+    [isLoading]
+  );
 
-  const renderMediaThumbnails = (mediaUrls: string[]) => {
-    if (!mediaUrls || mediaUrls.length === 0) return null;
-
-    return (
-      <View style={styles.mediaContainer}>
-        {mediaUrls.length === 1 ? (
-          <View style={styles.singleMedia}>
-            <Image
-              source={{ uri: mediaUrls[0] }}
-              style={styles.singleMediaImage}
-              resizeMode="cover"
-            />
-          </View>
-        ) : (
-          <View style={styles.mediaGrid}>
-            {mediaUrls.slice(0, 3).map((url, index) => (
-              <View key={index} style={styles.mediaGridItem}>
-                <Image
-                  source={{ uri: url }}
-                  style={styles.mediaGridImage}
-                  resizeMode="cover"
-                />
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    );
-  };
+  const postData = useMemo(() => (posts ?? []) as PostItem[], [posts]);
 
   return (
     <View style={styles.container}>
@@ -218,181 +485,19 @@ export default function CommunityIndexScreen() {
       </ScrollView>
 
       {/* Posts Feed */}
-      <ScrollView
+      <FlatList
+        data={postData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={false}
-            onRefresh={refetch}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {isLoading ? (
-          <View style={styles.centerMessage}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : (posts ?? []).length === 0 ? (
-          <View style={styles.centerMessage}>
-            <Ionicons
-              name="chatbubbles-outline"
-              size={48}
-              color={colors.textDisabled}
-            />
-            <Text style={styles.emptyTitle}>No posts yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Be the first to share something with the community.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.postsList}>
-            {(posts ?? []).map((post) => {
-              const author = post.residents as {
-                id: string;
-                first_name: string;
-                paternal_surname: string;
-                photo_url: string | null;
-              } | null;
-              const channel = post.channels as {
-                id: string;
-                name: string;
-                icon: string | null;
-              } | null;
-              const authorName = author
-                ? `${author.first_name} ${author.paternal_surname}`
-                : 'Unknown';
-              const reactionCounts = (post.reaction_counts ?? {}) as Record<
-                string,
-                number
-              >;
-              const likeCount = reactionCounts['like'] ?? 0;
-              const mediaUrls = (post.media_urls ?? []) as string[];
-
-              return (
-                <TouchableOpacity
-                  key={post.id}
-                  style={styles.postCard}
-                  activeOpacity={0.7}
-                  onPress={() =>
-                    router.push(`/(resident)/community/post/${post.id}`)
-                  }
-                >
-                  {/* Pinned indicator */}
-                  {post.is_pinned && (
-                    <View style={styles.pinnedBadge}>
-                      <Ionicons name="pin" size={12} color={colors.primary} />
-                      <Text style={styles.pinnedText}>Pinned</Text>
-                    </View>
-                  )}
-
-                  {/* Author row */}
-                  <View style={styles.authorRow}>
-                    {author?.photo_url ? (
-                      <Image
-                        source={{ uri: author.photo_url }}
-                        style={styles.avatar}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.avatarPlaceholder,
-                          {
-                            backgroundColor: getAvatarColor(authorName),
-                          },
-                        ]}
-                      >
-                        <Text style={styles.avatarInitials}>
-                          {getInitials(
-                            author?.first_name,
-                            author?.paternal_surname
-                          )}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.authorInfo}>
-                      <Text style={styles.authorName}>{authorName}</Text>
-                      <Text style={styles.authorMeta}>
-                        {getChannelName(channel)}
-                        {channel ? ' - ' : ''}
-                        {formatRelative(post.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Post content */}
-                  {post.title && (
-                    <Text style={styles.postTitle}>{post.title}</Text>
-                  )}
-                  <Text style={styles.postContent} numberOfLines={4}>
-                    {post.content}
-                  </Text>
-
-                  {/* Media thumbnails */}
-                  {mediaUrls.length > 0 && renderMediaThumbnails(mediaUrls)}
-
-                  {/* Poll */}
-                  {post.post_type === 'poll' && renderPollOptions(post)}
-
-                  {/* Reaction bar */}
-                  <View style={styles.reactionBar}>
-                    <View style={styles.reactionLeft}>
-                      <TouchableOpacity
-                        style={styles.reactionButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleToggleLike(post.id);
-                        }}
-                      >
-                        <Ionicons
-                          name={myLikedPosts?.has(post.id) ? 'heart' : 'heart-outline'}
-                          size={20}
-                          color={myLikedPosts?.has(post.id) ? '#F43F5E' : colors.textCaption}
-                        />
-                        <Text
-                          style={[
-                            styles.reactionCount,
-                            myLikedPosts?.has(post.id) && styles.reactionCountActive,
-                          ]}
-                        >
-                          {likeCount}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.reactionButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          router.push(`/(resident)/community/post/${post.id}`);
-                        }}
-                      >
-                        <Ionicons
-                          name="chatbubble-outline"
-                          size={20}
-                          color={colors.primary}
-                        />
-                        <Text style={[styles.reactionCount, styles.reactionCountBlue]}>
-                          {post.comment_count ?? 0}
-                        </Text>
-                      </TouchableOpacity>
-                      <View style={styles.reactionButton}>
-                        <Ionicons
-                          name="eye-outline"
-                          size={20}
-                          color={colors.textCaption}
-                        />
-                        <Text style={styles.reactionCount}>
-                          {post.view_count ?? 0}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+        refreshControl={refreshControl}
+        ListEmptyComponent={listEmptyComponent}
+        ItemSeparatorComponent={PostSeparator}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+      />
 
       {/* FAB */}
       <TouchableOpacity
@@ -465,7 +570,7 @@ const styles = StyleSheet.create({
   channelPillTextActive: {
     color: colors.textOnDark,
   },
-  // ScrollView
+  // FlatList
   scrollView: {
     flex: 1,
   },
@@ -473,6 +578,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing['3xl'],
     paddingBottom: spacing.bottomNavClearance + 20,
+    flexGrow: 1,
   },
   // Empty / Loading
   centerMessage: {
@@ -492,9 +598,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  // Posts list
-  postsList: {
-    gap: spacing['3xl'],
+  // Post separator (replaces gap in postsList)
+  postSeparator: {
+    height: spacing['3xl'],
   },
   // Post card
   postCard: {
@@ -655,12 +761,12 @@ const styles = StyleSheet.create({
   pollBarFillDefault: {
     backgroundColor: colors.borderMedium,
   },
-  pollCheckContainer: {
-    position: 'absolute',
-    left: spacing.xl,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+  pollFooter: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textCaption,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   // Reaction bar
   reactionBar: {

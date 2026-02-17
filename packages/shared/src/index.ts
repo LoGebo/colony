@@ -14,5 +14,15 @@ export * from './queries';
 export { createSupabaseClient } from './lib/supabase';
 export type { SupabaseClient } from './lib/supabase';
 
+// Formatters
+export {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatTime,
+  formatRelativeDate,
+  DAY_LABELS,
+} from './lib/formatters';
+
 // Upload utilities
 export { generateUploadPath, getContentType } from './lib/upload';

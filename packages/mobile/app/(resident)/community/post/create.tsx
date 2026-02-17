@@ -8,12 +8,12 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Image,
   Animated,
   Dimensions,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChannels, useCreatePost } from '@/hooks/usePosts';
@@ -162,7 +162,7 @@ export default function CreatePostScreen() {
           router.back();
         },
         onError: (error) => {
-          Alert.alert('Error', error.message || 'Failed to create post');
+          showAlert('Error', error.message || 'Failed to create post');
         },
       }
     );

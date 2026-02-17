@@ -6,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -84,18 +83,10 @@ export default function NotificationSettingsScreen() {
     try {
       await updatePrefs.mutateAsync(localPrefs);
       setDirty(false);
-      if (Platform.OS === 'web') {
-        window.alert('Notification preferences updated.');
-      } else {
-        Alert.alert('Saved', 'Notification preferences updated.');
-      }
+      showAlert('Saved', 'Notification preferences updated.');
     } catch (err: any) {
       const msg = err.message ?? 'Failed to save preferences.';
-      if (Platform.OS === 'web') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Error', msg);
-      }
+      showAlert('Error', msg);
     }
   };
 

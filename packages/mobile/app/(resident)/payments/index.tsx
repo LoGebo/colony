@@ -80,7 +80,10 @@ export default function PaymentDashboardScreen() {
             </View>
             <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
             <View style={styles.balanceActions}>
-              <TouchableOpacity style={styles.payButton}>
+              <TouchableOpacity
+                style={styles.payButton}
+                onPress={() => router.push('/(resident)/payments/upload-proof')}
+              >
                 <Text style={styles.payButtonText}>Pay Now</Text>
               </TouchableOpacity>
               <TouchableOpacity

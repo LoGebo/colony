@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { queryKeys } from '@upoe/shared';
+import { toastError } from '@/lib/toast-error';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -43,7 +45,7 @@ export function useFeeStructures() {
   const { communityId } = useAuth();
 
   return useQuery({
-    queryKey: ['fee-structures', communityId],
+    queryKey: queryKeys.financials.feeStructures(communityId!).queryKey,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -72,7 +74,7 @@ export function useChargePreview(feeStructureId: string | null) {
   const { communityId } = useAuth();
 
   return useQuery({
-    queryKey: ['charge-preview', communityId, feeStructureId],
+    queryKey: queryKeys.financials.chargePreview(communityId!, feeStructureId ?? undefined).queryKey,
     queryFn: async () => {
       const supabase = createClient();
 
@@ -174,12 +176,12 @@ export function useGenerateCharges() {
       } else {
         toast.warning(`${fulfilled} cargos generados, ${rejected} fallaron`);
       }
-      queryClient.invalidateQueries({ queryKey: ['unit-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['transaction-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['charge-preview'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.unitBalances._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.transactionSummary._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.chargePreview._def });
     },
     onError: (error: Error) => {
-      toast.error('Error al generar cargos: ' + error.message);
+      toastError('Error al generar cargos', error);
     },
   });
 }
@@ -209,7 +211,7 @@ export function useUnitBalances() {
   const { communityId } = useAuth();
 
   return useQuery({
-    queryKey: ['unit-balances', communityId],
+    queryKey: queryKeys.financials.unitBalances(communityId!).queryKey,
     queryFn: async () => {
       const supabase = createClient();
       const { data, error } = await supabase

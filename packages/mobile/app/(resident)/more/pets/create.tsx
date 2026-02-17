@@ -8,9 +8,9 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreatePet } from '@/hooks/usePets';
@@ -43,17 +43,6 @@ export default function CreatePetScreen() {
 
   const isValid = name.trim().length > 0 && species !== null;
 
-  const showAlert = (title: string, message: string, onOk?: () => void) => {
-    if (Platform.OS === 'web') {
-      window.alert(message);
-      onOk?.();
-    } else if (onOk) {
-      Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!name.trim()) {
       showAlert('Required', 'Please enter the pet name.');
@@ -81,7 +70,9 @@ export default function CreatePetScreen() {
         special_needs: specialNeeds.trim() || undefined,
       });
 
-      showAlert('Success', 'Pet registered successfully.', () => router.back());
+      showAlert('Success', 'Pet registered successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (err: any) {
       showAlert('Error', err?.message ?? 'Failed to register pet.');
     }

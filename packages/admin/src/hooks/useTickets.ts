@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Valid status transitions (matches DB trigger)                     */
@@ -105,10 +106,10 @@ export function useTickets(filters: TicketFilters = {}) {
         );
       }
       if (status) {
-        query = query.eq('status', status as never);
+        query = query.eq('status', status as any);
       }
       if (priority) {
-        query = query.eq('priority', priority as never);
+        query = query.eq('priority', priority as any);
       }
 
       const from = page * pageSize;
@@ -117,7 +118,7 @@ export function useTickets(filters: TicketFilters = {}) {
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return { data: (data ?? []) as unknown as TicketRow[], count: count ?? 0 };
+      return { data: (data ?? []) as TicketRow[], count: count ?? 0 };
     },
     enabled: !!communityId,
   });
@@ -143,7 +144,7 @@ export function useTicket(id: string) {
         .single();
 
       if (error) throw error;
-      return data as unknown as TicketDetail;
+      return data as TicketDetail;
     },
     enabled: !!communityId && !!id,
   });
@@ -229,7 +230,7 @@ export function useAssignTicket() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al asignar ticket: ${error.message}`);
+      toastError('Error al asignar ticket', error);
     },
   });
 }
@@ -251,7 +252,7 @@ export function useUpdateTicketStatus() {
       const supabase = createClient();
       const { error } = await supabase
         .from('tickets')
-        .update({ status: newStatus as never })
+        .update({ status: newStatus as any })
         .eq('id', ticketId);
 
       if (error) throw error;
@@ -261,7 +262,7 @@ export function useUpdateTicketStatus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar estado: ${error.message}`);
+      toastError('Error al actualizar estado', error);
     },
   });
 }
@@ -305,7 +306,7 @@ export function useAddTicketComment() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al agregar comentario: ${error.message}`);
+      toastError('Error al agregar comentario', error);
     },
   });
 }

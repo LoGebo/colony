@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { showAlert } from '@/lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
@@ -38,7 +38,7 @@ export default function OnboardingScreen() {
 
   const handleComplete = async () => {
     if (!communityName) {
-      Alert.alert('Error', 'Please enter a community name.');
+      showAlert('Error', 'Please enter a community name.');
       return;
     }
     setLoading(true);
@@ -52,7 +52,7 @@ export default function OnboardingScreen() {
       await refreshSession();
       router.replace('/');
     } catch (err: any) {
-      Alert.alert('Setup Failed', err.message ?? 'Something went wrong.');
+      showAlert('Setup Failed', err.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }

@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogAccess } from '@/hooks/useGateOps';
@@ -86,7 +86,7 @@ export default function VisitorResultScreen() {
             window.alert(`${visitorName} has been granted entry.`);
             router.replace('/(guard)');
           } else {
-            Alert.alert('Entry Confirmed', `${visitorName} has been granted entry.`, [
+            showAlert('Entry Confirmed', `${visitorName} has been granted entry.`, [
               { text: 'OK', onPress: () => router.replace('/(guard)') },
             ]);
           }
@@ -95,7 +95,7 @@ export default function VisitorResultScreen() {
           if (Platform.OS === 'web') {
             window.alert(err.message);
           } else {
-            Alert.alert('Error', err.message);
+            showAlert('Error', err.message);
           }
         },
       },
@@ -121,7 +121,7 @@ export default function VisitorResultScreen() {
               window.alert(`${visitorName} has been denied entry.`);
               router.replace('/(guard)');
             } else {
-              Alert.alert('Entry Denied', `${visitorName} has been denied entry.`, [
+              showAlert('Entry Denied', `${visitorName} has been denied entry.`, [
                 { text: 'OK', onPress: () => router.replace('/(guard)') },
               ]);
             }
@@ -130,7 +130,7 @@ export default function VisitorResultScreen() {
             if (Platform.OS === 'web') {
               window.alert(err.message);
             } else {
-              Alert.alert('Error', err.message);
+              showAlert('Error', err.message);
             }
           },
         },
@@ -142,7 +142,7 @@ export default function VisitorResultScreen() {
         doDeny();
       }
     } else {
-      Alert.alert('Deny Entry', `Are you sure you want to deny entry for ${visitorName}?`, [
+      showAlert('Deny Entry', `Are you sure you want to deny entry for ${visitorName}?`, [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Deny', style: 'destructive', onPress: doDeny },
       ]);

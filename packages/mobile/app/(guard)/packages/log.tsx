@@ -8,9 +8,9 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -78,7 +78,7 @@ export default function LogPackageScreen() {
         window.alert('The package has been registered successfully.');
         router.back();
       } else {
-        Alert.alert('Package Logged', 'The package has been registered successfully.', [
+        showAlert('Package Logged', 'The package has been registered successfully.', [
           { text: 'OK', onPress: () => router.back() },
         ]);
       }
@@ -87,7 +87,7 @@ export default function LogPackageScreen() {
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
-        Alert.alert('Error', msg);
+        showAlert('Error', msg);
       }
     }
   };

@@ -7,12 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Image,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Modal,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -77,7 +77,7 @@ export default function ProfileScreen() {
         await updateProfile.mutateAsync({ photo_url: path });
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to upload photo.');
+      showAlert('Error', err?.message ?? 'Failed to upload photo.');
     } finally {
       setUploadingPhoto(false);
     }
@@ -101,9 +101,9 @@ export default function ProfileScreen() {
       setIsEditing(false);
       setPhone(null);
       setPhoneSecondary(null);
-      Alert.alert('Saved', 'Profile updated successfully.');
+      showAlert('Saved', 'Profile updated successfully.');
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to update profile.');
+      showAlert('Error', err?.message ?? 'Failed to update profile.');
     }
   };
 
@@ -124,11 +124,11 @@ export default function ProfileScreen() {
 
   const handleSaveContact = async () => {
     if (!contactForm.contact_name.trim()) {
-      Alert.alert('Required', 'Please enter the contact name.');
+      showAlert('Required', 'Please enter the contact name.');
       return;
     }
     if (!contactForm.phone_primary.trim()) {
-      Alert.alert('Required', 'Please enter a phone number.');
+      showAlert('Required', 'Please enter a phone number.');
       return;
     }
     try {
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
       setShowContactModal(false);
       setContactForm(EMPTY_CONTACT);
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to save contact.');
+      showAlert('Error', err?.message ?? 'Failed to save contact.');
     }
   };
 

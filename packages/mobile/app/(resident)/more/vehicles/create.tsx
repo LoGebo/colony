@@ -8,9 +8,9 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreateVehicle } from '@/hooks/useVehicles';
@@ -30,17 +30,6 @@ export default function CreateVehicleScreen() {
   const [year, setYear] = useState('');
 
   const isValid = plateNumber.trim().length > 0 && plateState.trim().length > 0;
-
-  const showAlert = (title: string, message: string, onOk?: () => void) => {
-    if (Platform.OS === 'web') {
-      window.alert(message);
-      onOk?.();
-    } else if (onOk) {
-      Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!plateNumber.trim()) {
@@ -68,7 +57,9 @@ export default function CreateVehicleScreen() {
         year: yearNum,
       });
 
-      showAlert('Success', 'Vehicle added successfully.', () => router.back());
+      showAlert('Success', 'Vehicle added successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (err: any) {
       showAlert('Error', err?.message ?? 'Failed to add vehicle.');
     }

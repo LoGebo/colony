@@ -19,7 +19,7 @@ export function useChannels() {
         .from('channels')
         .select('id, name, description, channel_type, icon, anyone_can_post, requires_moderation')
         .eq('community_id', communityId!)
-        .eq('status', 'active' as never)
+        .eq('status', 'active')
         .is('deleted_at', null)
         .order('sort_order', { ascending: true });
 
@@ -89,7 +89,8 @@ export function usePostDetail(postId: string) {
       if (error) throw error;
 
       // Fire-and-forget view count increment
-      supabase.rpc('increment_post_view_count', { p_post_id: postId });
+      supabase.rpc('increment_post_view_count', { p_post_id: postId })
+        .then(({ error: rpcErr }) => { if (rpcErr) console.warn('View count RPC failed:', rpcErr.message); });
 
       return data;
     },
@@ -143,6 +144,27 @@ export function useMyPostReactions() {
   });
 }
 
+// ---------- useMyPollVotes ----------
+
+export function useMyPollVotes() {
+  const { residentId } = useAuth();
+
+  return useQuery({
+    queryKey: [...queryKeys.posts._def, 'my-poll-votes', residentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('poll_votes')
+        .select('post_id, option_index')
+        .eq('resident_id', residentId!);
+
+      if (error) throw error;
+      // Map: postId → optionIndex the user voted for
+      return new Map((data ?? []).map((v) => [v.post_id, v.option_index as number]));
+    },
+    enabled: !!residentId,
+  });
+}
+
 // ---------- useCreatePost ----------
 
 interface CreatePostInput {
@@ -171,18 +193,18 @@ export function useCreatePost() {
           community_id: communityId!,
           channel_id: input.channel_id,
           author_id: residentId!,
-          post_type: dbPostType as never,
+          post_type: dbPostType,
           title: input.title ?? undefined,
           content: input.content,
           media_urls: input.media_urls ?? undefined,
           poll_options: input.poll_options
-            ? (input.poll_options as never)
+            ? (input.poll_options as any)
             : undefined,
           poll_ends_at: input.poll_ends_at ?? undefined,
           poll_results: input.poll_options
             ? (Object.fromEntries(
                 input.poll_options.map((opt, i) => [String(i), 0])
-              ) as never)
+              ) as any)
             : undefined,
         })
         .select()
@@ -199,6 +221,16 @@ export function useCreatePost() {
 
 // ---------- useToggleReaction ----------
 
+/**
+ * Optimistic like/unlike toggle with race-condition protection.
+ *
+ * Key design decisions:
+ * - Caller passes `isLiked` so we never SELECT before DELETE/INSERT (atomic).
+ * - `onSettled` only invalidates the lightweight `my-reactions` set.
+ *   Post-list caches keep their optimistic counts until a natural refetch
+ *   (pull-to-refresh, window focus, stale-time expiry) to avoid refetch storms.
+ * - Concurrent-click protection is handled by the caller via a `pendingLikes` ref.
+ */
 export function useToggleReaction() {
   const { residentId, communityId } = useAuth();
   const queryClient = useQueryClient();
@@ -207,27 +239,22 @@ export function useToggleReaction() {
     mutationFn: async ({
       postId,
       reactionType,
+      isLiked,
     }: {
       postId: string;
       reactionType: string;
+      isLiked: boolean;
     }) => {
-      // Check if reaction exists
-      const { data: existing } = await supabase
-        .from('post_reactions')
-        .select('id')
-        .eq('post_id', postId)
-        .eq('resident_id', residentId!)
-        .maybeSingle();
-
-      const wasLiked = !!existing;
-
-      if (existing) {
+      if (isLiked) {
+        // Unlike: delete by compound key – no prior SELECT needed
         const { error } = await supabase
           .from('post_reactions')
           .delete()
-          .eq('id', existing.id);
+          .eq('post_id', postId)
+          .eq('resident_id', residentId!);
         if (error) throw error;
       } else {
+        // Like: insert new reaction
         const { error } = await supabase.from('post_reactions').insert({
           community_id: communityId!,
           post_id: postId,
@@ -237,33 +264,28 @@ export function useToggleReaction() {
         if (error) throw error;
       }
 
-      return { wasLiked };
+      return { wasLiked: isLiked };
     },
-    onMutate: async ({ postId, reactionType }) => {
-      // Cancel outgoing refetches so they don't overwrite our optimistic update
+    onMutate: async ({ postId, reactionType, isLiked }) => {
+      // Cancel in-flight refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: queryKeys.posts._def });
-      await queryClient.cancelQueries({ queryKey: [...queryKeys.posts._def, 'my-reactions'] });
 
-      // Snapshot previous values
-      const prevMyReactions = queryClient.getQueryData<Set<string>>(
-        [...queryKeys.posts._def, 'my-reactions', residentId]
-      );
+      const myReactionsKey = [...queryKeys.posts._def, 'my-reactions', residentId];
 
-      // Optimistically update my-reactions set
-      const isCurrentlyLiked = prevMyReactions?.has(postId) ?? false;
+      // Snapshot previous values for rollback
+      const prevMyReactions = queryClient.getQueryData<Set<string>>(myReactionsKey);
+
+      // Optimistically update my-reactions set (using isLiked from caller, not cache)
       const nextSet = new Set(prevMyReactions);
-      if (isCurrentlyLiked) {
+      if (isLiked) {
         nextSet.delete(postId);
       } else {
         nextSet.add(postId);
       }
-      queryClient.setQueryData(
-        [...queryKeys.posts._def, 'my-reactions', residentId],
-        nextSet,
-      );
+      queryClient.setQueryData(myReactionsKey, nextSet);
 
-      // Optimistically update reaction_counts on all post queries in cache
-      const delta = isCurrentlyLiked ? -1 : 1;
+      // Optimistically update reaction_counts on all cached post lists
+      const delta = isLiked ? -1 : 1;
       queryClient.setQueriesData<any[]>(
         { queryKey: queryKeys.posts._def },
         (old) => {
@@ -296,14 +318,21 @@ export function useToggleReaction() {
           context.prevMyReactions,
         );
       }
-      // Refetch to get accurate server state
+      if (context?.prevDetail) {
+        queryClient.setQueryData(
+          queryKeys.posts.detail(variables.postId).queryKey,
+          context.prevDetail,
+        );
+      }
+      // Full refetch to resync with server on error
       queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });
     },
-    onSettled: (_data, _error, variables) => {
-      // Always refetch after mutation settles for consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.posts._def, 'my-reactions'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId).queryKey });
+    onSettled: () => {
+      // Only sync my-reactions (lightweight); post lists keep optimistic counts
+      // until a natural refetch (pull-to-refresh / stale-time / window focus).
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.posts._def, 'my-reactions'],
+      });
     },
   });
 }
@@ -351,6 +380,7 @@ export function useCreateComment() {
 // ---------- useVotePoll ----------
 
 export function useVotePoll() {
+  const { residentId } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -361,16 +391,92 @@ export function useVotePoll() {
       postId: string;
       optionIndex: number;
     }) => {
-      const { data, error } = await supabase.rpc('vote_on_poll' as never, {
+      const { data, error } = await supabase.rpc('vote_on_poll', {
         p_post_id: postId,
         p_option_index: optionIndex,
-      } as never);
+      }) as { data: any; error: any };
 
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onMutate: async ({ postId, optionIndex }) => {
+      const detailKey = queryKeys.posts.detail(postId).queryKey;
+      const myVotesKey = [...queryKeys.posts._def, 'my-poll-votes', residentId];
+
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      await queryClient.cancelQueries({ queryKey: myVotesKey });
+
+      // Snapshots for rollback
+      const prevDetail = queryClient.getQueryData<any>(detailKey);
+      const prevMyVotes = queryClient.getQueryData<Map<string, number>>(myVotesKey);
+
+      // User's previous vote (if any) – needed for change-vote logic
+      const prevOptionIndex = prevMyVotes?.get(postId);
+
+      // Optimistically update my-poll-votes
+      const nextVotes = new Map(prevMyVotes);
+      nextVotes.set(postId, optionIndex);
+      queryClient.setQueryData(myVotesKey, nextVotes);
+
+      // Helper: adjust poll_results for a vote (handles new vote AND vote change)
+      const adjustResults = (post: any) => {
+        const results = { ...(post.poll_results ?? {}) } as Record<string, number>;
+        // Decrement old option when changing vote
+        if (prevOptionIndex !== undefined && prevOptionIndex !== optionIndex) {
+          const oldKey = String(prevOptionIndex);
+          results[oldKey] = Math.max(0, (results[oldKey] ?? 0) - 1);
+        }
+        // Increment new option (new vote or changed vote)
+        const newKey = String(optionIndex);
+        results[newKey] = (results[newKey] ?? 0) + 1;
+        return results;
+      };
+
+      // Optimistically update detail query
+      if (prevDetail) {
+        queryClient.setQueryData(detailKey, {
+          ...prevDetail,
+          poll_results: adjustResults(prevDetail),
+        });
+      }
+
+      // Optimistically update cached list queries
+      queryClient.setQueriesData<any[]>(
+        { queryKey: queryKeys.posts._def },
+        (old) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((post: any) => {
+            if (post.id !== postId) return post;
+            return { ...post, poll_results: adjustResults(post) };
+          });
+        },
+      );
+
+      return { prevDetail, prevMyVotes };
+    },
+    onError: (_err, variables, context) => {
+      if (context?.prevDetail) {
+        queryClient.setQueryData(
+          queryKeys.posts.detail(variables.postId).queryKey,
+          context.prevDetail,
+        );
+      }
+      if (context?.prevMyVotes) {
+        queryClient.setQueryData(
+          [...queryKeys.posts._def, 'my-poll-votes', residentId],
+          context.prevMyVotes,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.posts._def });
+    },
+    onSettled: (_data, _error, variables) => {
+      // Refetch detail + my votes for server confirmation
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.detail(variables.postId).queryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.posts._def, 'my-poll-votes'],
+      });
     },
   });
 }

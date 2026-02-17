@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { showAlert } from '@/lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
@@ -27,14 +27,14 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password.');
+      showAlert('Error', 'Please enter email and password.');
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      Alert.alert('Sign In Failed', error.message);
+      showAlert('Sign In Failed', error.message);
     } else {
       router.replace('/');
     }

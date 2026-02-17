@@ -5,6 +5,11 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUUID(str: unknown): str is string {
+  return typeof str === 'string' && UUID_REGEX.test(str);
+}
+
 type NotificationType =
   | 'emergency_alert'
   | 'visitor_arrived'
@@ -286,7 +291,7 @@ class NotificationService {
     try {
       switch (actionType) {
         case 'open_visitor':
-          if (data.visitor_id) {
+          if (isValidUUID(data.visitor_id)) {
             router.push(`/(resident)/visitors/${data.visitor_id}`);
           }
           break;
@@ -296,13 +301,13 @@ class NotificationService {
           break;
 
         case 'open_ticket':
-          if (data.ticket_id) {
+          if (isValidUUID(data.ticket_id)) {
             router.push(`/(resident)/maintenance/${data.ticket_id}`);
           }
           break;
 
         case 'open_announcement':
-          if (data.announcement_id) {
+          if (isValidUUID(data.announcement_id)) {
             router.push(`/(resident)/announcements/${data.announcement_id}`);
           }
           break;

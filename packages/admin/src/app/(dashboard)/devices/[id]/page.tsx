@@ -17,6 +17,17 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate, formatCurrency } from '@/lib/formatters';
 
+type DeviceStatus = 'in_inventory' | 'assigned' | 'lost' | 'damaged' | 'deactivated' | 'retired';
+
+const STATUS_LABELS: Record<DeviceStatus, string> = {
+  in_inventory: 'En Inventario',
+  assigned: 'Asignado',
+  lost: 'Extraviado',
+  damaged: 'Danado',
+  deactivated: 'Desactivado',
+  retired: 'Retirado',
+};
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -94,7 +105,7 @@ export default function DeviceDetailPage() {
                   : 'neutral'
               }
             >
-              {device.status}
+              {STATUS_LABELS[device.status as DeviceStatus] ?? device.status}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-gray-500">

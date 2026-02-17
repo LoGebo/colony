@@ -6,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMyPets, useDeletePet } from '@/hooks/usePets';
@@ -52,30 +51,20 @@ export default function PetsScreen() {
         await deleteMutation.mutateAsync(petId);
       } catch (err: any) {
         const msg = err?.message ?? 'Failed to remove pet.';
-        if (Platform.OS === 'web') {
-          window.alert(msg);
-        } else {
-          Alert.alert('Error', msg);
-        }
+        showAlert('Error', msg);
       } finally {
         setDeletingId(null);
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to remove ${petName}?`)) {
-        doDelete();
-      }
-    } else {
-      Alert.alert(
-        'Remove Pet',
-        `Are you sure you want to remove ${petName} from your registered pets?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: doDelete },
-        ],
-      );
-    }
+    showAlert(
+      'Remove Pet',
+      `Are you sure you want to remove ${petName} from your registered pets?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: doDelete },
+      ],
+    );
   };
 
   const hasPets = pets && pets.length > 0;

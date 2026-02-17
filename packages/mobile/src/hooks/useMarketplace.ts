@@ -32,7 +32,7 @@ export function useMarketplaceListings(category?: string | null) {
         .from('marketplace_listings')
         .select(LISTING_SELECT)
         .eq('community_id', communityId!)
-        .eq('moderation_status', 'approved' as never)
+        .eq('moderation_status', 'approved')
         .eq('is_sold', false)
         .is('deleted_at', null)
         .gte('expires_at', new Date().toISOString())
@@ -40,7 +40,7 @@ export function useMarketplaceListings(category?: string | null) {
         .limit(50);
 
       if (category) {
-        query = query.eq('category', category as never);
+        query = query.eq('category', category as any);
       }
 
       const { data, error } = await query;
@@ -88,7 +88,8 @@ export function useListingDetail(listingId: string) {
       if (error) throw error;
 
       // Fire-and-forget view count increment
-      supabase.rpc('increment_listing_view_count', { p_listing_id: listingId });
+      supabase.rpc('increment_listing_view_count', { p_listing_id: listingId })
+        .then(({ error: rpcErr }) => { if (rpcErr) console.warn('View count RPC failed:', rpcErr.message); });
 
       return data;
     },
@@ -120,7 +121,7 @@ export function useCreateListing() {
           community_id: communityId!,
           seller_id: residentId!,
           unit_id: unitId ?? undefined,
-          category: input.category as never,
+          category: input.category as any,
           title: input.title,
           description: input.description,
           price: input.price ?? undefined,
@@ -128,7 +129,7 @@ export function useCreateListing() {
           image_urls: input.image_urls && input.image_urls.length > 0
             ? input.image_urls
             : undefined,
-          moderation_status: 'pending' as never,
+          moderation_status: 'pending',
         })
         .select()
         .single();
@@ -199,7 +200,8 @@ export async function handleContactSeller(
   const encoded = encodeURIComponent(message);
 
   // Fire-and-forget inquiry count increment
-  supabase.rpc('increment_listing_inquiry_count', { p_listing_id: listingId });
+  supabase.rpc('increment_listing_inquiry_count', { p_listing_id: listingId })
+    .then(({ error: rpcErr }) => { if (rpcErr) console.warn('Inquiry count RPC failed:', rpcErr.message); });
 
   // Try WhatsApp first
   const waUrl = `whatsapp://send?phone=${sellerPhone}&text=${encoded}`;

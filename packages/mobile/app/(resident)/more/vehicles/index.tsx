@@ -6,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
-  Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMyVehicles, useDeleteVehicle } from '@/hooks/useVehicles';
@@ -63,30 +62,20 @@ export default function VehiclesScreen() {
         await deleteMutation.mutateAsync(vehicleId);
       } catch (err: any) {
         const msg = err?.message ?? 'Failed to delete vehicle.';
-        if (Platform.OS === 'web') {
-          window.alert(msg);
-        } else {
-          Alert.alert('Error', msg);
-        }
+        showAlert('Error', msg);
       } finally {
         setDeletingId(null);
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to remove ${plateNumber} from your vehicles?`)) {
-        doDelete();
-      }
-    } else {
-      Alert.alert(
-        'Delete Vehicle',
-        `Are you sure you want to remove ${plateNumber} from your vehicles?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: doDelete },
-        ],
-      );
-    }
+    showAlert(
+      'Delete Vehicle',
+      `Are you sure you want to remove ${plateNumber} from your vehicles?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ],
+    );
   };
 
   const getStatusBadge = (status: string | null, accessEnabled: boolean) => {

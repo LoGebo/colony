@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
@@ -59,45 +60,35 @@ export default function MoreIndexScreen() {
   const lastName = user?.user_metadata?.last_name ?? '';
 
   const confirmSignOut = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to sign out?')) signOut();
-    } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
-      ]);
-    }
+    showAlert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+    ]);
   };
 
   const confirmDeleteAccount = () => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('This will permanently delete your account and all associated data. This action cannot be undone. Are you sure?')) {
-        deleteAccount();
-      }
-    } else {
-      Alert.alert(
-        'Delete Account',
-        'This will permanently delete your account and all associated data. This action cannot be undone.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete My Account',
-            style: 'destructive',
-            onPress: () => {
-              // Double-confirm for destructive action
-              Alert.alert(
-                'Are you absolutely sure?',
-                'You will lose access to your community, payment history, and all personal data.',
-                [
-                  { text: 'Keep Account', style: 'cancel' },
-                  { text: 'Yes, Delete', style: 'destructive', onPress: deleteAccount },
-                ],
-              );
-            },
+    showAlert(
+      'Delete Account',
+      'This will permanently delete your account and all associated data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete My Account',
+          style: 'destructive',
+          onPress: () => {
+            // Double-confirm for destructive action
+            showAlert(
+              'Are you absolutely sure?',
+              'You will lose access to your community, payment history, and all personal data.',
+              [
+                { text: 'Keep Account', style: 'cancel' },
+                { text: 'Yes, Delete', style: 'destructive', onPress: deleteAccount },
+              ],
+            );
           },
-        ],
-      );
-    }
+        },
+      ],
+    );
   };
 
   const deleteAccount = async () => {
@@ -110,11 +101,7 @@ export default function MoreIndexScreen() {
       await signOut();
     } catch (err: any) {
       const message = err?.message ?? 'Something went wrong. Please try again or contact support.';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Error', message);
-      }
+      showAlert('Error', message);
     } finally {
       setIsDeletingAccount(false);
     }
@@ -144,7 +131,7 @@ export default function MoreIndexScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{firstName} {lastName}</Text>
-            <Text style={styles.profileUnit}>{unitNumber ? `Unit ${unitNumber}` : 'Loading...'}</Text>
+            <Text style={styles.profileUnit}>{unitNumber ? `Unit ${unitNumber}` : 'No unit assigned'}</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textDisabled} />
         </TouchableOpacity>

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
@@ -133,7 +134,7 @@ export function useUpdateCommunity() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar: ${error.message}`);
+      toastError('Error al actualizar', error);
     },
   });
 }
@@ -167,7 +168,7 @@ export function useUpdateCommunitySettings() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al guardar: ${error.message}`);
+      toastError('Error al guardar', error);
     },
   });
 }
@@ -201,7 +202,7 @@ export function useUpdateFeatureFlags() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar funcionalidades: ${error.message}`);
+      toastError('Error al actualizar funcionalidades', error);
     },
   });
 }

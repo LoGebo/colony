@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -71,7 +71,7 @@ export default function ScanScreen() {
           if (Platform.OS === 'web') {
             window.alert(error.message);
           } else {
-            Alert.alert('Scan Error', error.message);
+            showAlert('Scan Error', error.message);
           }
         },
       });
@@ -98,7 +98,7 @@ export default function ScanScreen() {
         if (Platform.OS === 'web') {
           window.alert(error.message);
         } else {
-          Alert.alert('Scan Error', error.message);
+          showAlert('Scan Error', error.message);
         }
       },
     });

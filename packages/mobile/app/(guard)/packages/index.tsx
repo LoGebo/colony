@@ -7,9 +7,9 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePendingPackages, useConfirmPickup } from '@/hooks/usePackages';
@@ -114,7 +114,7 @@ export default function PackagesIndexScreen() {
           if (Platform.OS === 'web') {
             window.alert(msg);
           } else {
-            Alert.alert('Error', msg);
+            showAlert('Error', msg);
           }
         }
       };
@@ -124,7 +124,7 @@ export default function PackagesIndexScreen() {
           await doConfirm();
         }
       } else {
-        Alert.alert(
+        showAlert(
           'Confirm Pickup',
           `Confirm package pickup for ${recipientName}?`,
           [

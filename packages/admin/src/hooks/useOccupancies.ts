@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ export function useCreateOccupancy() {
       queryClient.invalidateQueries({ queryKey: queryKeys.residents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al asignar: ${error.message}`);
+      toastError('Error al asignar', error);
     },
   });
 }
@@ -92,7 +93,7 @@ export function useRemoveOccupancy() {
       queryClient.invalidateQueries({ queryKey: queryKeys.residents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al remover asignacion: ${error.message}`);
+      toastError('Error al remover asignacion', error);
     },
   });
 }

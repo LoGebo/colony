@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Share,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
@@ -97,7 +97,7 @@ export default function InvitationDetailScreen() {
       const uri = await captureRef(cardRef, {
         format: 'png',
         quality: 1,
-        pixelRatio: 3,
+        width: 1080,
         result: 'tmpfile',
       });
 
@@ -142,7 +142,7 @@ export default function InvitationDetailScreen() {
 
   const handleCancel = useCallback(() => {
     if (!invitation) return;
-    Alert.alert(
+    showAlert(
       'Cancel Invitation',
       `Are you sure you want to cancel the invitation for ${invitation.visitor_name}?`,
       [
@@ -153,12 +153,12 @@ export default function InvitationDetailScreen() {
           onPress: async () => {
             try {
               await cancelMutation.mutateAsync(invitation.id);
-              Alert.alert('Cancelled', 'Invitation has been cancelled.', [
+              showAlert('Cancelled', 'Invitation has been cancelled.', [
                 { text: 'OK', onPress: () => router.back() },
               ]);
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : 'Failed to cancel invitation.';
-              Alert.alert('Error', message);
+              showAlert('Error', message);
             }
           },
         },

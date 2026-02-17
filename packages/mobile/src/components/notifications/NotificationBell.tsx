@@ -1,5 +1,6 @@
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUnreadCount } from '@/hooks/useNotifications';
 import { colors, fonts, borderRadius, shadows } from '@/theme';
@@ -16,7 +17,7 @@ export function NotificationBell({ href }: Props) {
   return (
     <TouchableOpacity
       style={styles.button}
-      onPress={() => router.push((href ?? '/(resident)/notifications') as any)}
+      onPress={() => router.push((href ?? '/(resident)/notifications') as Href)}
       activeOpacity={0.7}
     >
       <Ionicons name="notifications-outline" size={20} color={colors.textBody} />

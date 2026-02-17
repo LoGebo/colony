@@ -249,6 +249,17 @@ export const audit = createQueryKeys('audit', {
   logs: (communityId: string, filters?: Record<string, unknown>) => [{ communityId, filters }],
 });
 
+export const financials = createQueryKeys('financials', {
+  all: null,
+  feeStructures: (communityId: string) => [{ communityId }],
+  chargePreview: (communityId: string, feeStructureId?: string) => [{ communityId, feeStructureId }],
+  unitBalances: (communityId: string) => [{ communityId }],
+  transactionSummary: (communityId: string, year?: number) => [{ communityId, year }],
+  expenseBreakdown: (communityId: string, year?: number) => [{ communityId, year }],
+  delinquentUnits: (communityId: string) => [{ communityId }],
+  paymentProofs: (communityId: string) => [{ communityId }],
+});
+
 export const queryKeys = mergeQueryKeys(
   accessLogs,
   amenities,
@@ -257,6 +268,7 @@ export const queryKeys = mergeQueryKeys(
   audit,
   communities,
   devices,
+  financials,
   documents,
   elections,
   emergencies,

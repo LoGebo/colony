@@ -6,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  Alert,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -156,21 +155,12 @@ export default function ReserveAmenityScreen() {
         notes: notes.trim() || undefined,
       });
 
-      if (Platform.OS === 'web') {
-        window.alert('Your reservation has been successfully created.');
-        router.back();
-      } else {
-        Alert.alert('Reservation Created', 'Your reservation has been successfully created.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      }
+      showAlert('Reservation Created', 'Your reservation has been successfully created.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (error: any) {
       const message = error?.message ?? 'Could not create reservation. Please try again.';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Reservation Failed', message);
-      }
+      showAlert('Reservation Failed', message);
     }
   }, [amenityId, selectedDate, selectedStartHour, selectedEndHour, notes, createReservation, router]);
 

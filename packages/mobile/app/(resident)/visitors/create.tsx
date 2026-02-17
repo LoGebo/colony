@@ -8,10 +8,10 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
@@ -216,12 +216,17 @@ export default function CreateInvitationScreen() {
 
   const handleSubmit = async () => {
     if (!visitorName.trim()) {
-      Alert.alert('Required', 'Please enter the visitor name.');
+      showAlert('Required', 'Please enter the visitor name.');
       return;
     }
 
     if (invitationType === 'recurring' && recurringDays.length === 0) {
-      Alert.alert('Required', 'Please select at least one day for recurring access.');
+      showAlert('Required', 'Please select at least one day for recurring access.');
+      return;
+    }
+
+    if (invitationType !== 'recurring' && validUntil < validFrom) {
+      showAlert('Invalid Dates', 'End date must be after start date.');
       return;
     }
 
@@ -241,21 +246,12 @@ export default function CreateInvitationScreen() {
         unit_id: unitId ?? undefined,
       });
 
-      if (Platform.OS === 'web') {
-        window.alert('Invitation created successfully.');
-        router.back();
-      } else {
-        Alert.alert('Success', 'Invitation created successfully.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      }
+      showAlert('Success', 'Invitation created successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create invitation.';
-      if (Platform.OS === 'web') {
-        window.alert(message);
-      } else {
-        Alert.alert('Error', message);
-      }
+      showAlert('Error', message);
     }
   };
 

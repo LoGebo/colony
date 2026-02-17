@@ -1,3 +1,6 @@
+/**
+ * @deprecated Not currently imported by mobile package. Kept for future centralized routing.
+ */
 // ---------- Mobile (Expo Router) ----------
 export const MOBILE_ROUTES = {
   SIGN_IN: '/(auth)/sign-in',
@@ -9,6 +12,9 @@ export const MOBILE_ROUTES = {
   ADMIN_HOME: '/(admin)/',
 } as const;
 
+/**
+ * @deprecated Not currently imported by admin package. Kept for future centralized routing.
+ */
 // ---------- Admin Dashboard (Next.js) ----------
 export const ADMIN_ROUTES = {
   SIGN_IN: '/sign-in',

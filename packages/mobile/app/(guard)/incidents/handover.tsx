@@ -6,11 +6,11 @@ import {
   ScrollView,
   TextInput,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -91,7 +91,7 @@ export default function HandoverScreen() {
         setPriority('normal');
         setPendingItems([]);
       } else {
-        Alert.alert('Handover Created', 'Your shift handover notes have been submitted.', [
+        showAlert('Handover Created', 'Your shift handover notes have been submitted.', [
           {
             text: 'OK',
             onPress: () => {
@@ -108,7 +108,7 @@ export default function HandoverScreen() {
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
-        Alert.alert('Error', msg);
+        showAlert('Error', msg);
       }
     }
   };
@@ -122,7 +122,7 @@ export default function HandoverScreen() {
         if (Platform.OS === 'web') {
           window.alert(msg);
         } else {
-          Alert.alert('Error', msg);
+          showAlert('Error', msg);
         }
       }
     },

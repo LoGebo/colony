@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -157,7 +158,7 @@ export function useElections(filters: ElectionFilters) {
         .order('created_at', { ascending: false });
 
       if (status) {
-        query = query.eq('status', status as never);
+        query = query.eq('status', status as any);
       }
 
       const from = page * pageSize;
@@ -165,7 +166,7 @@ export function useElections(filters: ElectionFilters) {
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return { data: (data ?? []) as unknown as ElectionRow[], count: count ?? 0 };
+      return { data: (data ?? []) as ElectionRow[], count: count ?? 0 };
     },
     enabled: !!communityId,
   });
@@ -199,8 +200,8 @@ export function useElectionDetail(id: string) {
       if (optionsError) throw optionsError;
 
       return {
-        election: election as unknown as ElectionDetail,
-        options: (options ?? []) as unknown as ElectionOption[],
+        election: election as ElectionDetail,
+        options: (options ?? []) as ElectionOption[],
       };
     },
     enabled: !!id,
@@ -236,7 +237,7 @@ export function useCreateElection() {
           election_number: `ELEC-${Date.now()}`,
           title: input.title,
           description: input.description || null,
-          election_type: input.election_type as never,
+          election_type: input.election_type as any,
           opens_at: input.opens_at,
           closes_at: input.closes_at,
           created_by: user!.id,
@@ -269,7 +270,7 @@ export function useCreateElection() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear elección: ${error.message}`);
+      toastError('Error al crear elección', error);
     },
   });
 }
@@ -285,7 +286,7 @@ export function useUpdateElectionStatus() {
       const supabase = createClient();
       const { error } = await supabase
         .from('elections')
-        .update({ status: status as never })
+        .update({ status })
         .eq('id', id);
 
       if (error) throw error;
@@ -301,7 +302,7 @@ export function useUpdateElectionStatus() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar estado: ${error.message}`);
+      toastError('Error al actualizar estado', error);
     },
   });
 }
@@ -334,7 +335,7 @@ export function useAssemblies(filters: AssemblyFilters) {
         .order('scheduled_date', { ascending: false });
 
       if (status) {
-        query = query.eq('status', status as never);
+        query = query.eq('status', status as any);
       }
 
       const from = page * pageSize;
@@ -342,7 +343,7 @@ export function useAssemblies(filters: AssemblyFilters) {
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return { data: (data ?? []) as unknown as AssemblyRow[], count: count ?? 0 };
+      return { data: (data ?? []) as AssemblyRow[], count: count ?? 0 };
     },
     enabled: !!communityId,
   });
@@ -385,9 +386,9 @@ export function useAssemblyDetail(id: string) {
       if (agreementsError) throw agreementsError;
 
       return {
-        assembly: assembly as unknown as AssemblyDetail,
-        attendance: (attendance ?? []) as unknown as AssemblyAttendanceRow[],
-        agreements: (agreements ?? []) as unknown as AssemblyAgreementRow[],
+        assembly: assembly as AssemblyDetail,
+        attendance: (attendance ?? []) as AssemblyAttendanceRow[],
+        agreements: (agreements ?? []) as AssemblyAgreementRow[],
       };
     },
     enabled: !!id,
@@ -444,7 +445,7 @@ export function useAddAttendee() {
         .insert({
           assembly_id: input.assembly_id,
           unit_id: input.unit_id,
-          attendee_type: input.attendee_type as never,
+          attendee_type: input.attendee_type as any,
           coefficient: input.coefficient,
           attendee_name: input.attendee_name || null,
           is_proxy: input.is_proxy ?? false,
@@ -463,7 +464,7 @@ export function useAddAttendee() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al registrar asistente: ${error.message}`);
+      toastError('Error al registrar asistente', error);
     },
   });
 }
@@ -491,10 +492,10 @@ export function useAddAgreement() {
         .from('assembly_agreements')
         .insert({
           assembly_id: input.assembly_id,
-          agreement_number: input.agreement_number as never,
+          agreement_number: input.agreement_number,
           title: input.title,
           description: input.description,
-          display_order: input.display_order as never,
+          display_order: input.display_order,
           action_required: input.action_required ?? false,
           action_description: input.action_description || null,
           action_due_date: input.action_due_date || null,
@@ -510,7 +511,7 @@ export function useAddAgreement() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Error al registrar acuerdo: ${error.message}`);
+      toastError('Error al registrar acuerdo', error);
     },
   });
 }

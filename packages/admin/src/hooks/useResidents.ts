@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /**
  * Fetch paginated list of residents for the admin's community.
@@ -114,7 +115,7 @@ export function useCreateResident() {
       queryClient.invalidateQueries({ queryKey: queryKeys.residents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear residente: ${error.message}`);
+      toastError('Error al crear residente', error);
     },
   });
 }
@@ -153,7 +154,7 @@ export function useUpdateResident() {
       queryClient.invalidateQueries({ queryKey: queryKeys.residents.detail(data.id).queryKey });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar residente: ${error.message}`);
+      toastError('Error al actualizar residente', error);
     },
   });
 }
@@ -182,7 +183,7 @@ export function useDeactivateResident() {
       queryClient.invalidateQueries({ queryKey: queryKeys.residents._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al desactivar residente: ${error.message}`);
+      toastError('Error al desactivar residente', error);
     },
   });
 }

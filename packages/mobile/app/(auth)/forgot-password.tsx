@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { showAlert } from '@/lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
@@ -26,14 +26,14 @@ export default function ForgotPasswordScreen() {
 
   const handleSend = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address.');
+      showAlert('Error', 'Please enter your email address.');
       return;
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
     } else {
       setSent(true);
     }

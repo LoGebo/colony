@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,7 +55,7 @@ export default function PatrolScanScreen() {
       if (Platform.OS === 'web') {
         window.alert('Start a patrol first before scanning checkpoints.');
       } else {
-        Alert.alert('No Active Patrol', 'Start a patrol first before scanning checkpoints.');
+        showAlert('No Active Patrol', 'Start a patrol first before scanning checkpoints.');
       }
       return;
     }
@@ -71,7 +71,7 @@ export default function PatrolScanScreen() {
         if (Platform.OS === 'web') {
           window.alert('All checkpoints have been scanned.');
         } else {
-          Alert.alert('All Done', 'All checkpoints have been scanned.');
+          showAlert('All Done', 'All checkpoints have been scanned.');
         }
         setScanning(false);
         return;
@@ -91,7 +91,7 @@ export default function PatrolScanScreen() {
         window.alert(`${nextCheckpoint.name} has been recorded.`);
         router.back();
       } else {
-        Alert.alert(
+        showAlert(
           'Checkpoint Scanned',
           `${nextCheckpoint.name} has been recorded.`,
           [{ text: 'OK', onPress: () => router.back() }],
@@ -102,7 +102,7 @@ export default function PatrolScanScreen() {
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
-        Alert.alert('Scan Error', msg);
+        showAlert('Scan Error', msg);
       }
     } finally {
       setScanning(false);

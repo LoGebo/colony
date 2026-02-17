@@ -5,6 +5,7 @@ import { queryKeys } from '@upoe/shared';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-error';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                             */
@@ -118,15 +119,15 @@ export function useParkingSpots(
         .order('spot_number', { ascending: true });
 
       if (typeFilter) {
-        query = query.eq('spot_type', typeFilter as never);
+        query = query.eq('spot_type', typeFilter as any);
       }
       if (statusFilter) {
-        query = query.eq('status', statusFilter as never);
+        query = query.eq('status', statusFilter as any);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as ParkingSpotRow[];
+      return (data ?? []) as ParkingSpotRow[];
     },
     enabled: !!communityId,
   });
@@ -151,7 +152,7 @@ export function useParkingReservations() {
         .order('reservation_date', { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as unknown as ParkingReservationRow[];
+      return (data ?? []) as ParkingReservationRow[];
     },
     enabled: !!communityId,
   });
@@ -176,12 +177,12 @@ export function useParkingViolations(statusFilter?: string) {
         .order('observed_at', { ascending: false });
 
       if (statusFilter) {
-        query = query.eq('status', statusFilter as never);
+        query = query.eq('status', statusFilter as any);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as unknown as ParkingViolationRow[];
+      return (data ?? []) as ParkingViolationRow[];
     },
     enabled: !!communityId,
   });
@@ -213,7 +214,7 @@ export function useCreateParkingSpot() {
           is_electric_vehicle: input.is_electric_vehicle ?? false,
           monthly_fee: input.monthly_fee ?? null,
           status: 'available',
-        } as never)
+        } as any)
         .select()
         .single();
 
@@ -225,7 +226,7 @@ export function useCreateParkingSpot() {
       queryClient.invalidateQueries({ queryKey: queryKeys.parking._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al crear estacionamiento: ${error.message}`);
+      toastError('Error al crear estacionamiento', error);
     },
   });
 }
@@ -241,7 +242,7 @@ export function useUpdateParkingSpot() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('parking_spots')
-        .update(updates as never)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -254,7 +255,7 @@ export function useUpdateParkingSpot() {
       queryClient.invalidateQueries({ queryKey: queryKeys.parking._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar estacionamiento: ${error.message}`);
+      toastError('Error al actualizar estacionamiento', error);
     },
   });
 }
@@ -280,14 +281,14 @@ export function useAssignParkingSpot() {
           assignment_type: input.assignment_type,
           assigned_from: input.assigned_from,
           assigned_until: input.assigned_until ?? null,
-        } as never);
+        } as any);
 
       if (assignError) throw assignError;
 
       // Update spot status to occupied
       const { error: updateError } = await supabase
         .from('parking_spots')
-        .update({ status: 'occupied' } as never)
+        .update({ status: 'occupied' } as any)
         .eq('id', input.parking_spot_id);
 
       if (updateError) throw updateError;
@@ -297,7 +298,7 @@ export function useAssignParkingSpot() {
       queryClient.invalidateQueries({ queryKey: queryKeys.parking._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al asignar estacionamiento: ${error.message}`);
+      toastError('Error al asignar estacionamiento', error);
     },
   });
 }
@@ -323,7 +324,7 @@ export function useUnassignParkingSpot() {
       // Set spot back to available
       const { error: updateError } = await supabase
         .from('parking_spots')
-        .update({ status: 'available' } as never)
+        .update({ status: 'available' } as any)
         .eq('id', spotId);
 
       if (updateError) throw updateError;
@@ -333,7 +334,7 @@ export function useUnassignParkingSpot() {
       queryClient.invalidateQueries({ queryKey: queryKeys.parking._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al desasignar estacionamiento: ${error.message}`);
+      toastError('Error al desasignar estacionamiento', error);
     },
   });
 }
@@ -349,7 +350,7 @@ export function useUpdateParkingViolation() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('parking_violations')
-        .update(updates as never)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -362,7 +363,7 @@ export function useUpdateParkingViolation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.parking._def });
     },
     onError: (error: Error) => {
-      toast.error(`Error al actualizar infraccion: ${error.message}`);
+      toastError('Error al actualizar infraccion', error);
     },
   });
 }
