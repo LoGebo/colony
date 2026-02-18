@@ -31,13 +31,30 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      ["expo-camera", { "cameraPermission": "La app necesita acceso a la camara para escanear codigos QR" }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La app necesita acceso a la camara para escanear codigos QR"
+        }
+      ],
       "react-native-nfc-manager",
-      ["expo-location", { "locationWhenInUsePermission": "Necesitamos tu ubicacion para validar los puntos de control de ronda" }],
-      ["expo-notifications", {
-        "icon": "./assets/icon.png",
-        "color": "#2563eb",
-        "sounds": []
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Necesitamos tu ubicacion para validar los puntos de control de ronda"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2563eb",
+          "sounds": []
+        }
+      ],
+      ["@stripe/stripe-react-native", {
+        "merchantIdentifier": "merchant.com.upoe",
+        "enableGooglePay": false
       }]
     ]
   }

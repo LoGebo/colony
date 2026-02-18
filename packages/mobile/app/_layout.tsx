@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 
@@ -41,16 +42,21 @@ export default function RootLayout() {
 
   return (
     <QueryProvider>
-      <SessionProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade', gestureEnabled: true }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(resident)" />
-          <Stack.Screen name="(guard)" />
-          <Stack.Screen name="(admin)" />
-        </Stack>
-      </SessionProvider>
+      <StripeProvider
+        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+        merchantIdentifier="merchant.com.upoe"
+      >
+        <SessionProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false, animation: 'fade', gestureEnabled: true }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(resident)" />
+            <Stack.Screen name="(guard)" />
+            <Stack.Screen name="(admin)" />
+          </Stack>
+        </SessionProvider>
+      </StripeProvider>
     </QueryProvider>
   );
 }
