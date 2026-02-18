@@ -1,19 +1,11 @@
 # Project State
 
 ## Current Phase
-Phase 02: Stripe Infrastructure (DB + Edge Functions)
+Phase 02: COMPLETE (Stripe secrets pending user configuration)
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
-
-## Current Position
-Phase: 02 of unknown (Stripe Infrastructure)
-Plan: 03 of unknown in phase
-Status: In progress
-Last activity: 2026-02-18 - Completed 02-03-PLAN.md (payment-webhook Edge Function)
-
-Progress: Phase 01 complete, Phase 02 plans 01-03 complete
-░░░░░░░░░░░░░░░░░░░░ (ongoing)
+- Phase 02: Stripe Infrastructure (COMPLETE - 28/28 automated checks passed)
 
 ## Decisions Made
 
@@ -45,8 +37,8 @@ Progress: Phase 01 complete, Phase 02 plans 01-03 complete
 - record_charge has mutable search_path (WARN, not blocking)
 - Fee structure points to old accounts (1200, 4100) vs standard (1100, 4010)
 - ~60 functions have mutable search_path (batch fix planned later)
-- create-payment-intent Edge Function not yet deployed (mcp__supabase__deploy_edge_function unavailable in session)
-- payment-webhook Edge Function not yet deployed (STRIPE_WEBHOOK_SECRET env var must be set in Supabase secrets)
+- STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET not yet configured (user checkpoint)
+- Webhook endpoint not yet registered in Stripe Dashboard (user checkpoint)
 
 ## Key IDs (Demo Data)
 - Community: 00000000-0000-0000-0000-000000000010 (Residencial Las Palmas)
@@ -55,7 +47,12 @@ Progress: Phase 01 complete, Phase 02 plans 01-03 complete
 - Resident Carlos: 3b25ca26-68c9-49a2-8be1-383d8dbefb5b (carlos@demo.upoe.mx)
 - Fee Structure: a0000000-0000-0000-0000-000000000001 (Cuota Mantenimiento $1,500)
 
+## Edge Functions (5 deployed)
+- `verify-qr` (JWT required) - QR HMAC verification
+- `send-push` (JWT required) - FCM push + in-app notifications
+- `payment-webhook` (no JWT) - Stripe webhook handler v2
+- `create-payment-intent` (JWT required) - Stripe PaymentIntent creation
+
 ## Session Continuity
 Last session: 2026-02-18
-Stopped at: Completed 02-03-PLAN.md (payment-webhook Edge Function)
-Resume file: None
+Phase 02 execution complete. QA testing in progress.

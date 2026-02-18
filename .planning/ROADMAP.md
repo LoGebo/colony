@@ -10,15 +10,14 @@
 - Verified E2E: charge -> payment proof -> approval -> balance update
 
 ### Phase 02: Stripe Infrastructure (DB + Edge Functions)
-**Status:** Planning complete
+**Status:** COMPLETE (Stripe secrets pending user configuration)
 **Goal:** Tables for Stripe integration + Edge Functions ready to process payments
-**Plans:** 4 plans
-
-Plans:
-- [ ] 02-01-PLAN.md -- DB tables (stripe_customers, webhook_events, payment_intents) + RLS policies
-- [ ] 02-02-PLAN.md -- Edge Function: create-payment-intent (JWT auth, amount validation, Stripe PI creation)
-- [ ] 02-03-PLAN.md -- Edge Function: payment-webhook upgrade (HMAC verification, idempotency, record_payment)
-- [ ] 02-04-PLAN.md -- Deploy migrations, Edge Functions, configure Stripe secrets + webhook endpoint
+**Completed:** 2026-02-18
+- [x] 02-01: DB tables (stripe_customers, webhook_events, payment_intents) + RLS policies
+- [x] 02-02: Edge Function create-payment-intent (JWT auth, amount validation, Stripe PI creation)
+- [x] 02-03: Edge Function payment-webhook (HMAC verification, idempotency, record_payment)
+- [x] 02-04: Deploy migrations + Edge Functions (Stripe secrets = user checkpoint)
+- Verification: 28/28 automated checks passed, 3 items need user action (Stripe secrets)
 
 ### Phase 03: Mobile Payment Screen (Card)
 **Status:** Not started
