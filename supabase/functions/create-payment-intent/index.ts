@@ -170,6 +170,7 @@ Deno.serve(async (req: Request) => {
       .select("id")
       .eq("resident_id", resident.id)
       .eq("unit_id", unit_id)
+      .eq("status", "active")
       .is("deleted_at", null)
       .single();
 

@@ -81,8 +81,9 @@ export default function PaymentDashboardScreen() {
             <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
             <View style={styles.balanceActions}>
               <TouchableOpacity
-                style={styles.payButton}
+                style={[styles.payButton, currentBalance <= 0 && styles.payButtonDisabledState]}
                 onPress={() => router.push('/(resident)/payments/checkout')}
+                disabled={currentBalance <= 0}
               >
                 <Text style={styles.payButtonText}>Pay Now</Text>
               </TouchableOpacity>
@@ -313,6 +314,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  payButtonDisabledState: {
+    opacity: 0.4,
   },
   payButtonText: {
     fontFamily: fonts.bold,

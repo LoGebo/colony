@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,14 +26,30 @@ import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 type PaymentState = 'idle' | 'creating' | 'presenting' | 'processing' | 'success' | 'failed' | 'timeout';
 
+// ---------- Helpers ----------
+
+/** Generate a UUID v4. Uses crypto.randomUUID() if available, otherwise falls back to crypto.getRandomValues(). */
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for Hermes/older React Native
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 // ---------- Screen ----------
 
 export default function CheckoutScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const { unitId, unitNumber } = useResidentUnit();
-  const { data: balance, refetch: refetchBalance } = useUnitBalance(unitId ?? undefined);
+  const { unitId, unitNumber, isLoading: unitLoading } = useResidentUnit();
+  const { data: balance, isLoading: balanceLoading } = useUnitBalance(unitId ?? undefined);
   const createPaymentIntent = useCreatePaymentIntent();
 
   // ---------- State ----------
@@ -45,6 +61,9 @@ export default function CheckoutScreen() {
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [paidAmount, setPaidAmount] = useState<number>(0);
 
+  // Ref to capture activeAmount for async callbacks (avoids stale closures)
+  const activeAmountRef = useRef<number | null>(null);
+
   // ---------- Derived ----------
 
   const currentBalance = balance?.current_balance ?? 0;
@@ -54,32 +73,37 @@ export default function CheckoutScreen() {
     { label: '50%', value: Math.ceil((currentBalance / 2) * 100) / 100 },
   ];
 
-  const activeAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) : null);
-  const isValidAmount = activeAmount !== null && activeAmount >= 10 && activeAmount <= currentBalance;
+  const parsedCustom = customAmount ? parseFloat(customAmount) : null;
+  const activeAmount = selectedAmount ?? (parsedCustom !== null && !isNaN(parsedCustom) ? parsedCustom : null);
+  const isValidAmount = activeAmount !== null && !isNaN(activeAmount) && activeAmount >= 10 && activeAmount <= currentBalance;
+
+  // Keep ref in sync
+  activeAmountRef.current = activeAmount;
 
   // ---------- Realtime Subscription ----------
 
+  const handleRealtimeEvent = useCallback((payload: { new: { status: string } | null }) => {
+    if (payload.new?.status === 'succeeded') {
+      setPaymentState('success');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (payload.new?.status === 'failed' || payload.new?.status === 'canceled') {
+      setPaymentState('failed');
+      setErrorMessage('Payment was not completed. Please try again.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  }, []);
+
   useRealtimeSubscription({
-    channelName: `payment-confirmation-${stripePaymentIntentId}`,
+    channelName: `payment-confirmation-${stripePaymentIntentId ?? 'none'}`,
     table: 'payment_intents',
     event: 'UPDATE',
     filter: `stripe_payment_intent_id=eq.${stripePaymentIntentId}`,
     queryKeys: [
-      queryKeys.payments.balance(unitId!).queryKey,
-      queryKeys.payments.byUnit(unitId!).queryKey,
+      queryKeys.payments.balance(unitId ?? '').queryKey,
+      queryKeys.payments.byUnit(unitId ?? '').queryKey,
     ],
     enabled: !!stripePaymentIntentId && paymentState === 'processing',
-    onEvent: (payload: any) => {
-      if (payload.new?.status === 'succeeded') {
-        setPaymentState('success');
-        setPaidAmount(activeAmount ?? 0);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else if (payload.new?.status === 'failed' || payload.new?.status === 'canceled') {
-        setPaymentState('failed');
-        setErrorMessage('Payment was not completed. Please try again.');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    },
+    onEvent: handleRealtimeEvent,
   });
 
   // ---------- 10-second timeout fallback ----------
@@ -87,13 +111,9 @@ export default function CheckoutScreen() {
   useEffect(() => {
     if (paymentState !== 'processing') return;
     const timer = setTimeout(() => {
-      if (paymentState === 'processing') {
-        setPaymentState('timeout');
-        setPaidAmount(activeAmount ?? 0);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Invalidate balance queries — webhook may have already updated
-        queryClient.invalidateQueries({ queryKey: queryKeys.payments._def });
-      }
+      setPaymentState('timeout');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments._def });
     }, 10_000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,17 +122,18 @@ export default function CheckoutScreen() {
   // ---------- handlePay ----------
 
   const handlePay = useCallback(async () => {
-    if (!activeAmount || !unitId || !unitNumber) return;
+    if (!activeAmountRef.current || !unitId || !unitNumber) return;
+    const amount = activeAmountRef.current;
     setErrorMessage(null);
     setPaymentState('creating');
+    setPaidAmount(amount); // Capture amount now, before any async ops
 
     try {
       // Step 1: Create PaymentIntent via edge function
-      // Generate a NEW idempotency key per Pay tap (not on screen mount)
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = generateUUID();
       const result = await createPaymentIntent.mutateAsync({
         unit_id: unitId,
-        amount: activeAmount, // MXN pesos, NOT centavos
+        amount, // MXN pesos, NOT centavos
         description: `Pago de mantenimiento - ${unitNumber}`,
         idempotency_key: idempotencyKey,
         payment_method_type: 'card',
@@ -152,11 +173,11 @@ export default function CheckoutScreen() {
 
       // Step 4: PaymentSheet submitted — wait for Realtime confirmation
       setPaymentState('processing');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setPaymentState('failed');
-      setErrorMessage(err.message ?? 'An unexpected error occurred');
+      setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
-  }, [activeAmount, unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet]);
+  }, [unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet]);
 
   // ---------- handleRetry ----------
 
@@ -167,6 +188,25 @@ export default function CheckoutScreen() {
     // Do NOT reset selectedAmount — preserve user's selection
   }, []);
 
+  // ---------- Render: Loading ----------
+
+  if (unitLoading || balanceLoading) {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Pay with Card</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
   // ---------- Render: Success / Timeout ----------
 
   if (paymentState === 'success' || paymentState === 'timeout') {
@@ -175,7 +215,7 @@ export default function CheckoutScreen() {
         <AmbientBackground />
         <View style={styles.successContainer}>
           <Animated.View entering={BounceIn.delay(200)} style={styles.successIconCircle}>
-            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={48} color={colors.textOnDark} />
           </Animated.View>
           <Animated.Text entering={FadeInDown.delay(400)} style={styles.successTitle}>
             {paymentState === 'timeout' ? 'Payment Submitted' : 'Payment Successful'}
@@ -200,16 +240,20 @@ export default function CheckoutScreen() {
 
   // ---------- Render: Main Checkout ----------
 
-  const isLoading = paymentState === 'creating' || paymentState === 'presenting' || paymentState === 'processing';
+  const isProcessing = paymentState === 'creating' || paymentState === 'presenting' || paymentState === 'processing';
 
   return (
     <View style={styles.container}>
       <AmbientBackground />
 
-      {/* Header with back button */}
+      {/* Header with back button — disabled during payment */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[styles.backButton, isProcessing && styles.backButtonDisabled]}
+          disabled={isProcessing}
+        >
+          <Ionicons name="chevron-back" size={24} color={isProcessing ? colors.textDisabled : colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pay with Card</Text>
       </View>
@@ -271,12 +315,17 @@ export default function CheckoutScreen() {
                 placeholderTextColor={colors.textDisabled}
                 value={customAmount}
                 onChangeText={(text) => {
-                  setCustomAmount(text);
-                  setSelectedAmount(null); // deselect chip
+                  // Allow only digits and one decimal point
+                  const sanitized = text.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                  setCustomAmount(sanitized);
+                  setSelectedAmount(null);
                 }}
               />
               <Text style={styles.currencySuffix}>MXN</Text>
             </View>
+            {customAmount !== '' && parsedCustom !== null && isNaN(parsedCustom) && (
+              <Text style={styles.amountError}>Please enter a valid number</Text>
+            )}
             {activeAmount !== null && activeAmount < 10 && (
               <Text style={styles.amountError}>Minimum amount is $10.00 MXN</Text>
             )}
@@ -308,13 +357,13 @@ export default function CheckoutScreen() {
         <TouchableOpacity
           style={[
             styles.payButton,
-            (!isValidAmount || paymentState !== 'idle') && styles.payButtonDisabled,
+            (!isValidAmount || !unitId || paymentState !== 'idle') && styles.payButtonDisabled,
           ]}
           onPress={handlePay}
-          disabled={!isValidAmount || paymentState !== 'idle'}
+          disabled={!isValidAmount || !unitId || paymentState !== 'idle'}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" size="small" />
+          {isProcessing ? (
+            <ActivityIndicator color={colors.textOnDark} size="small" />
           ) : (
             <Text style={styles.payButtonText}>
               {isValidAmount ? `Pay ${formatCurrency(activeAmount!)}` : 'Select an amount'}
@@ -362,6 +411,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  backButtonDisabled: {
+    opacity: 0.4,
+  },
+
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Scroll
@@ -541,11 +600,16 @@ const styles = StyleSheet.create({
   },
   payButtonDisabled: {
     backgroundColor: colors.textDisabled,
+    shadowColor: undefined,
+    shadowOffset: undefined,
+    shadowOpacity: undefined,
+    shadowRadius: undefined,
+    elevation: 0,
   },
   payButtonText: {
     fontFamily: fonts.bold,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textOnDark,
   },
   retryLink: {
     alignItems: 'center',
@@ -606,6 +670,6 @@ const styles = StyleSheet.create({
   successButtonText: {
     fontFamily: fonts.bold,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textOnDark,
   },
 });
