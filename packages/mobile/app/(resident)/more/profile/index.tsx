@@ -563,7 +563,11 @@ export default function ProfileScreen() {
                   mate.occupancy_type === 'authorized' ? 'Authorized' :
                   mate.occupancy_type === 'employee' ? 'Employee' : mate.occupancy_type;
                 return (
-                  <View key={mate.id}>
+                  <TouchableOpacity
+                    key={mate.id}
+                    onPress={() => router.push(`/(resident)/more/profile/${mate.id}` as any)}
+                    activeOpacity={0.6}
+                  >
                     <View style={styles.editDivider} />
                     <View style={styles.housemateRow}>
                       <View style={styles.housemateAvatar}>
@@ -579,8 +583,9 @@ export default function ProfileScreen() {
                         </Text>
                         <Text style={styles.housemateRole}>{roleLabel}</Text>
                       </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.textDisabled} />
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
 

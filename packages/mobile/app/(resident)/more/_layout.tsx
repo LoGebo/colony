@@ -5,6 +5,7 @@ export default function MoreLayout() {
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="profile/index" />
+      <Stack.Screen name="profile/[id]" />
       <Stack.Screen name="profile/unit" />
       <Stack.Screen name="vehicles/index" />
       <Stack.Screen name="vehicles/create" />
