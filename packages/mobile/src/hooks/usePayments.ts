@@ -177,7 +177,7 @@ export interface CreatePaymentIntentInput {
   amount: number; // MXN pesos (NOT centavos) — edge function converts internally
   description: string;
   idempotency_key: string;
-  payment_method_type: 'card';
+  payment_method_type: 'card' | 'oxxo';
 }
 
 // ---------- useCreatePaymentIntent ----------
@@ -217,5 +217,45 @@ export function useCreatePaymentIntent() {
 
       return response.json();
     },
+  });
+}
+
+// ---------- PendingOxxoVoucher Types ----------
+
+export interface PendingOxxoVoucher {
+  id: string;
+  stripe_payment_intent_id: string;
+  amount: number;
+  expires_at: string;
+  metadata: { hosted_voucher_url?: string } | null;
+}
+
+// ---------- usePendingOxxoVoucher ----------
+
+/**
+ * Queries for an active (non-expired) OXXO voucher for the given unit.
+ * Returns null if no pending voucher exists.
+ * Used by the dashboard to show pending voucher card and disable OXXO button.
+ */
+export function usePendingOxxoVoucher(unitId?: string) {
+  return useQuery({
+    queryKey: ['pending-oxxo-voucher', unitId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_intents')
+        .select('id, stripe_payment_intent_id, amount, expires_at, metadata')
+        .eq('unit_id', unitId!)
+        .eq('payment_method_type', 'oxxo')
+        .eq('status', 'requires_action')
+        .is('deleted_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as PendingOxxoVoucher | null;
+    },
+    enabled: !!unitId,
   });
 }
