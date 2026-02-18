@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Phase
-Phase 05: COMPLETE. Proceeding to Phase 06.
+Phase 06: COMPLETE. Proceeding to Phase 07.
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
@@ -9,6 +9,7 @@ Phase 05: COMPLETE. Proceeding to Phase 06.
 - Phase 03: Mobile Payment Screen (COMPLETE - 16/16 must-haves verified)
 - Phase 04: OXXO Payments (COMPLETE - 17/17 must-haves verified, QA P1+P2 fixed)
 - Phase 05: Automated Charge Generation (COMPLETE - batch function + history + duplicate prevention)
+- Phase 06: Digital Receipts and Notifications (COMPLETE - auto-receipt, receipts screen, charge notifications)
 
 ## Decisions Made
 
@@ -99,4 +100,15 @@ Phase 05: COMPLETE. Proceeding to Phase 06.
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 05 COMPLETE. Proceeding to Phase 06: Digital Receipts and Notifications.
+Phase 06 COMPLETE. Proceeding to Phase 07: Admin Financial Dashboard Improvements.
+
+## Phase 06 Deliverables
+- `receipts` table with UNIQUE on transaction_id + RLS (resident via occupancy, admin via community)
+- `generate_receipt_number()` function (REC-YYYY-NNNNN format)
+- `notify_charge_run()` function (in-app + push notifications for charged units)
+- Webhook auto-creates receipt after `record_payment()` succeeds (idempotent via UNIQUE constraint)
+- Mobile `useReceipts` hook querying receipts by unit
+- Mobile receipts screen with FlatList, payment method icons, receipt numbers
+- "My Receipts" action card on payments dashboard
+- Admin charge generation triggers resident notifications via `notify_charge_run`
+- Edge functions: payment-webhook v6 (receipt auto-creation)

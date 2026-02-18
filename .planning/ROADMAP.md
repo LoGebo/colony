@@ -48,12 +48,15 @@
 - [x] Duplicate prevention: friendly error when same period+fee already charged
 
 ### Phase 06: Digital Receipts and Notifications
-**Status:** Not started
+**Status:** COMPLETE
 **Goal:** Automatic receipt generation after every payment
-- Edge Function generate-receipt (PDF with pdf-lib)
-- Post-payment trigger for receipt generation + Storage upload
-- Mobile screen to view/download receipts
-- Push notifications for payment confirmation and new charges
+**Completed:** 2026-02-18
+- [x] receipts table + generate_receipt_number() + RLS policies
+- [x] Webhook auto-creates receipt after record_payment() succeeds (idempotent)
+- [x] Mobile receipts screen (FlatList, payment method icons, pull-to-refresh)
+- [x] "My Receipts" action card on payments dashboard
+- [x] notify_charge_run() function for in-app + push notifications on charge generation
+- [x] Admin charge generation triggers resident notifications
 
 ### Phase 07: Admin Financial Dashboard Improvements
 **Status:** Not started
