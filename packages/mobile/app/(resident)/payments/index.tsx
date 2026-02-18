@@ -1,8 +1,8 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, ActivityIndicator, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useResidentUnit } from '@/hooks/useOccupancy';
-import { useUnitBalance, useTransactions, usePaymentProofs } from '@/hooks/usePayments';
+import { useUnitBalance, useTransactions, usePaymentProofs, usePendingOxxoVoucher } from '@/hooks/usePayments';
 import { formatCurrency, formatDate } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -20,6 +20,8 @@ export default function PaymentDashboardScreen() {
     isLoading: txLoading,
   } = useTransactions(unitId ?? undefined, 10);
   const { data: proofs, refetch: refetchProofs } = usePaymentProofs(unitId ?? undefined);
+  const { data: pendingOxxo, refetch: refetchOxxo } = usePendingOxxoVoucher(unitId ?? undefined);
+  const hasOxxoPending = !!pendingOxxo;
 
   const transactions = transactionPages?.pages.flatMap((p) => p.data) ?? [];
   const pendingProof = proofs?.find((p) => p.status === 'pending');
@@ -28,7 +30,7 @@ export default function PaymentDashboardScreen() {
   const daysOverdue = balance?.days_overdue ?? 0;
 
   const onRefresh = async () => {
-    await Promise.all([refetchBalance(), refetchTx(), refetchProofs()]);
+    await Promise.all([refetchBalance(), refetchTx(), refetchProofs(), refetchOxxo()]);
   };
 
   const getTransactionIcon = (type: string): { name: string; bg: string; color: string } => {
@@ -82,7 +84,7 @@ export default function PaymentDashboardScreen() {
             <View style={styles.balanceActions}>
               <TouchableOpacity
                 style={[styles.payButton, currentBalance <= 0 && styles.payButtonDisabledState]}
-                onPress={() => router.push('/(resident)/payments/checkout')}
+                onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'card' } })}
                 disabled={currentBalance <= 0}
               >
                 <Text style={styles.payButtonText}>Pay Now</Text>
@@ -97,12 +99,49 @@ export default function PaymentDashboardScreen() {
           </View>
         </View>
 
+        {/* Pending OXXO Voucher */}
+        {pendingOxxo && (
+          <View style={styles.pendingOxxoCard}>
+            <View style={styles.pendingOxxoHeader}>
+              <View style={[styles.pendingProofIconBox, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="storefront-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.pendingProofInfo}>
+                <Text style={styles.pendingProofTitle}>OXXO Voucher Pending</Text>
+                <Text style={styles.pendingProofSubtitle}>
+                  Expira: {new Date(pendingOxxo.expires_at).toLocaleDateString('es-MX', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+              <View style={styles.pendingProofAmount}>
+                <Text style={[styles.pendingProofAmountText, { color: colors.primary }]}>
+                  {formatCurrency(pendingOxxo.amount)}
+                </Text>
+              </View>
+            </View>
+            {pendingOxxo.metadata?.hosted_voucher_url && (
+              <TouchableOpacity
+                style={styles.viewVoucherButton}
+                onPress={() => Linking.openURL(pendingOxxo.metadata!.hosted_voucher_url!)}
+              >
+                <Ionicons name="open-outline" size={16} color={colors.textOnDark} />
+                <Text style={styles.viewVoucherButtonText}>Ver Voucher</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Upload Receipt Action */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PAYMENT ACTIONS</Text>
           {/* Pay with Card */}
           <TouchableOpacity
-            onPress={() => router.push('/(resident)/payments/checkout')}
+            onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'card' } })}
           >
             <GlassCard style={styles.actionCard}>
               <View style={[styles.actionIconBox, { backgroundColor: colors.primaryLightAlt }]}>
@@ -111,6 +150,29 @@ export default function PaymentDashboardScreen() {
               <View style={styles.actionTextContainer}>
                 <Text style={styles.actionTitle}>Pay with Card</Text>
                 <Text style={styles.actionSubtitle}>Credit or debit card via Stripe</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
+            </GlassCard>
+          </TouchableOpacity>
+
+          <View style={{ height: spacing.lg }} />
+
+          {/* Pay with OXXO */}
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'oxxo' } })}
+            disabled={hasOxxoPending || currentBalance <= 0}
+          >
+            <GlassCard style={[styles.actionCard, (hasOxxoPending || currentBalance <= 0) && { opacity: 0.5 }]}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.warningBgLight }]}>
+                <Ionicons name="storefront-outline" size={20} color={colors.warningText} />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>
+                  {hasOxxoPending ? 'Voucher pendiente' : 'Pay with OXXO'}
+                </Text>
+                <Text style={styles.actionSubtitle}>
+                  {hasOxxoPending ? 'Ya tienes un voucher activo' : 'Generate voucher, pay at any OXXO'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
             </GlassCard>
@@ -385,6 +447,38 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.textMuted,
+  },
+  // Pending OXXO
+  pendingOxxoCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    padding: spacing.xl,
+    marginBottom: spacing['3xl'],
+    ...shadows.sm,
+  },
+  pendingOxxoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  viewVoucherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    height: spacing.smallButtonHeight,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+  },
+  viewVoucherButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textOnDark,
   },
   // Pending Proof
   pendingProofCard: {
