@@ -64,12 +64,6 @@ Phase 04: COMPLETE (human E2E testing pending Stripe keys + OXXO enabled)
 - Resident Carlos: 3b25ca26-68c9-49a2-8be1-383d8dbefb5b (carlos@demo.upoe.mx)
 - Fee Structure: a0000000-0000-0000-0000-000000000001 (Cuota Mantenimiento $1,500)
 
-## Edge Functions (5 deployed)
-- `verify-qr` (JWT required) - QR HMAC verification
-- `send-push` (JWT required) - FCM push + in-app notifications
-- `payment-webhook` v4 (no JWT) - Stripe webhook handler (OXXO lifecycle upgraded)
-- `create-payment-intent` v4 (JWT required) - Stripe PaymentIntent creation (occupancy status fix)
-
 ## QA Testing (Phase 02)
 - **67/69 tests passed** (~97%) across 4 QA rounds
 - Round 1: 43/43 DB constraints, FK, RLS, indexes, triggers
@@ -90,9 +84,18 @@ Phase 04: COMPLETE (human E2E testing pending Stripe keys + OXXO enabled)
 
 ## QA Testing (Phase 04)
 - **17/17 must-haves verified** via structural code analysis
+- **Exhaustive QA**: 22 issues found (8 P1, 10 P2, 4 P3)
+- **All P1 fixed**: SEC-01 (idempotency &&→||), SEC-02 (URL scheme validation), EC-03 (email guard), EC-07 (status update failure), EC-08 (.single→.maybeSingle), INT-01 (query key + invalidation), INT-02 (Stripe timestamp for expires_at)
+- **P2 fixes applied**: SEC-04 (OXXO email validation in edge fn), INT-04 (OXXO $10k cap), INT-06 (card disabled at $0), GlassCard style type fix
+- Edge functions need redeployment: create-payment-intent v5, payment-webhook v5
 - 4 items need human testing with Stripe keys + OXXO enabled in Stripe Dashboard
-- Webhook upgraded to v4 with OXXO lifecycle (processing handler, voucher URL storage, expiry push)
+
+## Edge Functions (5 deployed)
+- `verify-qr` (JWT required) - QR HMAC verification
+- `send-push` (JWT required) - FCM push + in-app notifications
+- `payment-webhook` v5 (no JWT) - Stripe webhook handler (QA fixes: maybeSingle, status update guard)
+- `create-payment-intent` v5 (JWT required) - Stripe PaymentIntent creation (QA fixes: idempotency, email, OXXO cap, Stripe timestamp)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 04 COMPLETE. All 3 plans executed and verified. Exhaustive QA pending.
+Phase 04 QA fixes applied. Proceeding to Phase 05: Automated Charge Generation.
