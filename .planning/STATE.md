@@ -50,9 +50,19 @@ Phase 02: COMPLETE (Stripe secrets pending user configuration)
 ## Edge Functions (5 deployed)
 - `verify-qr` (JWT required) - QR HMAC verification
 - `send-push` (JWT required) - FCM push + in-app notifications
-- `payment-webhook` (no JWT) - Stripe webhook handler v2
-- `create-payment-intent` (JWT required) - Stripe PaymentIntent creation
+- `payment-webhook` v3 (no JWT) - Stripe webhook handler (security-hardened)
+- `create-payment-intent` v3 (JWT required) - Stripe PaymentIntent creation (paternal_surname fix)
+
+## QA Testing (Phase 02)
+- **67/69 tests passed** (~97%) across 4 QA rounds
+- Round 1: 43/43 DB constraints, FK, RLS, indexes, triggers
+- Round 2: 22-finding security code review → 15 fixes applied
+- Round 3: 37/39 edge cases + integration → 2 bugs found and fixed
+- Round 4: 15/15 record_payment() + double-entry accounting
+- **P0 bug fixed**: `last_name` → `paternal_surname` in create-payment-intent
+- **RLS fix**: stripe_customers soft-delete filter added
+- **Design note**: webhook_events visible to all admins (no community_id by design)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 02 execution complete. QA testing in progress.
+Phase 02 COMPLETE with exhaustive QA. All bugs fixed and redeployed.
