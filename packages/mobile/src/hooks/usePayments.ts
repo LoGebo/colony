@@ -162,3 +162,60 @@ export function useUploadPaymentProof() {
     },
   });
 }
+
+// ---------- CreatePaymentIntent Types ----------
+
+export interface CreatePaymentIntentResponse {
+  clientSecret: string;
+  paymentIntentId: string;
+  customerId: string;
+  status: string;
+}
+
+export interface CreatePaymentIntentInput {
+  unit_id: string;
+  amount: number; // MXN pesos (NOT centavos) — edge function converts internally
+  description: string;
+  idempotency_key: string;
+  payment_method_type: 'card';
+}
+
+// ---------- useCreatePaymentIntent ----------
+
+/**
+ * Calls the create-payment-intent edge function via fetch() with JWT auth.
+ * CRITICAL: Uses fetch() directly, NOT supabase.functions.invoke().
+ * The latter does not correctly forward the user's JWT for verify_jwt: true
+ * edge functions (Pitfall 2 from research).
+ *
+ * The amount parameter is in MXN pesos (e.g., 500.00), NOT centavos.
+ * The edge function handles the conversion to centavos internally.
+ */
+export function useCreatePaymentIntent() {
+  return useMutation({
+    mutationFn: async (input: CreatePaymentIntentInput): Promise<CreatePaymentIntentResponse> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+          },
+          body: JSON.stringify(input),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(err.error ?? `Payment failed (${response.status})`);
+      }
+
+      return response.json();
+    },
+  });
+}
