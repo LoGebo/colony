@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
     // residents.id is a business ID; residents.user_id links to auth.users
     const { data: resident, error: residentError } = await serviceClient
       .from("residents")
-      .select("id, community_id, user_id, first_name, last_name")
+      .select("id, community_id, user_id, first_name, paternal_surname")
       .eq("user_id", user.id)
       .is("deleted_at", null)
       .single();
@@ -224,8 +224,8 @@ Deno.serve(async (req: Request) => {
     } else {
       // Use resident's actual name for Stripe, fallback to email
       const displayName =
-        resident.first_name && resident.last_name
-          ? `${resident.first_name} ${resident.last_name}`
+        resident.first_name && resident.paternal_surname
+          ? `${resident.first_name} ${resident.paternal_surname}`
           : (user.email ?? "");
 
       const stripeCustomer = await stripe.customers.create({
