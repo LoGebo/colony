@@ -16,7 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@upoe/shared';
 import { useResidentUnit } from '@/hooks/useOccupancy';
-import { useUnitBalance, useCreatePaymentIntent } from '@/hooks/usePayments';
+import { useUnitBalance, useCreatePaymentIntent, pendingOxxoQueryKey } from '@/hooks/usePayments';
 import { useResidentProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
@@ -157,6 +157,12 @@ export default function CheckoutScreen() {
           : (user?.email ?? 'Residente');
         const email = user?.email ?? '';
 
+        if (!email) {
+          setPaymentState('failed');
+          setErrorMessage('OXXO payments require an email address. Please update your profile.');
+          return;
+        }
+
         setPaymentState('presenting');
 
         const { error: confirmError } = await confirmPayment(
@@ -182,6 +188,8 @@ export default function CheckoutScreen() {
         // Do NOT start Realtime subscription or 10-second timeout - OXXO settles hours/days later.
         setPaymentState('voucher_generated');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Invalidate pending OXXO query so dashboard shows the new voucher
+        queryClient.invalidateQueries({ queryKey: pendingOxxoQueryKey(unitId ?? undefined) });
         return;
       }
       // --- End OXXO Flow ---

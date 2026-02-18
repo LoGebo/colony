@@ -237,9 +237,11 @@ export interface PendingOxxoVoucher {
  * Returns null if no pending voucher exists.
  * Used by the dashboard to show pending voucher card and disable OXXO button.
  */
+export const pendingOxxoQueryKey = (unitId?: string): string[] => ['pending-oxxo-voucher', unitId ?? ''];
+
 export function usePendingOxxoVoucher(unitId?: string) {
   return useQuery({
-    queryKey: ['pending-oxxo-voucher', unitId],
+    queryKey: pendingOxxoQueryKey(unitId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_intents')

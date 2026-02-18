@@ -124,7 +124,7 @@ export default function PaymentDashboardScreen() {
                 </Text>
               </View>
             </View>
-            {pendingOxxo.metadata?.hosted_voucher_url && (
+            {pendingOxxo.metadata?.hosted_voucher_url?.startsWith('https://') && (
               <TouchableOpacity
                 style={styles.viewVoucherButton}
                 onPress={() => Linking.openURL(pendingOxxo.metadata!.hosted_voucher_url!)}
@@ -142,8 +142,9 @@ export default function PaymentDashboardScreen() {
           {/* Pay with Card */}
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'card' } })}
+            disabled={currentBalance <= 0}
           >
-            <GlassCard style={styles.actionCard}>
+            <GlassCard style={currentBalance <= 0 ? { ...styles.actionCard, opacity: 0.5 } : styles.actionCard}>
               <View style={[styles.actionIconBox, { backgroundColor: colors.primaryLightAlt }]}>
                 <Ionicons name="card-outline" size={20} color={colors.primary} />
               </View>
@@ -162,7 +163,7 @@ export default function PaymentDashboardScreen() {
             onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'oxxo' } })}
             disabled={hasOxxoPending || currentBalance <= 0}
           >
-            <GlassCard style={[styles.actionCard, (hasOxxoPending || currentBalance <= 0) && { opacity: 0.5 }]}>
+            <GlassCard style={(hasOxxoPending || currentBalance <= 0) ? { ...styles.actionCard, opacity: 0.5 } : styles.actionCard}>
               <View style={[styles.actionIconBox, { backgroundColor: colors.warningBgLight }]}>
                 <Ionicons name="storefront-outline" size={20} color={colors.warningText} />
               </View>

@@ -140,6 +140,10 @@ async function handlePaymentIntentSucceeded(
       `Failed to update payment_intent status for ${piId}:`,
       updateError,
     );
+    return {
+      success: false,
+      error: `Failed to update status: ${updateError.message}`,
+    };
   }
 
   // 2. Look up local payment_intent to determine payment method type
@@ -269,7 +273,7 @@ async function handlePaymentIntentFailed(
     .from("payment_intents")
     .select("payment_method_type, resident_id")
     .eq("stripe_payment_intent_id", piId)
-    .single();
+    .maybeSingle();
 
   if (piRecord?.payment_method_type === "oxxo" && piRecord?.resident_id) {
     try {

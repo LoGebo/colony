@@ -20,6 +20,7 @@ const UUID_REGEX =
 const VALID_PAYMENT_METHODS = ["card", "oxxo"] as const;
 const MIN_AMOUNT_CENTAVOS = 1000; // MXN $10.00 minimum (Stripe MXN minimum)
 const MAX_AMOUNT_CENTAVOS = 99999999; // MXN $999,999.99
+const MAX_OXXO_AMOUNT_CENTAVOS = 1000000; // MXN $10,000.00 (OXXO limit)
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -99,7 +100,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "unit_id must be a valid UUID" }, 400);
     }
 
-    if (!UUID_REGEX.test(idempotency_key) && idempotency_key.length > 255) {
+    if (!UUID_REGEX.test(idempotency_key) || idempotency_key.length > 255) {
       return jsonResponse(
         { error: "idempotency_key must be a UUID or at most 255 characters" },
         400,
@@ -144,6 +145,13 @@ Deno.serve(async (req: Request) => {
     if (amountCentavos > MAX_AMOUNT_CENTAVOS) {
       return jsonResponse(
         { error: "amount exceeds maximum allowed (999999.99 MXN)" },
+        400,
+      );
+    }
+
+    if (payment_method_type === "oxxo" && amountCentavos > MAX_OXXO_AMOUNT_CENTAVOS) {
+      return jsonResponse(
+        { error: "OXXO payments are limited to $10,000.00 MXN" },
         400,
       );
     }
@@ -280,6 +288,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 9b. OXXO requires a valid email for billing details
+    if (payment_method_type === "oxxo" && !user.email) {
+      return jsonResponse(
+        { error: "OXXO payments require an email address on your account" },
+        422,
+      );
+    }
+
     // 10. Create Stripe PaymentIntent
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCentavos,
@@ -309,10 +325,11 @@ Deno.serve(async (req: Request) => {
     );
 
     // 11. Insert payment_intents record
-    // expires_at: 48 hours from now for OXXO; null for card
+    // expires_at: 48 hours from Stripe's created timestamp for OXXO; null for card
+    // Uses paymentIntent.created (unix seconds) from Stripe as source of truth
     const expiresAt =
       payment_method_type === "oxxo"
-        ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+        ? new Date((paymentIntent.created + 2 * 24 * 60 * 60) * 1000).toISOString()
         : null;
 
     const { error: insertIntentError } = await serviceClient
