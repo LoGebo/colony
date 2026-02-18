@@ -1,4 +1,3 @@
-// @ts-nocheck
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17";
@@ -8,11 +7,19 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 
+// CORS: wildcard is acceptable for mobile API endpoints (React Native does not
+// use browser CORS). Supabase Edge Functions are not called from web browsers.
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_PAYMENT_METHODS = ["card", "oxxo"] as const;
+const MIN_AMOUNT_CENTAVOS = 1000; // MXN $10.00 minimum (Stripe MXN minimum)
+const MAX_AMOUNT_CENTAVOS = 99999999; // MXN $999,999.99
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -33,15 +40,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // 3. Initialize clients
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: "2024-12-18.acacia",
-    });
-
-    // Service client: bypasses RLS for trusted writes
-    const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // User client: uses caller's JWT for auth verification
+    // 3. Authenticate FIRST — no privileged clients before auth is confirmed
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return jsonResponse({ error: "Missing Authorization header" }, 401);
@@ -51,7 +50,6 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // 4. Authenticate user
     const {
       data: { user },
       error: authError,
@@ -60,6 +58,12 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+
+    // 4. Initialize privileged clients AFTER auth confirmation
+    const stripe = new Stripe(STRIPE_SECRET_KEY, {
+      apiVersion: "2024-12-18.acacia",
+    });
+    const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // 5. Parse and validate request body
     let body: {
@@ -79,36 +83,76 @@ Deno.serve(async (req: Request) => {
     const { unit_id, amount, description, idempotency_key } = body;
     const payment_method_type = body.payment_method_type ?? "card";
 
+    // Required fields
     if (!unit_id || amount === undefined || !description || !idempotency_key) {
       return jsonResponse(
         {
           error:
             "Missing required fields: unit_id, amount, description, idempotency_key",
         },
-        400
+        400,
       );
     }
 
-    // Basic amount sanity check (Stripe-level validation follows)
-    if (typeof amount !== "number" || amount <= 0) {
+    // Format validation
+    if (!UUID_REGEX.test(unit_id)) {
+      return jsonResponse({ error: "unit_id must be a valid UUID" }, 400);
+    }
+
+    if (!UUID_REGEX.test(idempotency_key) && idempotency_key.length > 255) {
+      return jsonResponse(
+        { error: "idempotency_key must be a UUID or at most 255 characters" },
+        400,
+      );
+    }
+
+    if (
+      !VALID_PAYMENT_METHODS.includes(
+        payment_method_type as (typeof VALID_PAYMENT_METHODS)[number],
+      )
+    ) {
+      return jsonResponse(
+        { error: "payment_method_type must be 'card' or 'oxxo'" },
+        400,
+      );
+    }
+
+    if (typeof description !== "string" || description.length > 1000) {
+      return jsonResponse(
+        { error: "description must be a string of at most 1000 characters" },
+        400,
+      );
+    }
+
+    // Amount validation — work in integer centavos to avoid floating-point issues
+    if (typeof amount !== "number" || !isFinite(amount) || amount <= 0) {
       return jsonResponse(
         { error: "amount must be a positive number" },
-        400
+        400,
       );
     }
 
-    if (amount > 999999.99) {
+    const amountCentavos = Math.round(amount * 100);
+
+    if (amountCentavos < MIN_AMOUNT_CENTAVOS) {
+      return jsonResponse(
+        { error: `Minimum payment is $${(MIN_AMOUNT_CENTAVOS / 100).toFixed(2)} MXN` },
+        400,
+      );
+    }
+
+    if (amountCentavos > MAX_AMOUNT_CENTAVOS) {
       return jsonResponse(
         { error: "amount exceeds maximum allowed (999999.99 MXN)" },
-        400
+        400,
       );
     }
 
-    // 6. Get user's resident record
+    // 6. Get user's resident record (with name for Stripe customer)
     // residents.id is a business ID; residents.user_id links to auth.users
     const { data: resident, error: residentError } = await serviceClient
       .from("residents")
-      .select("id, community_id, user_id, deleted_at")
+      .select("id, community_id, user_id, first_name, last_name")
       .eq("user_id", user.id)
       .is("deleted_at", null)
       .single();
@@ -116,7 +160,7 @@ Deno.serve(async (req: Request) => {
     if (residentError || !resident) {
       return jsonResponse(
         { error: "Forbidden: user is not an active resident" },
-        403
+        403,
       );
     }
 
@@ -132,11 +176,11 @@ Deno.serve(async (req: Request) => {
     if (occupancyError || !occupancy) {
       return jsonResponse(
         { error: "Forbidden: resident has no active occupancy in this unit" },
-        403
+        403,
       );
     }
 
-    // 8. Validate amount against unit balance
+    // 8. Validate amount against unit balance (compare in centavos)
     // unit_balances view uses total_receivable column (NOT current_balance)
     const { data: balance, error: balanceError } = await serviceClient
       .from("unit_balances")
@@ -147,19 +191,20 @@ Deno.serve(async (req: Request) => {
     if (balanceError) {
       return jsonResponse(
         { error: "Failed to retrieve unit balance" },
-        500
+        500,
       );
     }
 
-    const totalReceivable = balance?.total_receivable ?? 0;
+    const totalReceivable = Number(balance?.total_receivable ?? 0);
+    const totalReceivableCentavos = Math.round(totalReceivable * 100);
 
-    if (amount > totalReceivable) {
+    if (amountCentavos > totalReceivableCentavos) {
       return jsonResponse(
         {
           error: "Amount exceeds outstanding balance",
           outstanding_balance: totalReceivable,
         },
-        422
+        422,
       );
     }
 
@@ -177,10 +222,15 @@ Deno.serve(async (req: Request) => {
     if (existingCustomer?.stripe_customer_id) {
       stripeCustomerId = existingCustomer.stripe_customer_id;
     } else {
-      // Create a new Stripe Customer
+      // Use resident's actual name for Stripe, fallback to email
+      const displayName =
+        resident.first_name && resident.last_name
+          ? `${resident.first_name} ${resident.last_name}`
+          : (user.email ?? "");
+
       const stripeCustomer = await stripe.customers.create({
         email: user.email,
-        name: user.email, // Display name; can be updated via profile sync later
+        name: displayName,
         metadata: {
           community_id: resident.community_id,
           resident_id: resident.id,
@@ -217,13 +267,13 @@ Deno.serve(async (req: Request) => {
           } else {
             return jsonResponse(
               { error: "Failed to create Stripe customer" },
-              500
+              500,
             );
           }
         } else {
           return jsonResponse(
             { error: "Failed to save Stripe customer" },
-            500
+            500,
           );
         }
       }
@@ -231,7 +281,7 @@ Deno.serve(async (req: Request) => {
 
     // 10. Create Stripe PaymentIntent
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
-      amount: Math.round(amount * 100), // Stripe uses centavos (integer)
+      amount: amountCentavos,
       currency: "mxn",
       customer: stripeCustomerId,
       description: description,
@@ -254,7 +304,7 @@ Deno.serve(async (req: Request) => {
 
     const paymentIntent = await stripe.paymentIntents.create(
       paymentIntentParams,
-      { idempotencyKey: idempotency_key }
+      { idempotencyKey: idempotency_key },
     );
 
     // 11. Insert payment_intents record
@@ -288,17 +338,18 @@ Deno.serve(async (req: Request) => {
     if (insertIntentError) {
       // UNIQUE(idempotency_key) violation means this is a duplicate request
       if (insertIntentError.code === "23505") {
-        // Idempotent: fetch the existing payment intent and return its details
+        // Idempotent: fetch the existing intent — verify resident_id ownership
         const { data: existingIntent } = await serviceClient
           .from("payment_intents")
           .select("stripe_payment_intent_id, stripe_customer_id, status")
           .eq("idempotency_key", idempotency_key)
+          .eq("resident_id", resident.id)
           .single();
 
         if (existingIntent) {
           // Re-fetch client_secret from Stripe since we don't store it
           const existingPi = await stripe.paymentIntents.retrieve(
-            existingIntent.stripe_payment_intent_id
+            existingIntent.stripe_payment_intent_id,
           );
 
           return jsonResponse(
@@ -307,16 +358,15 @@ Deno.serve(async (req: Request) => {
               paymentIntentId: existingPi.id,
               customerId: existingIntent.stripe_customer_id,
               status: existingPi.status,
-              duplicate: true,
             },
-            200
+            200,
           );
         }
       }
 
       return jsonResponse(
         { error: "Failed to save payment intent" },
-        500
+        500,
       );
     }
 
@@ -328,42 +378,45 @@ Deno.serve(async (req: Request) => {
         customerId: stripeCustomerId,
         status: paymentIntent.status,
       },
-      201
+      201,
     );
   } catch (err: unknown) {
     // Stripe-specific error handling
     if (err && typeof err === "object" && "type" in err) {
-      const stripeErr = err as Stripe.errors.StripeError;
+      const stripeErr = err as { type: string; message?: string };
 
       if (stripeErr.type === "StripeRateLimitError") {
         return jsonResponse(
           { error: "Rate limit exceeded. Please retry shortly." },
-          429
+          429,
         );
       }
 
-      if (
-        stripeErr.type === "StripeCardError" ||
-        stripeErr.type === "StripeInvalidRequestError"
-      ) {
+      if (stripeErr.type === "StripeCardError") {
+        // Card errors are user-visible (decline messages)
         return jsonResponse({ error: stripeErr.message }, 400);
+      }
+
+      if (stripeErr.type === "StripeInvalidRequestError") {
+        // Don't leak Stripe internal details
+        console.error("Stripe invalid request:", stripeErr.message);
+        return jsonResponse({ error: "Invalid payment request" }, 400);
       }
 
       if (
         stripeErr.type === "StripeAuthenticationError" ||
         stripeErr.type === "StripePermissionError"
       ) {
-        // Stripe API key misconfiguration - don't expose details
         console.error("Stripe auth error:", stripeErr.message);
-        return jsonResponse({ error: "Payment service configuration error" }, 500);
+        return jsonResponse(
+          { error: "Payment service configuration error" },
+          500,
+        );
       }
     }
 
     // Generic server error - log but don't leak details
     console.error("create-payment-intent error:", err);
-    return jsonResponse(
-      { error: "Internal server error" },
-      500
-    );
+    return jsonResponse({ error: "Internal server error" }, 500);
   }
 });
