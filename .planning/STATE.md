@@ -2,16 +2,17 @@
 
 ## Current Phase
 Phase 03: Mobile Payment Screen (In Progress)
-Plan: 01 of 03
-Status: Plan 01 COMPLETE
-Last activity: 2026-02-18 - Completed 03-01-PLAN.md
+Plan: 02 of 03
+Status: Plan 02 COMPLETE
+Last activity: 2026-02-18 - Completed 03-02-PLAN.md
 
-Progress: [Phase 01 ██] [Phase 02 ██] [Phase 03 ██░░░░]
+Progress: [Phase 01 ██] [Phase 02 ██] [Phase 03 ████░░]
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
 - Phase 02: Stripe Infrastructure (COMPLETE - 28/28 automated checks passed)
 - Phase 03 Plan 01: Stripe Payment Infrastructure Setup (COMPLETE)
+- Phase 03 Plan 02: Checkout Screen with PaymentSheet + Realtime (COMPLETE)
 
 ## Decisions Made
 
@@ -41,6 +42,9 @@ Progress: [Phase 01 ██] [Phase 02 ██] [Phase 03 ██░░░░]
 | 2026-02-18 | @stripe/stripe-react-native@0.50.3 for Expo SDK 54 | npx expo install resolved compatible version |
 | 2026-02-18 | StripeProvider outside SessionProvider, inside QueryProvider | Stripe context doesn't depend on auth; must be available to all payment screens |
 | 2026-02-18 | payment_intents added to supabase_realtime | Enables mobile Realtime subscriptions for payment status updates |
+| 2026-02-18 | fetch() not supabase.functions.invoke() for edge functions | invoke() does not correctly forward user JWT for verify_jwt: true functions |
+| 2026-02-18 | New idempotency key per Pay tap, not screen mount | Prevents stale cached error response on retry (Pitfall 6) |
+| 2026-02-18 | 10-second timeout with optimistic success | Webhook may be delayed; PaymentSheet confirmed so payment likely succeeded |
 
 ## Known Issues
 - record_charge has mutable search_path (WARN, not blocking)
@@ -75,5 +79,5 @@ Progress: [Phase 01 ██] [Phase 02 ██] [Phase 03 ██░░░░]
 
 ## Session Continuity
 Last session: 2026-02-18
-Stopped at: Completed 03-01-PLAN.md
-Resume file: .planning/phases/03-mobile-payment-screen/03-02-PLAN.md
+Stopped at: Completed 03-02-PLAN.md
+Resume file: .planning/phases/03-mobile-payment-screen/03-03-PLAN.md
