@@ -1,11 +1,17 @@
 # Project State
 
 ## Current Phase
-Phase 02: COMPLETE (Stripe secrets pending user configuration)
+Phase 03: Mobile Payment Screen (In Progress)
+Plan: 01 of 03
+Status: Plan 01 COMPLETE
+Last activity: 2026-02-18 - Completed 03-01-PLAN.md
+
+Progress: [Phase 01 ██] [Phase 02 ██] [Phase 03 ██░░░░]
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
 - Phase 02: Stripe Infrastructure (COMPLETE - 28/28 automated checks passed)
+- Phase 03 Plan 01: Stripe Payment Infrastructure Setup (COMPLETE)
 
 ## Decisions Made
 
@@ -32,6 +38,9 @@ Phase 02: COMPLETE (Stripe secrets pending user configuration)
 | 2026-02-18 | Webhook always returns 200 after valid signature | Non-200 triggers Stripe retry storm; failures recorded in webhook_events.error_message |
 | 2026-02-18 | p_payment_method_id = null for Stripe payments | Stripe is not a row in payment_methods table; identity captured via stripe_payment_intent_id |
 | 2026-02-18 | charge.refunded is stub (full reversal Phase 07) | Full ledger reversal deferred to Phase 07 scope |
+| 2026-02-18 | @stripe/stripe-react-native@0.50.3 for Expo SDK 54 | npx expo install resolved compatible version |
+| 2026-02-18 | StripeProvider outside SessionProvider, inside QueryProvider | Stripe context doesn't depend on auth; must be available to all payment screens |
+| 2026-02-18 | payment_intents added to supabase_realtime | Enables mobile Realtime subscriptions for payment status updates |
 
 ## Known Issues
 - record_charge has mutable search_path (WARN, not blocking)
@@ -39,6 +48,7 @@ Phase 02: COMPLETE (Stripe secrets pending user configuration)
 - ~60 functions have mutable search_path (batch fix planned later)
 - STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET not yet configured (user checkpoint)
 - Webhook endpoint not yet registered in Stripe Dashboard (user checkpoint)
+- EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY is pk_test_placeholder (user must replace)
 
 ## Key IDs (Demo Data)
 - Community: 00000000-0000-0000-0000-000000000010 (Residencial Las Palmas)
@@ -65,4 +75,5 @@ Phase 02: COMPLETE (Stripe secrets pending user configuration)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 02 COMPLETE with exhaustive QA. All bugs fixed and redeployed.
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-mobile-payment-screen/03-02-PLAN.md
