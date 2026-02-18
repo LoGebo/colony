@@ -98,6 +98,7 @@ interface HandlerResult {
  * - Calls record_payment() RPC to create double-entry ledger entries
  * - Stores the returned transaction_id in payment_intents
  * - Sends push notification to the resident (non-critical, try/catch wrapped)
+ * - Uses OXXO-specific description when payment_method_type is 'oxxo'
  */
 async function handlePaymentIntentSucceeded(
   event: Record<string, unknown>,
@@ -141,7 +142,19 @@ async function handlePaymentIntentSucceeded(
     );
   }
 
-  // 2. Call record_payment() RPC
+  // 2. Look up local payment_intent to determine payment method type
+  //    Used to differentiate OXXO vs card in ledger description
+  const { data: localPi } = await supabase
+    .from("payment_intents")
+    .select("payment_method_type")
+    .eq("stripe_payment_intent_id", piId)
+    .single();
+
+  const paymentDescription = localPi?.payment_method_type === "oxxo"
+    ? `Pago OXXO via Stripe - ${piId}`
+    : `Pago con tarjeta via Stripe - ${piId}`;
+
+  // 3. Call record_payment() RPC
   //    Amount from Stripe is in centavos -> divide by 100 for MXN pesos
   const { data: transactionId, error: rpcError } = await supabase.rpc(
     "record_payment",
@@ -150,7 +163,7 @@ async function handlePaymentIntentSucceeded(
       p_unit_id: unitId,
       p_amount: amount / 100,
       p_payment_date: new Date().toISOString().split("T")[0],
-      p_description: `Pago con tarjeta via Stripe - ${piId}`,
+      p_description: paymentDescription,
       p_payment_method_id: null, // Stripe is not a row in payment_methods table
       p_created_by: residentId ?? null, // Audit trail
     },
@@ -172,7 +185,7 @@ async function handlePaymentIntentSucceeded(
     };
   }
 
-  // 3. Store transaction_id in payment_intents
+  // 4. Store transaction_id in payment_intents
   const { error: txUpdateError } = await supabase
     .from("payment_intents")
     .update({ transaction_id: transactionId })
@@ -185,7 +198,7 @@ async function handlePaymentIntentSucceeded(
     );
   }
 
-  // 4. Send push notification (non-critical)
+  // 5. Send push notification (non-critical)
   if (residentId) {
     try {
       const { data: resident, error: residentError } = await supabase
@@ -228,6 +241,9 @@ async function handlePaymentIntentSucceeded(
 
 /**
  * payment_intent.payment_failed
+ * - Updates status to 'failed'
+ * - Sends OXXO expiry push notification when payment_method_type is 'oxxo'
+ *   (non-critical, try/catch wrapped)
  */
 async function handlePaymentIntentFailed(
   event: Record<string, unknown>,
@@ -246,6 +262,35 @@ async function handlePaymentIntentFailed(
       error,
     );
     return { success: false, error: error.message };
+  }
+
+  // Send OXXO expiry push notification (non-critical)
+  const { data: piRecord } = await supabase
+    .from("payment_intents")
+    .select("payment_method_type, resident_id")
+    .eq("stripe_payment_intent_id", piId)
+    .single();
+
+  if (piRecord?.payment_method_type === "oxxo" && piRecord?.resident_id) {
+    try {
+      const { data: resident } = await supabase
+        .from("residents")
+        .select("user_id")
+        .eq("id", piRecord.resident_id)
+        .maybeSingle();
+
+      if (resident?.user_id) {
+        await supabase.functions.invoke("send-push", {
+          body: {
+            user_id: resident.user_id,
+            title: "Voucher OXXO expirado",
+            body: "Tu voucher OXXO ha expirado. Genera uno nuevo para pagar.",
+          },
+        });
+      }
+    } catch (pushErr) {
+      console.warn(`OXXO expiry push notification error for ${piId}:`, pushErr);
+    }
   }
 
   return { success: true };
@@ -278,7 +323,9 @@ async function handlePaymentIntentCanceled(
 
 /**
  * payment_intent.requires_action
- * Occurs for OXXO vouchers awaiting cash payment
+ * Occurs for OXXO vouchers awaiting cash payment.
+ * Stores hosted_voucher_url in payment_intents.metadata via JSONB merge
+ * (preserves existing metadata fields from create-payment-intent).
  */
 async function handlePaymentIntentRequiresAction(
   event: Record<string, unknown>,
@@ -286,9 +333,27 @@ async function handlePaymentIntentRequiresAction(
   const pi = (event.data as Record<string, unknown>)?.object as Record<string, unknown>;
   const piId = pi.id as string;
 
+  // Extract hosted_voucher_url from Stripe event payload (snake_case server-side)
+  const nextAction = pi.next_action as Record<string, unknown> | undefined;
+  const oxxoDetails = nextAction?.oxxo_display_details as Record<string, unknown> | undefined;
+  const hostedVoucherUrl = oxxoDetails?.hosted_voucher_url as string | undefined;
+
+  // Fetch existing metadata and MERGE — do NOT overwrite.
+  // metadata already contains stripe_created and payment_method_types from create-payment-intent.
+  const { data: existingRecord } = await supabase
+    .from("payment_intents")
+    .select("metadata")
+    .eq("stripe_payment_intent_id", piId)
+    .single();
+
+  const mergedMetadata = {
+    ...((existingRecord?.metadata as Record<string, unknown>) ?? {}),
+    ...(hostedVoucherUrl ? { hosted_voucher_url: hostedVoucherUrl } : {}),
+  };
+
   const { error } = await supabase
     .from("payment_intents")
-    .update({ status: "requires_action" })
+    .update({ status: "requires_action", metadata: mergedMetadata })
     .eq("stripe_payment_intent_id", piId);
 
   if (error) {
@@ -296,6 +361,30 @@ async function handlePaymentIntentRequiresAction(
       `Failed to update payment_intent to requires_action for ${piId}:`,
       error,
     );
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/**
+ * payment_intent.processing
+ * Occurs when an OXXO payment has been confirmed at the store but Stripe
+ * is still waiting for bank settlement confirmation.
+ */
+async function handlePaymentIntentProcessing(
+  event: Record<string, unknown>,
+): Promise<HandlerResult> {
+  const pi = (event.data as Record<string, unknown>)?.object as Record<string, unknown>;
+  const piId = pi.id as string;
+
+  const { error } = await supabase
+    .from("payment_intents")
+    .update({ status: "processing" })
+    .eq("stripe_payment_intent_id", piId);
+
+  if (error) {
+    console.error(`Failed to update payment_intent to processing for ${piId}:`, error);
     return { success: false, error: error.message };
   }
 
@@ -435,6 +524,9 @@ Deno.serve(async (req: Request) => {
         break;
       case "payment_intent.requires_action":
         result = await handlePaymentIntentRequiresAction(event);
+        break;
+      case "payment_intent.processing":
+        result = await handlePaymentIntentProcessing(event);
         break;
       case "charge.refunded":
         result = await handleChargeRefunded(event);
