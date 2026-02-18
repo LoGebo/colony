@@ -59,13 +59,15 @@
 - [x] Admin charge generation triggers resident notifications
 
 ### Phase 07: Admin Financial Dashboard Improvements
-**Status:** Not started
+**Status:** COMPLETE
 **Goal:** Complete financial visibility for administrators
-- PaymentIntent tracking view (succeeded, failed, pending)
-- Stripe vs internal ledger reconciliation
-- Collection reports by payment method
-- Failed webhook alerts
-- CSV/Excel transaction export
+**Completed:** 2026-02-18
+- [x] PaymentIntent tracking view with status filtering (succeeded, failed, pending, processing, canceled)
+- [x] Failed webhook alerts dashboard (top of Stripe Payments page)
+- [x] Collection reports by payment method with progress bars + month/year filter
+- [x] Receipt Excel export (full year, all receipts with unit info)
+- [x] PaymentIntent Excel export (filtered by status)
+- [x] Navigation: Cobranza + Pagos Stripe added to Finanzas sidebar
 
 ### Phase 08: Future Extensions
 **Status:** Not started
