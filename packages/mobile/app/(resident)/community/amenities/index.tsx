@@ -122,7 +122,10 @@ export default function AmenitiesExplorerScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.navigate('/(resident)/community')}>
+          <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+        </TouchableOpacity>
+        <View style={styles.headerTitleGroup}>
           <Text style={styles.headerTitle}>Amenities</Text>
           <Text style={styles.headerSubtitle}>Book spaces for your lifestyle</Text>
         </View>
@@ -286,11 +289,24 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: spacing.safeAreaTop,
     paddingHorizontal: spacing.pagePaddingX,
     paddingBottom: spacing['2xl'],
+    gap: spacing.lg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  headerTitleGroup: {
+    flex: 1,
   },
   headerTitle: {
     ...typography.largeTitle,

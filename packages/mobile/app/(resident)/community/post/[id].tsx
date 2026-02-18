@@ -218,7 +218,13 @@ export default function PostDetailScreen() {
             )}
 
             {/* Author row */}
-            <View style={styles.authorRow}>
+            <TouchableOpacity
+              style={styles.authorRow}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (author?.id) router.push(`/(resident)/more/profile/${author.id}`);
+              }}
+            >
               {author?.photo_url ? (
                 <Image
                   source={{ uri: author.photo_url }}
@@ -244,7 +250,7 @@ export default function PostDetailScreen() {
                   {formatRelative(post.created_at)}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Title */}
             {post.title && (
@@ -439,28 +445,42 @@ export default function PostDetailScreen() {
                     <View key={comment.id}>
                       {/* Root comment */}
                       <View style={styles.commentItem}>
-                        {cAuthor?.photo_url ? (
-                          <Image
-                            source={{ uri: cAuthor.photo_url }}
-                            style={styles.commentAvatar}
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.commentAvatarPlaceholder,
-                              { backgroundColor: getAvatarColor(cName) },
-                            ]}
-                          >
-                            <Text style={styles.commentAvatarInitials}>
-                              {getInitials(
-                                cAuthor?.first_name,
-                                cAuthor?.paternal_surname
-                              )}
-                            </Text>
-                          </View>
-                        )}
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (cAuthor?.id) router.push(`/(resident)/more/profile/${cAuthor.id}`);
+                          }}
+                        >
+                          {cAuthor?.photo_url ? (
+                            <Image
+                              source={{ uri: cAuthor.photo_url }}
+                              style={styles.commentAvatar}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                styles.commentAvatarPlaceholder,
+                                { backgroundColor: getAvatarColor(cName) },
+                              ]}
+                            >
+                              <Text style={styles.commentAvatarInitials}>
+                                {getInitials(
+                                  cAuthor?.first_name,
+                                  cAuthor?.paternal_surname
+                                )}
+                              </Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
                         <View style={styles.commentBubble}>
-                          <Text style={styles.commentAuthor}>{cName}</Text>
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              if (cAuthor?.id) router.push(`/(resident)/more/profile/${cAuthor.id}`);
+                            }}
+                          >
+                            <Text style={styles.commentAuthor}>{cName}</Text>
+                          </TouchableOpacity>
                           <Text style={styles.commentContent}>
                             {comment.content}
                           </Text>
@@ -494,33 +514,47 @@ export default function PostDetailScreen() {
                             key={child.id}
                             style={styles.childCommentItem}
                           >
-                            {childAuthor?.photo_url ? (
-                              <Image
-                                source={{ uri: childAuthor.photo_url }}
-                                style={styles.commentAvatar}
-                              />
-                            ) : (
-                              <View
-                                style={[
-                                  styles.commentAvatarPlaceholder,
-                                  {
-                                    backgroundColor:
-                                      getAvatarColor(childName),
-                                  },
-                                ]}
-                              >
-                                <Text style={styles.commentAvatarInitials}>
-                                  {getInitials(
-                                    childAuthor?.first_name,
-                                    childAuthor?.paternal_surname
-                                  )}
-                                </Text>
-                              </View>
-                            )}
+                            <TouchableOpacity
+                              activeOpacity={0.7}
+                              onPress={() => {
+                                if (childAuthor?.id) router.push(`/(resident)/more/profile/${childAuthor.id}`);
+                              }}
+                            >
+                              {childAuthor?.photo_url ? (
+                                <Image
+                                  source={{ uri: childAuthor.photo_url }}
+                                  style={styles.commentAvatar}
+                                />
+                              ) : (
+                                <View
+                                  style={[
+                                    styles.commentAvatarPlaceholder,
+                                    {
+                                      backgroundColor:
+                                        getAvatarColor(childName),
+                                    },
+                                  ]}
+                                >
+                                  <Text style={styles.commentAvatarInitials}>
+                                    {getInitials(
+                                      childAuthor?.first_name,
+                                      childAuthor?.paternal_surname
+                                    )}
+                                  </Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
                             <View style={styles.commentBubble}>
-                              <Text style={styles.commentAuthor}>
-                                {childName}
-                              </Text>
+                              <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                  if (childAuthor?.id) router.push(`/(resident)/more/profile/${childAuthor.id}`);
+                                }}
+                              >
+                                <Text style={styles.commentAuthor}>
+                                  {childName}
+                                </Text>
+                              </TouchableOpacity>
                               <Text style={styles.commentContent}>
                                 {child.content}
                               </Text>

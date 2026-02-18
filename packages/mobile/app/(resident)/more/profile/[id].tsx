@@ -54,10 +54,8 @@ export default function ResidentProfileScreen() {
   const [communityName, setCommunityName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Stats
-  const [vehicleCount, setVehicleCount] = useState<number | null>(null);
+  // Stats (only pets — vehicles & documents are private)
   const [petCount, setPetCount] = useState<number | null>(null);
-  const [docCount, setDocCount] = useState<number | null>(null);
 
   // Fetch resident data
   useEffect(() => {
@@ -122,26 +120,13 @@ export default function ResidentProfileScreen() {
         }
       }
 
-      // Stats
-      supabase
-        .from('vehicles')
-        .select('id', { count: 'exact', head: true })
-        .eq('resident_id', id)
-        .is('deleted_at', null)
-        .then(({ count }) => setVehicleCount(count ?? 0));
-
+      // Stats (only pets — vehicles & documents are private)
       supabase
         .from('pets')
         .select('id', { count: 'exact', head: true })
         .eq('resident_id', id)
         .is('deleted_at', null)
         .then(({ count }) => setPetCount(count ?? 0));
-
-      supabase
-        .from('documents')
-        .select('id', { count: 'exact', head: true })
-        .eq('community_id', communityId)
-        .then(({ count }) => setDocCount(count ?? 0));
 
       // Community name
       supabase
@@ -259,23 +244,15 @@ export default function ResidentProfileScreen() {
           )}
         </View>
 
-        {/* ── Stats Row ────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{vehicleCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Vehicles</Text>
+        {/* ── Pets ─────────────────────────────────────────────── */}
+        {(petCount ?? 0) > 0 && (
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{petCount}</Text>
+              <Text style={styles.statLabel}>Pets</Text>
+            </View>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{petCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Pets</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{docCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Documents</Text>
-          </View>
-        </View>
+        )}
 
         {/* ── Contact Info ─────────────────────────────────────── */}
         <View style={styles.sectionGroup}>
@@ -539,11 +516,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: colors.border,
   },
 
   // Sections

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useConversations, useChatPresence } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { ConversationRow } from '@/components/chat/ConversationRow';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius } from '@/theme';
@@ -48,11 +49,30 @@ export default function MessagesIndexScreen() {
     [router]
   );
 
+  const handleAvatarPress = useCallback(
+    async (otherUserId: string) => {
+      const { data } = await supabase
+        .from('residents')
+        .select('id')
+        .eq('user_id', otherUserId)
+        .single();
+      if (data?.id) {
+        router.push(`/(resident)/more/profile/${data.id}`);
+      }
+    },
+    [router]
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: ConversationListItem }) => (
       <ConversationRow
         conversation={item}
         onPress={() => handleConversationPress(item.conversation_id)}
+        onAvatarPress={
+          item.conversation_type === 'direct' && item.other_participant_user_id
+            ? () => handleAvatarPress(item.other_participant_user_id!)
+            : undefined
+        }
         isOnline={
           item.conversation_type === 'direct' && item.other_participant_user_id
             ? onlineUsers.has(item.other_participant_user_id)
@@ -60,7 +80,7 @@ export default function MessagesIndexScreen() {
         }
       />
     ),
-    [handleConversationPress, onlineUsers]
+    [handleConversationPress, handleAvatarPress, onlineUsers]
   );
 
   const keyExtractor = useCallback(
@@ -74,7 +94,10 @@ export default function MessagesIndexScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.navigate('/(resident)/community')}>
+          <Ionicons name="chevron-back" size={20} color={colors.textBody} />
+        </TouchableOpacity>
+        <View style={styles.headerTitleGroup}>
           <Text style={styles.headerTitle}>Messages</Text>
           <Text style={styles.headerSubtitle}>Conversations</Text>
         </View>
@@ -155,11 +178,24 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: spacing.safeAreaTop,
     paddingHorizontal: spacing.pagePaddingX,
     paddingBottom: spacing.xl,
+    gap: spacing.lg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+  },
+  headerTitleGroup: {
+    flex: 1,
   },
   headerTitle: {
     fontFamily: fonts.black,

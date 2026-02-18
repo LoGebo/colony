@@ -96,6 +96,21 @@ export default function ChatScreen() {
     conversationInfo?.conversation_type === 'group' ||
     conversationInfo?.conversation_type === 'guard_booth';
 
+  // Navigate to other participant's profile (direct chats)
+  const handleNavigateToProfile = useCallback(async () => {
+    if (!conversationInfo || conversationInfo.conversation_type !== 'direct') return;
+    const otherUserId = conversationInfo.other_participant_user_id;
+    if (!otherUserId) return;
+    const { data } = await supabase
+      .from('residents')
+      .select('id')
+      .eq('user_id', otherUserId)
+      .single();
+    if (data?.id) {
+      router.push(`/(resident)/more/profile/${data.id}`);
+    }
+  }, [conversationInfo, router]);
+
   // Flatten messages
   const messages = useMemo(
     () => messagesData?.pages.flat() ?? [],
@@ -296,7 +311,11 @@ export default function ChatScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
+        <TouchableOpacity
+          style={styles.headerInfo}
+          activeOpacity={isGroup ? 1 : 0.7}
+          onPress={isGroup ? undefined : handleNavigateToProfile}
+        >
           <Text style={styles.headerTitle} numberOfLines={1}>
             {headerTitle}
           </Text>
@@ -305,7 +324,10 @@ export default function ChatScreen() {
               {conversationInfo.participant_count} members
             </Text>
           )}
-        </View>
+          {!isGroup && (
+            <Text style={styles.headerSubtitle}>View profile</Text>
+          )}
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.moreButton}
           onPress={() => {

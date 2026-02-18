@@ -32,11 +32,12 @@ function formatMessageTime(dateStr: string | null): string {
 interface ConversationRowProps {
   conversation: ConversationListItem;
   onPress: () => void;
+  onAvatarPress?: () => void;
   isOnline?: boolean;
 }
 
 export const ConversationRow = React.memo(
-  function ConversationRow({ conversation, onPress, isOnline }: ConversationRowProps) {
+  function ConversationRow({ conversation, onPress, onAvatarPress, isOnline }: ConversationRowProps) {
     const displayName =
       conversation.conversation_type === 'direct'
         ? conversation.other_participant_name ?? 'Chat'
@@ -51,7 +52,12 @@ export const ConversationRow = React.memo(
         activeOpacity={0.7}
       >
         {/* Avatar */}
-        <View style={styles.avatarContainer}>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          activeOpacity={onAvatarPress ? 0.7 : 1}
+          onPress={onAvatarPress ?? undefined}
+          disabled={!onAvatarPress}
+        >
           {conversation.avatar_url ? (
             <Image
               source={{ uri: conversation.avatar_url }}
@@ -72,7 +78,7 @@ export const ConversationRow = React.memo(
           {isOnline && conversation.conversation_type === 'direct' && (
             <View style={styles.onlineDot} />
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Content */}
         <View style={styles.content}>

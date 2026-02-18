@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 
 export default function CommunityLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true, fullScreenGestureEnabled: true }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="post/[id]" />
       <Stack.Screen name="post/create" />

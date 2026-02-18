@@ -168,10 +168,11 @@ interface PostCardProps {
   isLiked: boolean;
   onToggleLike: (postId: string) => void;
   onNavigateToPost: (postId: string) => void;
+  onNavigateToProfile: (residentId: string) => void;
 }
 
 const PostCard = memo(
-  function PostCard({ post, isLiked, onToggleLike, onNavigateToPost }: PostCardProps) {
+  function PostCard({ post, isLiked, onToggleLike, onNavigateToPost, onNavigateToProfile }: PostCardProps) {
     const author = post.residents;
     const channel = post.channels;
     const authorName = author
@@ -196,7 +197,13 @@ const PostCard = memo(
         )}
 
         {/* Author row */}
-        <View style={styles.authorRow}>
+        <TouchableOpacity
+          style={styles.authorRow}
+          activeOpacity={0.7}
+          onPress={() => {
+            if (author?.id) onNavigateToProfile(author.id);
+          }}
+        >
           {author?.photo_url ? (
             <Image
               source={{ uri: author.photo_url }}
@@ -227,7 +234,7 @@ const PostCard = memo(
               {formatRelative(post.created_at)}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Post content */}
         {post.title && (
@@ -313,7 +320,8 @@ const PostCard = memo(
       prevProps.post.poll_results === nextProps.post.poll_results &&
       prevProps.isLiked === nextProps.isLiked &&
       prevProps.onToggleLike === nextProps.onToggleLike &&
-      prevProps.onNavigateToPost === nextProps.onNavigateToPost
+      prevProps.onNavigateToPost === nextProps.onNavigateToPost &&
+      prevProps.onNavigateToProfile === nextProps.onNavigateToProfile
     );
   }
 );
@@ -381,6 +389,13 @@ export default function CommunityIndexScreen() {
     [router]
   );
 
+  const handleNavigateToProfile = useCallback(
+    (residentId: string) => {
+      router.push(`/(resident)/more/profile/${residentId}`);
+    },
+    [router]
+  );
+
   const keyExtractor = useCallback((item: PostItem) => item.id, []);
 
   const renderItem = useCallback(
@@ -390,9 +405,10 @@ export default function CommunityIndexScreen() {
         isLiked={myLikedPosts?.has(item.id) ?? false}
         onToggleLike={handleToggleLike}
         onNavigateToPost={handleNavigateToPost}
+        onNavigateToProfile={handleNavigateToProfile}
       />
     ),
-    [myLikedPosts, handleToggleLike, handleNavigateToPost]
+    [myLikedPosts, handleToggleLike, handleNavigateToPost, handleNavigateToProfile]
   );
 
   const refreshControl = useMemo(

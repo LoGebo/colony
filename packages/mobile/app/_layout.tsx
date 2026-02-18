@@ -43,7 +43,7 @@ export default function RootLayout() {
     <QueryProvider>
       <SessionProvider>
         <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack screenOptions={{ headerShown: false, animation: 'fade', gestureEnabled: true }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(resident)" />
