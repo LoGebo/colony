@@ -1,12 +1,14 @@
 # Project State
 
 ## Current Phase
-Phase 03: COMPLETE (human E2E testing pending Stripe keys)
+Phase 04-oxxo-payments: IN PROGRESS (Plan 02 of 3 complete)
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
 - Phase 02: Stripe Infrastructure (COMPLETE - 28/28 automated checks passed)
 - Phase 03: Mobile Payment Screen (COMPLETE - 16/16 must-haves verified)
+- Phase 04-01: OXXO Webhook Lifecycle (COMPLETE)
+- Phase 04-02: OXXO Checkout Flow (COMPLETE)
 
 ## Decisions Made
 
@@ -39,6 +41,14 @@ Phase 03: COMPLETE (human E2E testing pending Stripe keys)
 | 2026-02-18 | fetch() not supabase.functions.invoke() for edge functions | invoke() does not correctly forward user JWT for verify_jwt: true functions |
 | 2026-02-18 | New idempotency key per Pay tap, not screen mount | Prevents stale cached error response on retry (Pitfall 6) |
 | 2026-02-18 | 10-second timeout with optimistic success | Webhook may be delayed; PaymentSheet confirmed so payment likely succeeded |
+| 2026-02-18 | JSONB merge pattern in requires_action handler | Preserves stripe_created and payment_method_types from create-payment-intent when adding hosted_voucher_url |
+| 2026-02-18 | DB lookup for payment_method_type in webhook handlers | Safer than parsing nested Stripe event payload; consistent source of truth |
+| 2026-02-18 | OXXO expiry push wrapped in try/catch (non-critical) | Push failure must not fail webhook response; Stripe would retry and risk double processing |
+| 2026-02-18 | create-payment-intent confirmed no changes for OXXO | All OXXO backend logic already present from Phase 03 |
+| 2026-02-18 | confirmPayment uses paymentMethodType: 'Oxxo' (capital O) | SDK-verified casing; lowercase 'oxxo' fails silently |
+| 2026-02-18 | OXXO checkout does NOT start Realtime or 10s timeout | OXXO settles at physical store hours to days later; only card needs real-time confirmation |
+| 2026-02-18 | Billing details for OXXO sourced silently from profile + auth | name from useResidentProfile, email from useAuth — no user prompt needed |
+| 2026-02-18 | voucher_generated is a distinct PaymentState from success | Different UX: receipt icon, Spanish text, "Volver a Pagos" vs card flow "Done" |
 
 ## Known Issues
 - record_charge has mutable search_path (WARN, not blocking)
@@ -58,16 +68,16 @@ Phase 03: COMPLETE (human E2E testing pending Stripe keys)
 ## Edge Functions (5 deployed)
 - `verify-qr` (JWT required) - QR HMAC verification
 - `send-push` (JWT required) - FCM push + in-app notifications
-- `payment-webhook` v3 (no JWT) - Stripe webhook handler (security-hardened)
+- `payment-webhook` v4 (no JWT) - Stripe webhook handler (OXXO lifecycle upgraded)
 - `create-payment-intent` v4 (JWT required) - Stripe PaymentIntent creation (occupancy status fix)
 
 ## QA Testing (Phase 02)
 - **67/69 tests passed** (~97%) across 4 QA rounds
 - Round 1: 43/43 DB constraints, FK, RLS, indexes, triggers
-- Round 2: 22-finding security code review → 15 fixes applied
-- Round 3: 37/39 edge cases + integration → 2 bugs found and fixed
+- Round 2: 22-finding security code review -> 15 fixes applied
+- Round 3: 37/39 edge cases + integration -> 2 bugs found and fixed
 - Round 4: 15/15 record_payment() + double-entry accounting
-- **P0 bug fixed**: `last_name` → `paternal_surname` in create-payment-intent
+- **P0 bug fixed**: `last_name` -> `paternal_surname` in create-payment-intent
 - **RLS fix**: stripe_customers soft-delete filter added
 - **Design note**: webhook_events visible to all admins (no community_id by design)
 
@@ -81,4 +91,4 @@ Phase 03: COMPLETE (human E2E testing pending Stripe keys)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 03 COMPLETE. All 3 plans executed and verified.
+Phase 04-02 COMPLETE. OXXO checkout flow added (2 tasks, 2 commits). Plan 03 next: dashboard OXXO pending voucher card.
