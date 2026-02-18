@@ -29,13 +29,13 @@
 - Verification: 16/16 must-haves passed, 4 items need human testing with Stripe keys
 
 ### Phase 04: OXXO Payments
-**Status:** Not started
-**Goal:** Resident can generate OXXO voucher and pay at store
-- Enable OXXO in Stripe Dashboard
-- Extend create-payment-intent for OXXO method
-- Create OXXO voucher screen (barcode, reference, expiration)
-- Handle expired vouchers in webhook
-- Push notification when OXXO payment processed
+**Status:** Planned
+**Goal:** Resident can generate OXXO voucher and pay at any OXXO convenience store
+**Plans:** 3 plans
+Plans:
+- [ ] 04-01-PLAN.md -- Webhook OXXO lifecycle (processing handler, voucher URL storage, expiry push, description differentiation)
+- [ ] 04-02-PLAN.md -- Checkout OXXO branch (confirmPayment flow, voucher_generated state, usePendingOxxoVoucher hook)
+- [ ] 04-03-PLAN.md -- Dashboard OXXO UI (action card, pending voucher section, disable logic, visual verification)
 
 ### Phase 05: Automated Charge Generation
 **Status:** Not started
