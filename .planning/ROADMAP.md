@@ -20,13 +20,13 @@
 - Verification: 28/28 automated checks passed, 3 items need user action (Stripe secrets)
 
 ### Phase 03: Mobile Payment Screen (Card)
-**Status:** Not started
+**Status:** COMPLETE (human E2E testing pending Stripe keys)
 **Goal:** Resident can pay with credit/debit card from the app
-- Install @stripe/stripe-react-native with Expo config plugin
-- Add StripeProvider to root layout
-- Create checkout screen with PaymentSheet integration
-- Realtime subscription for payment confirmation
-- E2E: pay with test card -> webhook -> balance updates
+**Completed:** 2026-02-18
+- [x] 03-01: DB migration (Realtime + index) + Stripe SDK v0.50.3 + StripeProvider
+- [x] 03-02: useCreatePaymentIntent hook + Checkout screen (PaymentSheet + Realtime + success/failure)
+- [x] 03-03: Dashboard wiring (Pay Now + Pay with Card entry points)
+- Verification: 16/16 must-haves passed, 4 items need human testing with Stripe keys
 
 ### Phase 04: OXXO Payments
 **Status:** Not started
