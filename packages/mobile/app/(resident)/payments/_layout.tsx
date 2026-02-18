@@ -6,6 +6,7 @@ export default function PaymentsLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="history" />
       <Stack.Screen name="upload-proof" />
+      <Stack.Screen name="checkout" />
     </Stack>
   );
 }
