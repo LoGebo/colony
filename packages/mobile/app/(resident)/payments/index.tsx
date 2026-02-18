@@ -82,7 +82,7 @@ export default function PaymentDashboardScreen() {
             <View style={styles.balanceActions}>
               <TouchableOpacity
                 style={styles.payButton}
-                onPress={() => router.push('/(resident)/payments/upload-proof')}
+                onPress={() => router.push('/(resident)/payments/checkout')}
               >
                 <Text style={styles.payButtonText}>Pay Now</Text>
               </TouchableOpacity>
@@ -99,6 +99,25 @@ export default function PaymentDashboardScreen() {
         {/* Upload Receipt Action */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>PAYMENT ACTIONS</Text>
+          {/* Pay with Card */}
+          <TouchableOpacity
+            onPress={() => router.push('/(resident)/payments/checkout')}
+          >
+            <GlassCard style={styles.actionCard}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.primaryLightAlt }]}>
+                <Ionicons name="card-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>Pay with Card</Text>
+                <Text style={styles.actionSubtitle}>Credit or debit card via Stripe</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
+            </GlassCard>
+          </TouchableOpacity>
+
+          <View style={{ height: spacing.lg }} />
+
+          {/* Upload Transfer Receipt */}
           <TouchableOpacity
             onPress={() => router.push('/(resident)/payments/upload-proof')}
           >
