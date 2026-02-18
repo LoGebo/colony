@@ -59,7 +59,7 @@ Phase 03: COMPLETE (human E2E testing pending Stripe keys)
 - `verify-qr` (JWT required) - QR HMAC verification
 - `send-push` (JWT required) - FCM push + in-app notifications
 - `payment-webhook` v3 (no JWT) - Stripe webhook handler (security-hardened)
-- `create-payment-intent` v3 (JWT required) - Stripe PaymentIntent creation (paternal_surname fix)
+- `create-payment-intent` v4 (JWT required) - Stripe PaymentIntent creation (occupancy status fix)
 
 ## QA Testing (Phase 02)
 - **67/69 tests passed** (~97%) across 4 QA rounds
@@ -73,6 +73,10 @@ Phase 03: COMPLETE (human E2E testing pending Stripe keys)
 
 ## QA Testing (Phase 03)
 - **16/16 must-haves verified** via structural code analysis
+- **Exhaustive QA**: 2 parallel agents, 19 issues found (3 P0, 5 P1, 7 P2, 4 P3)
+- **All P0 and P1 fixed**: crypto.randomUUID fallback, Realtime callback stability, occupancy status filter, NaN handling, loading skeleton, unitId guard, env types, stale closure
+- **P2 fixes applied**: back button disabled during processing, Pay Now disabled at $0, shadow fix, theme tokens
+- **Edge function redeployed**: create-payment-intent v4 (occupancy status='active' filter)
 - 4 items need human testing with Stripe keys (E2E payment flow, cancel, decline, visual design)
 
 ## Session Continuity
