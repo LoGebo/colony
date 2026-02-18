@@ -190,7 +190,7 @@ export function useGenerateCharges() {
         totalAmount: result?.total_amount ?? 0,
       };
     },
-    onSuccess: ({ unitsCharged, unitsSkipped }) => {
+    onSuccess: ({ chargeRunId, unitsCharged, unitsSkipped }, { description }) => {
       if (unitsSkipped === 0) {
         toast.success(`${unitsCharged} cargos generados exitosamente`);
       } else {
@@ -200,6 +200,19 @@ export function useGenerateCharges() {
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.transactionSummary._def });
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.chargePreview._def });
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.chargeRuns._def });
+
+      // Fire-and-forget: notify residents of new charges
+      if (chargeRunId && unitsCharged > 0) {
+        const supabase = createClient();
+        supabase.rpc('notify_charge_run' as never, {
+          p_charge_run_id: chargeRunId,
+          p_description: description,
+        } as never).then(({ error: notifyError }) => {
+          if (notifyError) {
+            console.warn('Failed to notify residents of new charges:', notifyError);
+          }
+        });
+      }
     },
     onError: (error: Error) => {
       toastError('Error al generar cargos', error);

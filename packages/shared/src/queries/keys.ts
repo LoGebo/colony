@@ -18,6 +18,7 @@ export const payments = createQueryKeys('payments', {
   all: null,
   byUnit: (unitId: string) => [{ unitId }],
   balance: (unitId: string) => [{ unitId }],
+  receipts: (unitId: string) => [{ unitId }],
 });
 
 export const accessLogs = createQueryKeys('access-logs', {

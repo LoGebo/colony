@@ -163,6 +163,40 @@ export function useUploadPaymentProof() {
   });
 }
 
+// ---------- Receipt Types ----------
+
+export interface Receipt {
+  id: string;
+  receipt_number: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  description: string;
+  payment_date: string;
+  created_at: string;
+}
+
+// ---------- useReceipts ----------
+
+export function useReceipts(unitId?: string) {
+  return useQuery({
+    queryKey: queryKeys.payments.receipts(unitId!).queryKey,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('receipts' as never)
+        .select('id, receipt_number, amount, currency, payment_method, description, payment_date, created_at' as never)
+        .eq('unit_id' as never, unitId! as never)
+        .is('deleted_at' as never, null as never)
+        .order('created_at' as never, { ascending: false } as never)
+        .limit(50);
+
+      if (error) throw error;
+      return (data ?? []) as unknown as Receipt[];
+    },
+    enabled: !!unitId,
+  });
+}
+
 // ---------- CreatePaymentIntent Types ----------
 
 export interface CreatePaymentIntentResponse {

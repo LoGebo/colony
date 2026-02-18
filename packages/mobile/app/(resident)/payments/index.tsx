@@ -196,6 +196,24 @@ export default function PaymentDashboardScreen() {
               <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
             </GlassCard>
           </TouchableOpacity>
+
+          <View style={{ height: spacing.lg }} />
+
+          {/* My Receipts */}
+          <TouchableOpacity
+            onPress={() => router.push('/(resident)/payments/receipts')}
+          >
+            <GlassCard style={styles.actionCard}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.tealLight }]}>
+                <Ionicons name="receipt-outline" size={20} color={colors.teal} />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>My Receipts</Text>
+                <Text style={styles.actionSubtitle}>View payment receipts</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
+            </GlassCard>
+          </TouchableOpacity>
         </View>
 
         {/* Pending Proof */}

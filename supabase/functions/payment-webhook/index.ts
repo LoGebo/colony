@@ -202,7 +202,61 @@ async function handlePaymentIntentSucceeded(
     );
   }
 
-  // 5. Send push notification (non-critical)
+  // 5. Auto-generate receipt (non-critical — payment already recorded)
+  try {
+    // Generate sequential receipt number
+    const { data: receiptNumber, error: receiptNumError } = await supabase.rpc(
+      "generate_receipt_number",
+      { p_community_id: communityId },
+    );
+
+    if (receiptNumError) {
+      console.warn(
+        `generate_receipt_number failed for ${piId}:`,
+        receiptNumError,
+      );
+    } else {
+      const paymentMethodLabel = localPi?.payment_method_type === "oxxo"
+        ? "oxxo"
+        : "card";
+
+      const { error: receiptError } = await supabase
+        .from("receipts")
+        .insert({
+          community_id: communityId,
+          unit_id: unitId,
+          resident_id: residentId ?? null,
+          transaction_id: transactionId,
+          stripe_payment_intent_id: piId,
+          receipt_number: receiptNumber,
+          amount: amount / 100,
+          currency: "MXN",
+          payment_method: paymentMethodLabel,
+          description: paymentDescription,
+          payment_date: new Date().toISOString().split("T")[0],
+        });
+
+      if (receiptError) {
+        // UNIQUE violation on transaction_id means receipt already exists (idempotent)
+        if (receiptError.code === "23505") {
+          console.log(`Receipt already exists for transaction ${transactionId}`);
+        } else {
+          console.warn(
+            `Failed to create receipt for ${piId}:`,
+            receiptError,
+          );
+        }
+      } else {
+        console.log(
+          `Receipt ${receiptNumber} created for transaction ${transactionId}`,
+        );
+      }
+    }
+  } catch (receiptErr) {
+    console.warn(`Receipt generation error for ${piId}:`, receiptErr);
+  }
+
+  // 6. Send push notification (non-critical)
   if (residentId) {
     try {
       const { data: resident, error: residentError } = await supabase
