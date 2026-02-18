@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   spacer: { width: 40 },
   scrollContent: {
     paddingHorizontal: spacing.pagePaddingX, paddingTop: spacing['3xl'],
-    paddingBottom: spacing['6xl'], gap: spacing['3xl'],
+    paddingBottom: spacing.bottomNavClearance + 20, gap: spacing['3xl'],
   },
   masterCard: { padding: spacing.xl, borderRadius: borderRadius.xl },
   masterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
