@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,9 +19,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useResidentProfile, useUpdateProfile, useUpdateEmergencyContact } from '@/hooks/useProfile';
 import { useResidentUnit } from '@/hooks/useOccupancy';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
-import { GlassCard } from '@/components/ui/GlassCard';
 import { pickAndUploadImage } from '@/lib/upload';
-import { colors, fonts, spacing, borderRadius, shadows, typography } from '@/theme';
+import { supabase } from '@/lib/supabase';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 interface EmergencyContactForm {
   id?: string;
@@ -38,9 +38,9 @@ const EMPTY_CONTACT: EmergencyContactForm = {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { communityId } = useAuth();
+  const { communityId, residentId } = useAuth();
   const { data: profile, isLoading: profileLoading } = useResidentProfile();
-  const { unitNumber, building, floorNumber } = useResidentUnit();
+  const { unitId, unitNumber, building, floorNumber } = useResidentUnit();
   const updateProfile = useUpdateProfile();
   const updateContact = useUpdateEmergencyContact();
 
@@ -54,6 +54,82 @@ export default function ProfileScreen() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactForm, setContactForm] = useState<EmergencyContactForm>(EMPTY_CONTACT);
 
+  // Stats counts
+  const [vehicleCount, setVehicleCount] = useState<number | null>(null);
+  const [petCount, setPetCount] = useState<number | null>(null);
+  const [docCount, setDocCount] = useState<number | null>(null);
+
+  // Community name
+  const [communityName, setCommunityName] = useState<string | null>(null);
+
+  // Housemates (co-residents in the same unit)
+  interface Housemate {
+    id: string;
+    first_name: string;
+    paternal_surname: string;
+    photo_url: string | null;
+    occupancy_type: string;
+  }
+  const [housemates, setHousemates] = useState<Housemate[]>([]);
+
+  // Fetch stats + community name
+  useEffect(() => {
+    if (!residentId || !communityId) return;
+
+    supabase
+      .from('vehicles')
+      .select('id', { count: 'exact', head: true })
+      .eq('resident_id', residentId)
+      .is('deleted_at', null)
+      .then(({ count }) => setVehicleCount(count ?? 0));
+
+    supabase
+      .from('pets')
+      .select('id', { count: 'exact', head: true })
+      .eq('resident_id', residentId)
+      .is('deleted_at', null)
+      .then(({ count }) => setPetCount(count ?? 0));
+
+    supabase
+      .from('documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('community_id', communityId)
+      .then(({ count }) => setDocCount(count ?? 0));
+
+    supabase
+      .from('communities')
+      .select('name')
+      .eq('id', communityId)
+      .single()
+      .then(({ data }) => setCommunityName(data?.name ?? null));
+  }, [residentId, communityId]);
+
+  // Fetch housemates when we know the unit
+  useEffect(() => {
+    if (!unitId || !residentId) return;
+
+    supabase
+      .from('occupancies')
+      .select('resident_id, occupancy_type, residents(id, first_name, paternal_surname, photo_url)')
+      .eq('unit_id', unitId)
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .neq('resident_id', residentId)
+      .then(({ data }) => {
+        if (!data) return;
+        const mates = data
+          .filter((o: any) => o.residents)
+          .map((o: any) => ({
+            id: o.residents.id,
+            first_name: o.residents.first_name,
+            paternal_surname: o.residents.paternal_surname,
+            photo_url: o.residents.photo_url,
+            occupancy_type: o.occupancy_type,
+          }));
+        setHousemates(mates);
+      });
+  }, [unitId, residentId]);
+
   // Derive display values
   const displayPhone = phone ?? profile?.phone ?? '';
   const displayPhoneSecondary = phoneSecondary ?? profile?.phone_secondary ?? '';
@@ -61,12 +137,23 @@ export default function ProfileScreen() {
     ? [profile.first_name, profile.paternal_surname, profile.maternal_surname].filter(Boolean).join(' ')
     : '';
 
+  const isVerified =
+    profile?.onboarding_status === 'verified' ||
+    profile?.onboarding_status === 'active' ||
+    profile?.onboarding_status === 'registered';
+
   const getInitials = useCallback(() => {
     if (!profile) return '';
     const first = profile.first_name?.charAt(0) ?? '';
     const last = profile.paternal_surname?.charAt(0) ?? '';
     return (first + last).toUpperCase();
   }, [profile]);
+
+  const unitInfo = [building, floorNumber != null ? `Floor ${floorNumber}` : null, unitNumber ? `#${unitNumber}` : null]
+    .filter(Boolean)
+    .join(', ');
+
+  // ── Handlers ──────────────────────────────────────────────────
 
   const handleChangePhoto = async () => {
     if (!communityId) return;
@@ -83,10 +170,16 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleStartEditing = () => {
-    setPhone(profile?.phone ?? '');
-    setPhoneSecondary(profile?.phone_secondary ?? '');
-    setIsEditing(true);
+  const handleToggleEditing = () => {
+    if (isEditing) {
+      setIsEditing(false);
+      setPhone(null);
+      setPhoneSecondary(null);
+    } else {
+      setPhone(profile?.phone ?? '');
+      setPhoneSecondary(profile?.phone_secondary ?? '');
+      setIsEditing(true);
+    }
   };
 
   const handleSave = async () => {
@@ -145,10 +238,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // Unit info text
-  const unitInfo = [building, floorNumber != null ? `Floor ${floorNumber}` : null, unitNumber ? `#${unitNumber}` : null]
-    .filter(Boolean)
-    .join(', ');
+  // ── Loading ───────────────────────────────────────────────────
 
   if (profileLoading) {
     return (
@@ -160,6 +250,8 @@ export default function ProfileScreen() {
       </View>
     );
   }
+
+  // ── Render ────────────────────────────────────────────────────
 
   return (
     <View style={styles.container}>
@@ -173,11 +265,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
-        {!isEditing ? (
-          <TouchableOpacity style={styles.settingsButton} onPress={handleStartEditing}>
-            <Ionicons name="create-outline" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        ) : null}
+        <TouchableOpacity style={styles.editButton} onPress={handleToggleEditing}>
+          <Ionicons
+            name={isEditing ? 'close' : 'create-outline'}
+            size={20}
+            color={isEditing ? colors.danger : colors.textMuted}
+          />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
@@ -191,154 +285,224 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* User Hero Card */}
-          <GlassCard style={styles.heroCard}>
-            <View style={styles.heroOrbDecor} />
-            <View style={styles.heroContent}>
-              <View style={styles.avatarWrapper}>
-                <View style={styles.avatarContainer}>
+          {/* ── Instagram Hero ─────────────────────────────────── */}
+          <View style={styles.heroSection}>
+            {/* Avatar with ring */}
+            <View style={styles.avatarOuter}>
+              <View style={styles.avatarRing}>
+                <View style={styles.avatarInner}>
                   {profile?.photo_url ? (
                     <Image source={{ uri: profile.photo_url }} style={styles.avatarImage} />
                   ) : (
                     <Text style={styles.avatarInitials}>{getInitials()}</Text>
                   )}
                 </View>
-                <TouchableOpacity
-                  style={styles.cameraButton}
-                  onPress={handleChangePhoto}
-                  disabled={uploadingPhoto}
-                >
-                  {uploadingPhoto ? (
-                    <ActivityIndicator size={12} color={colors.textOnDark} />
-                  ) : (
-                    <Ionicons name="camera" size={14} color={colors.textOnDark} />
-                  )}
-                </TouchableOpacity>
               </View>
-              <View style={styles.heroInfo}>
-                <Text style={styles.heroName}>{fullName}</Text>
-                <Text style={styles.heroSubtitle}>
-                  Resident{unitNumber ? ` \u2022 Unit ${unitNumber}` : ''}
-                </Text>
-                <View style={styles.badgeRow}>
-                  {(profile?.onboarding_status === 'verified' || profile?.onboarding_status === 'active') && (
-                    <View style={styles.badgeGreen}>
-                      <Text style={styles.badgeGreenText}>Verified</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </View>
-          </GlassCard>
-
-          {/* Personal Details */}
-          <View style={styles.sectionGroup}>
-            <Text style={styles.sectionHeader}>Personal Details</Text>
-            <View style={styles.infoCard}>
-              {/* Phone */}
               <TouchableOpacity
-                style={styles.infoRow}
-                onPress={isEditing ? undefined : handleStartEditing}
-                disabled={isEditing}
+                style={styles.cameraButton}
+                onPress={handleChangePhoto}
+                disabled={uploadingPhoto}
+                activeOpacity={0.8}
               >
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="call-outline" size={18} color={colors.textCaption} />
+                {uploadingPhoto ? (
+                  <ActivityIndicator size={12} color={colors.textOnDark} />
+                ) : (
+                  <Ionicons name="camera" size={14} color={colors.textOnDark} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Name + verified badge */}
+            <View style={styles.nameRow}>
+              <Text style={styles.heroName} numberOfLines={1}>{fullName}</Text>
+              {isVerified && (
+                <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+              )}
+            </View>
+
+            {/* Subtitle */}
+            <Text style={styles.heroSubtitle}>
+              Resident{unitNumber ? ` \u00B7 ${unitNumber}` : ''}
+            </Text>
+
+            {/* Community name */}
+            {communityName && (
+              <Text style={styles.heroCommunity}>{communityName}</Text>
+            )}
+          </View>
+
+          {/* ── Stats Row ──────────────────────────────────────── */}
+          <View style={styles.statsRow}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push('/(resident)/more/vehicles' as any)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.statNumber}>{vehicleCount ?? '-'}</Text>
+              <Text style={styles.statLabel}>Vehicles</Text>
+            </TouchableOpacity>
+
+            <View style={styles.statDivider} />
+
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push('/(resident)/more/pets' as any)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.statNumber}>{petCount ?? '-'}</Text>
+              <Text style={styles.statLabel}>Pets</Text>
+            </TouchableOpacity>
+
+            <View style={styles.statDivider} />
+
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push('/(resident)/more/documents' as any)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.statNumber}>{docCount ?? '-'}</Text>
+              <Text style={styles.statLabel}>Documents</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Action Button ──────────────────────────────────── */}
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push('/(resident)/more/profile/unit' as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="home-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.actionButtonText}>My Unit</Text>
+          </TouchableOpacity>
+
+          {/* ── Contact Info (read-only) ───────────────────────── */}
+          <View style={styles.sectionGroup}>
+            <Text style={styles.sectionHeader}>CONTACT INFO</Text>
+            <View style={styles.infoCard}>
+              {/* Email */}
+              <View style={styles.contactRow}>
+                <View style={[styles.contactIcon, { backgroundColor: colors.primaryLight }]}>
+                  <Ionicons name="mail-outline" size={16} color={colors.primary} />
                 </View>
-                <View style={styles.infoTextGroup}>
-                  <Text style={styles.infoLabel}>Phone Number</Text>
-                  {isEditing ? (
+                <Text style={styles.contactText} numberOfLines={1}>
+                  {profile?.email ?? 'Not set'}
+                </Text>
+              </View>
+
+              <View style={styles.contactDivider} />
+
+              {/* Phone */}
+              <View style={styles.contactRow}>
+                <View style={[styles.contactIcon, { backgroundColor: colors.successBg }]}>
+                  <Ionicons name="call-outline" size={16} color={colors.successText} />
+                </View>
+                <Text style={styles.contactText} numberOfLines={1}>
+                  {profile?.phone || 'No phone set'}
+                </Text>
+              </View>
+
+              {/* Unit Address */}
+              {unitInfo ? (
+                <>
+                  <View style={styles.contactDivider} />
+                  <View style={styles.contactRow}>
+                    <View style={[styles.contactIcon, { backgroundColor: colors.warningBg }]}>
+                      <Ionicons name="business-outline" size={16} color={colors.warningText} />
+                    </View>
+                    <Text style={styles.contactText} numberOfLines={1}>
+                      {unitInfo}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
+            </View>
+          </View>
+
+          {/* ── Editable Phone Fields ──────────────────────────── */}
+          {isEditing && (
+            <View style={styles.sectionGroup}>
+              <Text style={styles.sectionHeader}>EDIT PHONE NUMBERS</Text>
+              <View style={styles.infoCard}>
+                {/* Phone */}
+                <View style={styles.editRow}>
+                  <View style={styles.editIconBox}>
+                    <Ionicons name="call-outline" size={18} color={colors.textCaption} />
+                  </View>
+                  <View style={styles.editTextGroup}>
+                    <Text style={styles.editLabel}>Phone Number</Text>
                     <TextInput
-                      style={styles.infoValueInput}
+                      style={styles.editInput}
                       value={displayPhone}
                       onChangeText={setPhone}
                       keyboardType="phone-pad"
                       placeholder="+1 (555) 123-4567"
                       placeholderTextColor={colors.textDisabled}
                     />
-                  ) : (
-                    <Text style={styles.infoValue}>{displayPhone || 'Not set'}</Text>
-                  )}
+                  </View>
                 </View>
-                {!isEditing && (
-                  <Ionicons name="chevron-forward" size={16} color={colors.textDisabled} />
-                )}
-              </TouchableOpacity>
 
-              <View style={styles.infoRowDivider} />
+                <View style={styles.editDivider} />
 
-              {/* Phone Secondary */}
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="call-outline" size={18} color={colors.textCaption} />
-                </View>
-                <View style={styles.infoTextGroup}>
-                  <Text style={styles.infoLabel}>Secondary Phone</Text>
-                  {isEditing ? (
+                {/* Phone Secondary */}
+                <View style={styles.editRow}>
+                  <View style={styles.editIconBox}>
+                    <Ionicons name="call-outline" size={18} color={colors.textCaption} />
+                  </View>
+                  <View style={styles.editTextGroup}>
+                    <Text style={styles.editLabel}>Secondary Phone</Text>
                     <TextInput
-                      style={styles.infoValueInput}
+                      style={styles.editInput}
                       value={displayPhoneSecondary}
                       onChangeText={setPhoneSecondary}
                       keyboardType="phone-pad"
                       placeholder="+1 (555) 000-0000"
                       placeholderTextColor={colors.textDisabled}
                     />
-                  ) : (
-                    <Text style={styles.infoValue}>{displayPhoneSecondary || 'Not set'}</Text>
-                  )}
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.infoRowDivider} />
-
-              {/* Email (read-only) */}
-              <View style={styles.infoRow}>
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="mail-outline" size={18} color={colors.textCaption} />
-                </View>
-                <View style={styles.infoTextGroup}>
-                  <Text style={styles.infoLabel}>Email Address</Text>
-                  <Text style={styles.infoValue}>{profile?.email ?? 'Not set'}</Text>
-                </View>
-              </View>
-
-              <View style={styles.infoRowDivider} />
-
-              {/* Unit Info */}
+              {/* Save / Cancel */}
               <TouchableOpacity
-                style={styles.infoRow}
-                onPress={() => router.push('/(resident)/more/profile/unit')}
+                style={[styles.saveButton, updateProfile.isPending && styles.saveButtonDisabled]}
+                onPress={handleSave}
+                disabled={updateProfile.isPending}
+                activeOpacity={0.9}
               >
-                <View style={styles.infoIconBox}>
-                  <Ionicons name="business-outline" size={18} color={colors.textCaption} />
-                </View>
-                <View style={styles.infoTextGroup}>
-                  <Text style={styles.infoLabel}>Unit Information</Text>
-                  <Text style={styles.infoValue}>{unitInfo || 'Loading...'}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textDisabled} />
+                {updateProfile.isPending ? (
+                  <ActivityIndicator color={colors.textOnDark} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleToggleEditing}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          )}
 
-          {/* Emergency Contacts */}
+          {/* ── Emergency Contacts ─────────────────────────────── */}
           <View style={styles.sectionGroup}>
-            <Text style={styles.sectionHeader}>Emergency Contacts</Text>
+            <Text style={styles.sectionHeader}>EMERGENCY CONTACTS</Text>
             <View style={styles.infoCard}>
               {(profile?.emergencyContacts ?? []).map((contact, idx) => (
                 <View key={contact.id}>
-                  {idx > 0 && <View style={styles.infoRowDivider} />}
+                  {idx > 0 && <View style={styles.editDivider} />}
                   <TouchableOpacity
-                    style={styles.infoRow}
+                    style={styles.editRow}
                     onPress={() => handleOpenEditContact(contact)}
                   >
                     <View style={styles.emergencyIconBox}>
                       <Ionicons name="heart" size={18} color={colors.danger} />
                     </View>
-                    <View style={styles.infoTextGroup}>
-                      <Text style={styles.infoLabel}>
+                    <View style={styles.editTextGroup}>
+                      <Text style={styles.editLabel}>
                         {contact.relationship ?? 'Contact'}
                       </Text>
-                      <Text style={styles.infoValue}>
+                      <Text style={styles.editValue}>
                         {contact.contact_name}
                       </Text>
                       <Text style={styles.emergencyPhone}>
@@ -363,33 +527,76 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Save Button (visible only when editing) */}
-          {isEditing && (
-            <View style={styles.saveSection}>
-              <TouchableOpacity
-                style={[styles.saveButton, updateProfile.isPending && styles.saveButtonDisabled]}
-                onPress={handleSave}
-                disabled={updateProfile.isPending}
-                activeOpacity={0.9}
-              >
-                {updateProfile.isPending ? (
-                  <ActivityIndicator color={colors.textOnDark} />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+          {/* ── Housemates (co-residents) ──────────────────────── */}
+          <View style={styles.sectionGroup}>
+            <Text style={styles.sectionHeader}>
+              {unitNumber ? `WHO LIVES IN ${unitNumber.toUpperCase()}` : 'HOUSEMATES'}
+            </Text>
+            <View style={styles.infoCard}>
+              {/* Current user (self) */}
+              <View style={styles.housemateRow}>
+                <View style={styles.housemateAvatar}>
+                  {profile?.photo_url ? (
+                    <Image source={{ uri: profile.photo_url }} style={styles.housemateAvatarImg} />
+                  ) : (
+                    <Text style={styles.housemateInitials}>{getInitials()}</Text>
+                  )}
+                </View>
+                <View style={styles.housemateInfo}>
+                  <Text style={styles.housemateName}>{fullName}</Text>
+                  <Text style={styles.housemateRole}>You</Text>
+                </View>
+                {isVerified && (
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
                 )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  setIsEditing(false);
-                  setPhone(null);
-                  setPhoneSecondary(null);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+              </View>
+
+              {/* Other residents */}
+              {housemates.map((mate) => {
+                const mateInitials = (
+                  (mate.first_name?.charAt(0) ?? '') +
+                  (mate.paternal_surname?.charAt(0) ?? '')
+                ).toUpperCase();
+                const roleLabel =
+                  mate.occupancy_type === 'owner' ? 'Owner' :
+                  mate.occupancy_type === 'tenant' ? 'Tenant' :
+                  mate.occupancy_type === 'authorized' ? 'Authorized' :
+                  mate.occupancy_type === 'employee' ? 'Employee' : mate.occupancy_type;
+                return (
+                  <View key={mate.id}>
+                    <View style={styles.editDivider} />
+                    <View style={styles.housemateRow}>
+                      <View style={styles.housemateAvatar}>
+                        {mate.photo_url ? (
+                          <Image source={{ uri: mate.photo_url }} style={styles.housemateAvatarImg} />
+                        ) : (
+                          <Text style={styles.housemateInitials}>{mateInitials}</Text>
+                        )}
+                      </View>
+                      <View style={styles.housemateInfo}>
+                        <Text style={styles.housemateName}>
+                          {mate.first_name} {mate.paternal_surname}
+                        </Text>
+                        <Text style={styles.housemateRole}>{roleLabel}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {housemates.length === 0 && (
+                <>
+                  <View style={styles.editDivider} />
+                  <View style={styles.emptyHousemates}>
+                    <Ionicons name="people-outline" size={20} color={colors.textDisabled} />
+                    <Text style={styles.emptyHousematesText}>
+                      You're the only registered resident
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
-          )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -479,6 +686,10 @@ export default function ProfileScreen() {
   );
 }
 
+// ── Styles ─────────────────────────────────────────────────────
+const AVATAR_SIZE = 96;
+const RING_SIZE = AVATAR_SIZE + 8;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -523,7 +734,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
-  settingsButton: {
+  editButton: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.full,
@@ -542,40 +753,32 @@ const styles = StyleSheet.create({
     gap: spacing['3xl'],
   },
 
-  // Hero Card
-  heroCard: {
-    borderRadius: borderRadius['2xl'],
-    padding: spacing['3xl'],
-    overflow: 'hidden',
-  },
-  heroOrbDecor: {
-    position: 'absolute',
-    top: -16,
-    right: -16,
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    backgroundColor: 'rgba(37,99,235,0.05)',
-  },
-  heroContent: {
-    flexDirection: 'row',
+  // ── Instagram Hero ────────────────────────────────────────
+  heroSection: {
     alignItems: 'center',
-    gap: spacing.cardPadding,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
   },
-  avatarWrapper: {
+  avatarOuter: {
     position: 'relative',
+    marginBottom: spacing.xl,
   },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.xl,
+  avatarRing: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
+    padding: 4,
+    borderWidth: 2.5,
+    borderColor: colors.primary,
+  },
+  avatarInner: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     backgroundColor: colors.border,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
   },
   avatarImage: {
     width: '100%',
@@ -583,29 +786,34 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontFamily: fonts.bold,
-    fontSize: 28,
+    fontSize: 34,
     color: colors.textCaption,
   },
   cameraButton: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
+    bottom: 0,
+    right: -2,
     width: 32,
     height: 32,
-    borderRadius: borderRadius.full,
+    borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
-    ...shadows.lg,
+    borderWidth: 3,
+    borderColor: colors.background,
+    ...shadows.md,
   },
-  heroInfo: {
-    flex: 1,
+
+  // Name area
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
   },
   heroName: {
     fontFamily: fonts.bold,
-    fontSize: 20,
+    fontSize: 22,
     color: colors.textPrimary,
     letterSpacing: -0.5,
   },
@@ -613,40 +821,79 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 14,
     color: colors.textMuted,
-    marginBottom: spacing.md,
+    marginBottom: 2,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  badgeGreen: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 2,
-    backgroundColor: colors.successBg,
-    borderRadius: borderRadius.sm,
-  },
-  badgeGreenText: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    color: colors.successText,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  heroCommunity: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textCaption,
   },
 
-  // Section Group
+  // ── Stats Row ─────────────────────────────────────────────
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.xl,
+    ...shadows.sm,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontFamily: fonts.bold,
+    fontSize: 20,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border,
+  },
+
+  // ── Action Button ─────────────────────────────────────────
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: 44,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    ...shadows.sm,
+  },
+  actionButtonText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+
+  // ── Sections ──────────────────────────────────────────────
   sectionGroup: {
     gap: spacing.lg,
   },
   sectionHeader: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textCaption,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginLeft: 4,
+    letterSpacing: 1.5,
+    marginLeft: spacing.xs,
   },
 
-  // Info Card
+  // ── Info / Contact Card ───────────────────────────────────
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
@@ -654,18 +901,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  infoRow: {
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg + 2,
+    gap: spacing.xl,
+  },
+  contactIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.textBody,
+  },
+  contactDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginLeft: 34 + spacing.xl * 2,
+  },
+
+  // ── Editable rows ─────────────────────────────────────────
+  editRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xl,
     padding: spacing.xl,
   },
-  infoRowDivider: {
+  editDivider: {
     height: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.xl,
   },
-  infoIconBox: {
+  editIconBox: {
     width: 40,
     height: 40,
     borderRadius: borderRadius.md,
@@ -681,20 +955,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoTextGroup: {
+  editTextGroup: {
     flex: 1,
   },
-  infoLabel: {
+  editLabel: {
     fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.textCaption,
   },
-  infoValue: {
+  editValue: {
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.textSecondary,
   },
-  infoValueInput: {
+  editInput: {
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.textPrimary,
@@ -707,6 +981,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
+  },
+
+  // Housemates
+  housemateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    padding: spacing.xl,
+  },
+  housemateAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  housemateAvatarImg: {
+    width: '100%',
+    height: '100%',
+  },
+  housemateInitials: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textCaption,
+  },
+  housemateInfo: {
+    flex: 1,
+  },
+  housemateName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  housemateRole: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  emptyHousemates: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyHousematesText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textCaption,
   },
 
   // Add Contact
@@ -731,10 +1058,7 @@ const styles = StyleSheet.create({
     color: colors.textCaption,
   },
 
-  // Save Section
-  saveSection: {
-    gap: spacing.lg,
-  },
+  // Save / Cancel
   saveButton: {
     height: spacing.buttonHeight,
     backgroundColor: colors.primary,

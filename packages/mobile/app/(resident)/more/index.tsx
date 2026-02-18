@@ -50,6 +50,7 @@ const sections: MenuSection[] = [
 ];
 
 // ── Component ──────────────────────────────────────────────────
+// Menu screen with profile card + grouped menu sections
 export default function MoreIndexScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
