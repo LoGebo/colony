@@ -8,11 +8,11 @@ Phase 02: Stripe Infrastructure (DB + Edge Functions)
 
 ## Current Position
 Phase: 02 of unknown (Stripe Infrastructure)
-Plan: 02 of unknown in phase
+Plan: 03 of unknown in phase
 Status: In progress
-Last activity: 2026-02-18 - Completed 02-02-PLAN.md (create-payment-intent Edge Function)
+Last activity: 2026-02-18 - Completed 02-03-PLAN.md (payment-webhook Edge Function)
 
-Progress: Phase 01 complete, Phase 02 plans 01-02 complete
+Progress: Phase 01 complete, Phase 02 plans 01-03 complete
 ░░░░░░░░░░░░░░░░░░░░ (ongoing)
 
 ## Decisions Made
@@ -36,12 +36,17 @@ Progress: Phase 01 complete, Phase 02 plans 01-02 complete
 | 2026-02-18 | Dual Supabase client in Edge Functions | serviceClient (service_role) for DB writes; userClient (anon+JWT) only for auth.getUser() |
 | 2026-02-18 | Partial payment allowed (amount <= total_receivable) | Residents may pay partial balances; equality not enforced |
 | 2026-02-18 | client_secret never stored in DB | Security best practice; retrieve from Stripe API on idempotent replay |
+| 2026-02-18 | timingSafeEqual from jsr:@std/crypto (not crypto.subtle) | crypto.subtle.timingSafeEqual does not exist in Deno; Deno stdlib provides correct implementation |
+| 2026-02-18 | Webhook always returns 200 after valid signature | Non-200 triggers Stripe retry storm; failures recorded in webhook_events.error_message |
+| 2026-02-18 | p_payment_method_id = null for Stripe payments | Stripe is not a row in payment_methods table; identity captured via stripe_payment_intent_id |
+| 2026-02-18 | charge.refunded is stub (full reversal Phase 07) | Full ledger reversal deferred to Phase 07 scope |
 
 ## Known Issues
 - record_charge has mutable search_path (WARN, not blocking)
 - Fee structure points to old accounts (1200, 4100) vs standard (1100, 4010)
 - ~60 functions have mutable search_path (batch fix planned later)
 - create-payment-intent Edge Function not yet deployed (mcp__supabase__deploy_edge_function unavailable in session)
+- payment-webhook Edge Function not yet deployed (STRIPE_WEBHOOK_SECRET env var must be set in Supabase secrets)
 
 ## Key IDs (Demo Data)
 - Community: 00000000-0000-0000-0000-000000000010 (Residencial Las Palmas)
@@ -52,5 +57,5 @@ Progress: Phase 01 complete, Phase 02 plans 01-02 complete
 
 ## Session Continuity
 Last session: 2026-02-18
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Completed 02-03-PLAN.md (payment-webhook Edge Function)
 Resume file: None
