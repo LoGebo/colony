@@ -38,12 +38,14 @@
 - Verification: 17/17 must-haves passed, 4 items need human testing with Stripe keys + OXXO enabled
 
 ### Phase 05: Automated Charge Generation
-**Status:** Not started
+**Status:** COMPLETE
 **Goal:** Admin can generate monthly charges safely without duplicates
-- Create charge_runs and charge_run_items tables
-- Create generate_monthly_charges() function with UNIQUE constraint
-- Admin UI for charge generation with preview + confirmation
-- Charge run history with per-unit detail
+**Completed:** 2026-02-18
+- [x] charge_runs + charge_run_items tables with UNIQUE(community_id, fee_structure_id, period_start)
+- [x] generate_monthly_charges() DB function wrapping record_charge() with batch tracking
+- [x] Admin UI using atomic batch RPC (replaces N individual calls)
+- [x] Charge run history table on charges page (date, period, fee, units, total, status)
+- [x] Duplicate prevention: friendly error when same period+fee already charged
 
 ### Phase 06: Digital Receipts and Notifications
 **Status:** Not started
