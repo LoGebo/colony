@@ -29,13 +29,13 @@
 - Verification: 16/16 must-haves passed, 4 items need human testing with Stripe keys
 
 ### Phase 04: OXXO Payments
-**Status:** Planned
+**Status:** COMPLETE (human E2E testing pending Stripe keys + OXXO enabled)
 **Goal:** Resident can generate OXXO voucher and pay at any OXXO convenience store
-**Plans:** 3 plans
-Plans:
-- [ ] 04-01-PLAN.md -- Webhook OXXO lifecycle (processing handler, voucher URL storage, expiry push, description differentiation)
-- [ ] 04-02-PLAN.md -- Checkout OXXO branch (confirmPayment flow, voucher_generated state, usePendingOxxoVoucher hook)
-- [ ] 04-03-PLAN.md -- Dashboard OXXO UI (action card, pending voucher section, disable logic, visual verification)
+**Completed:** 2026-02-18
+- [x] 04-01: Webhook OXXO lifecycle (processing handler, voucher URL storage, expiry push, description differentiation)
+- [x] 04-02: Checkout OXXO branch (confirmPayment flow, voucher_generated state, usePendingOxxoVoucher hook)
+- [x] 04-03: Dashboard OXXO UI (action card, pending voucher section, disable logic)
+- Verification: 17/17 must-haves passed, 4 items need human testing with Stripe keys + OXXO enabled
 
 ### Phase 05: Automated Charge Generation
 **Status:** Not started

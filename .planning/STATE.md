@@ -1,14 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 04-oxxo-payments: IN PROGRESS (Plan 02 of 3 complete)
+Phase 04: COMPLETE (human E2E testing pending Stripe keys + OXXO enabled)
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
 - Phase 02: Stripe Infrastructure (COMPLETE - 28/28 automated checks passed)
 - Phase 03: Mobile Payment Screen (COMPLETE - 16/16 must-haves verified)
-- Phase 04-01: OXXO Webhook Lifecycle (COMPLETE)
-- Phase 04-02: OXXO Checkout Flow (COMPLETE)
+- Phase 04: OXXO Payments (COMPLETE - 17/17 must-haves verified)
 
 ## Decisions Made
 
@@ -89,6 +88,11 @@ Phase 04-oxxo-payments: IN PROGRESS (Plan 02 of 3 complete)
 - **Edge function redeployed**: create-payment-intent v4 (occupancy status='active' filter)
 - 4 items need human testing with Stripe keys (E2E payment flow, cancel, decline, visual design)
 
+## QA Testing (Phase 04)
+- **17/17 must-haves verified** via structural code analysis
+- 4 items need human testing with Stripe keys + OXXO enabled in Stripe Dashboard
+- Webhook upgraded to v4 with OXXO lifecycle (processing handler, voucher URL storage, expiry push)
+
 ## Session Continuity
 Last session: 2026-02-18
-Phase 04-02 COMPLETE. OXXO checkout flow added (2 tasks, 2 commits). Plan 03 next: dashboard OXXO pending voucher card.
+Phase 04 COMPLETE. All 3 plans executed and verified. Exhaustive QA pending.
