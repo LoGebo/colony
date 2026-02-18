@@ -8,11 +8,11 @@ Phase 02: Stripe Infrastructure (DB + Edge Functions)
 
 ## Current Position
 Phase: 02 of unknown (Stripe Infrastructure)
-Plan: 01 of unknown in phase
+Plan: 02 of unknown in phase
 Status: In progress
-Last activity: 2026-02-18 - Completed 02-01-PLAN.md (Stripe DB Tables)
+Last activity: 2026-02-18 - Completed 02-02-PLAN.md (create-payment-intent Edge Function)
 
-Progress: Phase 01 complete, Phase 02 plan 01 complete
+Progress: Phase 01 complete, Phase 02 plans 01-02 complete
 ░░░░░░░░░░░░░░░░░░░░ (ongoing)
 
 ## Decisions Made
@@ -33,11 +33,15 @@ Progress: Phase 01 complete, Phase 02 plan 01 complete
 | 2026-02-18 | stripe_customer_id on payment_intents is TEXT not FK | Raw ID for direct Stripe API calls without joins |
 | 2026-02-18 | expires_at on payment_intents for OXXO voucher expiry | OXXO vouchers expire 48h from creation; NULL for card payments |
 | 2026-02-18 | idempotency_key UNIQUE at DB level | First line of defense against double charges, even on Edge Function retry |
+| 2026-02-18 | Dual Supabase client in Edge Functions | serviceClient (service_role) for DB writes; userClient (anon+JWT) only for auth.getUser() |
+| 2026-02-18 | Partial payment allowed (amount <= total_receivable) | Residents may pay partial balances; equality not enforced |
+| 2026-02-18 | client_secret never stored in DB | Security best practice; retrieve from Stripe API on idempotent replay |
 
 ## Known Issues
 - record_charge has mutable search_path (WARN, not blocking)
 - Fee structure points to old accounts (1200, 4100) vs standard (1100, 4010)
 - ~60 functions have mutable search_path (batch fix planned later)
+- create-payment-intent Edge Function not yet deployed (mcp__supabase__deploy_edge_function unavailable in session)
 
 ## Key IDs (Demo Data)
 - Community: 00000000-0000-0000-0000-000000000010 (Residencial Las Palmas)
@@ -48,5 +52,5 @@ Progress: Phase 01 complete, Phase 02 plan 01 complete
 
 ## Session Continuity
 Last session: 2026-02-18
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
