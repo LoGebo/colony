@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo } from 'react';
-import { useFeeStructures, useChargePreview, useGenerateCharges } from '@/hooks/useCharges';
+import { useFeeStructures, useChargePreview, useGenerateCharges, useChargeRuns } from '@/hooks/useCharges';
 import { ChargePreviewTable } from '@/components/financial/ChargePreviewTable';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -20,6 +20,7 @@ const monthNames = [
  * Charge generation page with two-step workflow:
  * 1. Preview: select fee structure, date, description -> view preview table
  * 2. Confirm: review total, confirm via modal, generate charges
+ * 3. History: view past charge runs with duplicate prevention
  */
 export default function ChargesPage() {
   const now = new Date();
@@ -40,6 +41,7 @@ export default function ChargesPage() {
     isLoading: previewLoading,
     isFetching: previewFetching,
   } = useChargePreview(showPreview ? selectedFeeId : null);
+  const { data: chargeRuns, isLoading: runsLoading } = useChargeRuns();
 
   const generateMutation = useGenerateCharges();
 
@@ -66,7 +68,6 @@ export default function ChargesPage() {
         feeStructureId: selectedFeeId,
         chargeDate,
         description,
-        previews,
       },
       {
         onSuccess: () => {
@@ -191,6 +192,95 @@ export default function ChargesPage() {
         </Card>
       )}
 
+      {/* Charge Run History */}
+      <Card>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Historial de Corridas de Cargos
+        </h2>
+        {runsLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-12 animate-pulse rounded bg-gray-100" />
+            ))}
+          </div>
+        ) : !chargeRuns || chargeRuns.length === 0 ? (
+          <p className="py-6 text-center text-sm text-gray-500">
+            No se han generado cargos aun.
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Fecha
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Periodo
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Cuota
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Unidades
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Total
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Estado
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {chargeRuns.map((run) => (
+                  <tr key={run.id} className="hover:bg-gray-50">
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                      {new Date(run.created_at).toLocaleDateString('es-MX', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                      {new Date(run.period_start + 'T00:00:00').toLocaleDateString('es-MX', {
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                      {run.fee_structure_name}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500">
+                      {run.units_charged}
+                      {run.units_skipped > 0 && (
+                        <span className="ml-1 text-amber-600">
+                          ({run.units_skipped} omitidos)
+                        </span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900">
+                      {formatCurrency(run.total_amount)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-center">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                          run.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {run.status === 'completed' ? 'Completado' : 'Revertido'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Confirmation modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -202,8 +292,8 @@ export default function ChargesPage() {
               Se generaran <strong>{chargeableCount} cargos</strong> por un
               total de <strong>{formatCurrency(total)}</strong>.
             </p>
-            <p className="mt-2 text-sm text-red-600">
-              Esta accion no se puede deshacer.
+            <p className="mt-2 text-sm text-amber-600">
+              Si ya se generaron cargos para este periodo y estructura, la operacion sera rechazada automaticamente.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <Button

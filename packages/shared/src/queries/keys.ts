@@ -258,6 +258,7 @@ export const financials = createQueryKeys('financials', {
   expenseBreakdown: (communityId: string, year?: number) => [{ communityId, year }],
   delinquentUnits: (communityId: string) => [{ communityId }],
   paymentProofs: (communityId: string) => [{ communityId }],
+  chargeRuns: (communityId: string) => [{ communityId }],
 });
 
 export const conversations = createQueryKeys('conversations', {

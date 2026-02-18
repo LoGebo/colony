@@ -33,7 +33,20 @@ interface GenerateChargesInput {
   feeStructureId: string;
   chargeDate: string;
   description: string;
-  previews: ChargePreviewRow[];
+}
+
+export interface ChargeRun {
+  id: string;
+  fee_structure_id: string;
+  period_start: string;
+  description: string;
+  status: string;
+  total_amount: number;
+  units_charged: number;
+  units_skipped: number;
+  created_by: string | null;
+  created_at: string;
+  fee_structure_name?: string;
 }
 
 // ── Query: Active fee structures ───────────────────────────────────
@@ -131,58 +144,113 @@ export function useChargePreview(feeStructureId: string | null) {
   });
 }
 
-// ── Mutation: Generate charges ─────────────────────────────────────
+// ── Mutation: Generate charges (batch via DB function) ────────────
 
 /**
- * Generate charges for all units using record_charge RPC.
- * Processes each unit in parallel via Promise.allSettled.
+ * Generate charges for all active units using generate_monthly_charges() DB function.
+ * This is an atomic batch operation with duplicate prevention via UNIQUE constraint.
+ * Replaces the old approach of N individual record_charge() calls.
  */
 export function useGenerateCharges() {
   const { communityId, user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ feeStructureId, chargeDate, description, previews }: GenerateChargesInput) => {
+    mutationFn: async ({ feeStructureId, chargeDate, description }: GenerateChargesInput) => {
       const supabase = createClient();
 
-      const results = await Promise.allSettled(
-        previews
-          .filter((p) => p.calculated_amount > 0)
-          .map(async (preview) => {
-            // record_charge deployed via migration; types not yet regenerated
-            const { data, error } = await supabase.rpc('record_charge' as never, {
-              p_community_id: communityId!,
-              p_unit_id: preview.unit_id,
-              p_amount: preview.calculated_amount,
-              p_charge_date: chargeDate,
-              p_description: description,
-              p_fee_structure_id: feeStructureId,
-              p_created_by: user!.id,
-            } as never);
+      // generate_monthly_charges is deployed via migration; types not yet regenerated
+      const { data, error } = await supabase.rpc('generate_monthly_charges' as never, {
+        p_community_id: communityId!,
+        p_fee_structure_id: feeStructureId,
+        p_period_start: chargeDate,
+        p_description: description,
+        p_created_by: user!.id,
+      } as never);
 
-            if (error) throw error;
-            return data;
-          })
-      );
+      if (error) {
+        // UNIQUE constraint violation = duplicate charge run
+        if (error.code === '23505') {
+          throw new Error('Ya se generaron cargos para este periodo y estructura de cuota. No se pueden duplicar.');
+        }
+        throw error;
+      }
 
-      const fulfilled = results.filter((r) => r.status === 'fulfilled').length;
-      const rejected = results.filter((r) => r.status === 'rejected').length;
-
-      return { fulfilled, rejected, total: previews.length };
+      // RPC returns TABLE with single row; cast through unknown due to missing generated types
+      const result = (Array.isArray(data) ? data[0] : data) as unknown as {
+        charge_run_id: string;
+        units_charged: number;
+        units_skipped: number;
+        total_amount: number;
+      } | undefined;
+      return {
+        chargeRunId: result?.charge_run_id ?? '',
+        unitsCharged: result?.units_charged ?? 0,
+        unitsSkipped: result?.units_skipped ?? 0,
+        totalAmount: result?.total_amount ?? 0,
+      };
     },
-    onSuccess: ({ fulfilled, rejected }) => {
-      if (rejected === 0) {
-        toast.success(`${fulfilled} cargos generados exitosamente`);
+    onSuccess: ({ unitsCharged, unitsSkipped }) => {
+      if (unitsSkipped === 0) {
+        toast.success(`${unitsCharged} cargos generados exitosamente`);
       } else {
-        toast.warning(`${fulfilled} cargos generados, ${rejected} fallaron`);
+        toast.warning(`${unitsCharged} cargos generados, ${unitsSkipped} omitidos`);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.unitBalances._def });
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.transactionSummary._def });
       queryClient.invalidateQueries({ queryKey: queryKeys.financials.chargePreview._def });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financials.chargeRuns._def });
     },
     onError: (error: Error) => {
       toastError('Error al generar cargos', error);
     },
+  });
+}
+
+// ── Query: Charge run history ─────────────────────────────────────
+
+/**
+ * Fetch charge run history for the community.
+ * Joins fee_structures for display name.
+ */
+export function useChargeRuns() {
+  const { communityId } = useAuth();
+
+  return useQuery({
+    queryKey: queryKeys.financials.chargeRuns(communityId!).queryKey,
+    queryFn: async () => {
+      const supabase = createClient();
+
+      // charge_runs not in generated types; cast through unknown
+      const { data, error } = await supabase
+        .from('charge_runs' as never)
+        .select('id, fee_structure_id, period_start, description, status, total_amount, units_charged, units_skipped, created_by, created_at' as never)
+        .eq('community_id' as never, communityId! as never)
+        .is('deleted_at' as never, null as never)
+        .order('created_at' as never, { ascending: false } as never)
+        .limit(20);
+
+      if (error) throw error;
+
+      // Enrich with fee structure names
+      const runs = (data ?? []) as unknown as ChargeRun[];
+
+      if (runs.length > 0) {
+        const feeIds = [...new Set(runs.map((r) => r.fee_structure_id))];
+        const { data: feeStructures } = await supabase
+          .from('fee_structures')
+          .select('id, name')
+          .in('id', feeIds);
+
+        const feeMap = new Map((feeStructures ?? []).map((fs) => [fs.id, fs.name]));
+        for (const run of runs) {
+          run.fee_structure_name = feeMap.get(run.fee_structure_id) ?? 'Unknown';
+        }
+      }
+
+      return runs;
+    },
+    enabled: !!communityId,
   });
 }
 
