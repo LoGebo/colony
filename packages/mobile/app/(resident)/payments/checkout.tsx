@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import Animated, { FadeIn, FadeInDown, BounceIn } from 'react-native-reanimated';
@@ -17,6 +17,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@upoe/shared';
 import { useResidentUnit } from '@/hooks/useOccupancy';
 import { useUnitBalance, useCreatePaymentIntent } from '@/hooks/usePayments';
+import { useResidentProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { formatCurrency } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
@@ -24,7 +26,7 @@ import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 // ---------- Types ----------
 
-type PaymentState = 'idle' | 'creating' | 'presenting' | 'processing' | 'success' | 'failed' | 'timeout';
+type PaymentState = 'idle' | 'creating' | 'presenting' | 'processing' | 'success' | 'failed' | 'timeout' | 'voucher_generated';
 
 // ---------- Helpers ----------
 
@@ -46,11 +48,15 @@ function generateUUID(): string {
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const { paymentMethodType } = useLocalSearchParams<{ paymentMethodType?: string }>();
+  const isOxxo = paymentMethodType === 'oxxo';
   const queryClient = useQueryClient();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet, confirmPayment } = useStripe();
   const { unitId, unitNumber, isLoading: unitLoading } = useResidentUnit();
   const { data: balance, isLoading: balanceLoading } = useUnitBalance(unitId ?? undefined);
   const createPaymentIntent = useCreatePaymentIntent();
+  const { data: profile } = useResidentProfile();
+  const { user } = useAuth();
 
   // ---------- State ----------
 
@@ -134,12 +140,51 @@ export default function CheckoutScreen() {
       const result = await createPaymentIntent.mutateAsync({
         unit_id: unitId,
         amount, // MXN pesos, NOT centavos
-        description: `Pago de mantenimiento - ${unitNumber}`,
+        description: isOxxo
+          ? `Pago OXXO - ${unitNumber}`
+          : `Pago de mantenimiento - ${unitNumber}`,
         idempotency_key: idempotencyKey,
-        payment_method_type: 'card',
+        payment_method_type: isOxxo ? 'oxxo' : 'card',
       });
 
       setStripePaymentIntentId(result.paymentIntentId);
+
+      // --- OXXO Flow ---
+      if (isOxxo) {
+        // Build billing details from resident profile
+        const fullName = profile?.first_name && profile?.paternal_surname
+          ? `${profile.first_name} ${profile.paternal_surname}`
+          : (user?.email ?? 'Residente');
+        const email = user?.email ?? '';
+
+        setPaymentState('presenting');
+
+        const { error: confirmError } = await confirmPayment(
+          result.clientSecret,
+          {
+            paymentMethodType: 'Oxxo',  // Capital O - verified from SDK source
+            paymentMethodData: {
+              billingDetails: {
+                name: fullName,
+                email: email,
+              },
+            },
+          },
+        );
+
+        if (confirmError) {
+          setPaymentState('failed');
+          setErrorMessage(confirmError.message);
+          return;
+        }
+
+        // SDK opened WebView and user dismissed it. Status is now requires_action.
+        // Do NOT start Realtime subscription or 10-second timeout - OXXO settles hours/days later.
+        setPaymentState('voucher_generated');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+      // --- End OXXO Flow ---
 
       // Step 2: Initialize PaymentSheet
       const { error: initError } = await initPaymentSheet({
@@ -177,7 +222,7 @@ export default function CheckoutScreen() {
       setPaymentState('failed');
       setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
-  }, [unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet]);
+  }, [unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet, confirmPayment, isOxxo, profile, user]);
 
   // ---------- handleRetry ----------
 
@@ -198,7 +243,7 @@ export default function CheckoutScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pay with Card</Text>
+          <Text style={styles.headerTitle}>{isOxxo ? 'Pay with OXXO' : 'Pay with Card'}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -238,6 +283,35 @@ export default function CheckoutScreen() {
     );
   }
 
+  // ---------- Render: Voucher Generated ----------
+
+  if (paymentState === 'voucher_generated') {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.successContainer}>
+          <Animated.View entering={BounceIn.delay(200)} style={[styles.successIconCircle, { backgroundColor: colors.primary }]}>
+            <Ionicons name="receipt-outline" size={40} color={colors.textOnDark} />
+          </Animated.View>
+          <Animated.Text entering={FadeInDown.delay(400)} style={styles.successTitle}>
+            Voucher Generado
+          </Animated.Text>
+          <Animated.Text entering={FadeInDown.delay(500)} style={styles.successAmount}>
+            {formatCurrency(paidAmount)}
+          </Animated.Text>
+          <Animated.Text entering={FadeIn.delay(600)} style={styles.successSubtitle}>
+            Presenta el voucher en cualquier OXXO para completar tu pago. El voucher expira en 48 horas.
+          </Animated.Text>
+          <Animated.View entering={FadeIn.delay(700)}>
+            <TouchableOpacity style={styles.successButton} onPress={() => router.back()}>
+              <Text style={styles.successButtonText}>Volver a Pagos</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  }
+
   // ---------- Render: Main Checkout ----------
 
   const isProcessing = paymentState === 'creating' || paymentState === 'presenting' || paymentState === 'processing';
@@ -255,7 +329,7 @@ export default function CheckoutScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={isProcessing ? colors.textDisabled : colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pay with Card</Text>
+        <Text style={styles.headerTitle}>{isOxxo ? 'Pay with OXXO' : 'Pay with Card'}</Text>
       </View>
 
       <ScrollView
@@ -366,7 +440,9 @@ export default function CheckoutScreen() {
             <ActivityIndicator color={colors.textOnDark} size="small" />
           ) : (
             <Text style={styles.payButtonText}>
-              {isValidAmount ? `Pay ${formatCurrency(activeAmount!)}` : 'Select an amount'}
+              {isValidAmount
+                ? (isOxxo ? `Generar Voucher ${formatCurrency(activeAmount!)}` : `Pay ${formatCurrency(activeAmount!)}`)
+                : 'Select an amount'}
             </Text>
           )}
         </TouchableOpacity>
