@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx remotion studio:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(ping:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(npx playwright screenshot:*)",
+      "Bash(npx playwright@1.50.0 screenshot:*)",
+      "Bash(where:*)",
+      "Bash(npx @playwright/test --version)",
+      "Bash(npx playwright:*)",
+      "Bash(node:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm root:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

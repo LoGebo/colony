@@ -260,10 +260,21 @@ export const financials = createQueryKeys('financials', {
   paymentProofs: (communityId: string) => [{ communityId }],
 });
 
+export const conversations = createQueryKeys('conversations', {
+  all: null,
+  list: (userId: string) => [{ userId }],
+  detail: (conversationId: string) => [conversationId],
+  messages: (conversationId: string) => [{ conversationId }],
+  participants: (conversationId: string) => [{ conversationId }],
+  unreadCount: (userId: string) => [{ userId }],
+  search: (userId: string, query: string) => [{ userId, query }],
+});
+
 export const queryKeys = mergeQueryKeys(
   accessLogs,
   amenities,
   announcements,
+  conversations,
   assemblies,
   audit,
   communities,

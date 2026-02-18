@@ -110,10 +110,20 @@ export default function ReserveAmenityScreen() {
         setSelectedStartHour(null);
         setSelectedEndHour(null);
       } else if (hour >= selectedStartHour) {
-        // Tap after start - set end (hour+1 since slot represents start of hour)
-        setSelectedEndHour(hour + 1);
+        // Tap after start - check no occupied slots in between
+        let blocked = false;
+        for (let h = selectedStartHour; h <= hour; h++) {
+          if (occupiedHours.has(h)) {
+            blocked = true;
+            break;
+          }
+        }
+        if (!blocked) {
+          setSelectedEndHour(hour + 1);
+        }
+        // If blocked, ignore the tap (can't span occupied slots)
       } else {
-        // Tap before start - reset
+        // Tap before start - reset to new start
         setSelectedStartHour(hour);
         setSelectedEndHour(hour + 1);
       }

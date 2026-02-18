@@ -37,6 +37,7 @@ interface NotificationData {
   visitor_id?: string;
   ticket_id?: string;
   announcement_id?: string;
+  conversation_id?: string;
   type?: NotificationType;
   [key: string]: unknown;
 }
@@ -124,6 +125,18 @@ class NotificationService {
           };
         }
 
+        // Chat messages: HIGH priority with sound
+        if (type === 'new_message' || type === 'conversation_mention') {
+          return {
+            shouldShowAlert: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+            priority: Notifications.AndroidNotificationPriority.HIGH,
+          };
+        }
+
         // Default: banner only, no sound
         return {
           shouldShowAlert: true,
@@ -157,6 +170,14 @@ class NotificationService {
       vibrationPattern: [0, 500, 500, 500],
       lightColor: '#dc2626',
       bypassDnd: true,
+    });
+
+    // Chat messages channel
+    await Notifications.setNotificationChannelAsync('chat', {
+      name: 'Chat Messages',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 200, 100, 200],
+      lightColor: '#2563eb',
     });
 
     // Default channel
@@ -314,6 +335,12 @@ class NotificationService {
 
         case 'open_package':
           router.push('/(resident)/more/packages');
+          break;
+
+        case 'open_conversation':
+          if (isValidUUID(data.conversation_id)) {
+            router.push(`/(resident)/messages/${data.conversation_id}`);
+          }
           break;
 
         default:

@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChannels, usePosts, useToggleReaction, useMyPostReactions } from '@/hooks/usePosts';
+import { useUnreadConversations } from '@/hooks/useChat';
 import { formatRelative } from '@/lib/dates';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
@@ -342,6 +343,7 @@ function ListEmpty() {
 // ---- Main screen component ----
 export default function CommunityIndexScreen() {
   const router = useRouter();
+  const { data: unreadCount } = useUnreadConversations();
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const { data: channels } = useChannels();
   const { data: posts, isLoading, refetch } = usePosts(selectedChannel);
@@ -427,13 +429,28 @@ export default function CommunityIndexScreen() {
           <Text style={styles.headerTitle}>Community</Text>
           <Text style={styles.headerSubtitle}>Social Feed</Text>
         </View>
-        <TouchableOpacity
-          style={styles.amenitiesButton}
-          onPress={() => router.push('/(resident)/community/amenities/')}
-        >
-          <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-          <Text style={styles.amenitiesButtonText}>Amenities</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.dmButton}
+            onPress={() => router.push('/(resident)/messages')}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
+            {(unreadCount ?? 0) > 0 && (
+              <View style={styles.dmBadge}>
+                <Text style={styles.dmBadgeText}>
+                  {(unreadCount ?? 0) > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.amenitiesButton}
+            onPress={() => router.push('/(resident)/community/amenities/')}
+          >
+            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            <Text style={styles.amenitiesButtonText}>Amenities</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Channel Filter Pills */}
@@ -796,6 +813,40 @@ const styles = StyleSheet.create({
   },
   reactionCountBlue: {
     color: colors.primary,
+  },
+  // Header actions row
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  // DM button
+  dmButton: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(37,99,235,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dmBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  dmBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textOnDark,
   },
   // Amenities button
   amenitiesButton: {

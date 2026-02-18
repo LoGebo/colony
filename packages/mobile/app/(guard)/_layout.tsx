@@ -1,8 +1,9 @@
 import { Tabs, Redirect } from 'expo-router';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Text, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadConversations } from '@/hooks/useChat';
 import { colors, fonts, shadows } from '@/theme';
 
 type TabIconName =
@@ -10,6 +11,8 @@ type TabIconName =
   | 'shield-outline'
   | 'alert-circle'
   | 'alert-circle-outline'
+  | 'chatbubble'
+  | 'chatbubble-outline'
   | 'navigate'
   | 'navigate-outline'
   | 'ellipsis-horizontal'
@@ -17,6 +20,28 @@ type TabIconName =
 
 function TabBarIcon({ name, color }: { name: TabIconName; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
+}
+
+function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
+  const { data: unreadCount } = useUnreadConversations();
+  const hasUnread = (unreadCount ?? 0) > 0;
+
+  return (
+    <View>
+      <Ionicons
+        name={focused ? 'chatbubble' : 'chatbubble-outline'}
+        size={24}
+        color={color}
+      />
+      {hasUnread && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {(unreadCount ?? 0) > 9 ? '9+' : unreadCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function GuardLayout() {
@@ -56,6 +81,15 @@ export default function GuardLayout() {
           title: 'INCIDENTS',
           tabBarIcon: ({ focused, color }) => (
             <TabBarIcon name={focused ? 'alert-circle' : 'alert-circle-outline'} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'MESSAGES',
+          tabBarIcon: ({ focused, color }) => (
+            <ChatTabIcon focused={focused} color={color} />
           ),
         }}
       />
@@ -110,5 +144,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: -0.5,
     marginTop: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textOnDark,
   },
 });

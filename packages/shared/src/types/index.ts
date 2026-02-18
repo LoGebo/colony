@@ -53,6 +53,14 @@ export type GuardShift = Tables<'guard_shifts'>;
 export type PatrolRoute = Tables<'patrol_routes'>;
 export type Account = Tables<'accounts'>;
 
+// Chat / Messaging
+export type Conversation = Tables<'conversations'>;
+export type ConversationParticipant = Tables<'conversation_participants'>;
+export type Message = Tables<'messages'>;
+export type MessageReaction = Tables<'message_reactions'>;
+export type MessageReadReceipt = Tables<'message_read_receipts'>;
+export type QuickResponse = Tables<'quick_responses'>;
+
 // Auth-related types
 export interface AppMetadata {
   community_id?: string;

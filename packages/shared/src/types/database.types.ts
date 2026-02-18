@@ -11265,6 +11265,15 @@ export type Database = {
         Args: { p_device_info?: Json; p_ip_address: unknown; p_user_id: string }
         Returns: string
       }
+      create_group_conversation: {
+        Args: {
+          p_community_id: string
+          p_name: string
+          p_description?: string | null
+          p_member_user_ids?: string[]
+        }
+        Returns: string
+      }
       deactivate_device: {
         Args: { p_device_id: string; p_reason: string }
         Returns: undefined
@@ -11486,6 +11495,7 @@ export type Database = {
           message_count: number
           name: string
           other_participant_name: string
+          other_participant_user_id: string
           participant_count: number
           unread_count: number
         }[]

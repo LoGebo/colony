@@ -1,14 +1,47 @@
 import { Tabs, Redirect } from 'expo-router';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Text, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnreadConversations } from '@/hooks/useChat';
 import { colors, fonts, shadows } from '@/theme';
 
-type TabIconName = 'home' | 'home-outline' | 'people' | 'people-outline' | 'chatbubble' | 'chatbubble-outline' | 'calendar' | 'calendar-outline' | 'person' | 'person-outline';
+type TabIconName =
+  | 'home'
+  | 'home-outline'
+  | 'people'
+  | 'people-outline'
+  | 'chatbubble'
+  | 'chatbubble-outline'
+  | 'calendar'
+  | 'calendar-outline'
+  | 'person'
+  | 'person-outline';
 
 function TabBarIcon({ name, color }: { name: TabIconName; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
+}
+
+function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
+  const { data: unreadCount } = useUnreadConversations();
+  const hasUnread = (unreadCount ?? 0) > 0;
+
+  return (
+    <View>
+      <Ionicons
+        name={focused ? 'chatbubble' : 'chatbubble-outline'}
+        size={24}
+        color={color}
+      />
+      {hasUnread && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {(unreadCount ?? 0) > 9 ? '9+' : unreadCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function ResidentLayout() {
@@ -36,7 +69,6 @@ export default function ResidentLayout() {
       screenListeners={({ navigation }) => ({
         tabPress: (e) => {
           // When a tab is pressed, pop its nested stack back to root
-          // This prevents getting stuck on nested screens (e.g., Amenities inside Social)
           const target = e.target;
           if (!target) return;
           const tabName = target.split('-')[0];
@@ -69,7 +101,7 @@ export default function ResidentLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: 'SOCIAL',
+          title: 'COMMUNITY',
           tabBarIcon: ({ focused, color }) => (
             <TabBarIcon name={focused ? 'chatbubble' : 'chatbubble-outline'} color={color} />
           ),
@@ -94,6 +126,7 @@ export default function ResidentLayout() {
         }}
       />
       {/* Hidden stack screens accessible via navigation */}
+      <Tabs.Screen name="messages" options={{ href: null }} />
       <Tabs.Screen name="maintenance" options={{ href: null }} />
       <Tabs.Screen name="announcements" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
@@ -121,5 +154,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: -0.5,
     marginTop: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.textOnDark,
   },
 });
