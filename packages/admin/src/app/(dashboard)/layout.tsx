@@ -22,7 +22,9 @@ const navItems: NavItem[] = [
     children: [
       { href: '/finances/approvals', label: 'Aprobaciones' },
       { href: '/finances/charges', label: 'Cargos' },
+      { href: '/finances/collections', label: 'Cobranza' },
       { href: '/finances/delinquency', label: 'Morosidad' },
+      { href: '/finances/stripe-payments', label: 'Pagos Stripe' },
       { href: '/finances/reports', label: 'Reportes' },
     ],
   },
