@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Phase
-Phase 07: COMPLETE. All payment system phases delivered.
+Phase 08: COMPLETE. All payment methods implemented.
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
@@ -11,6 +11,7 @@ Phase 07: COMPLETE. All payment system phases delivered.
 - Phase 05: Automated Charge Generation (COMPLETE - batch function + history + duplicate prevention)
 - Phase 06: Digital Receipts and Notifications (COMPLETE - auto-receipt, receipts screen, charge notifications)
 - Phase 07: Admin Financial Dashboard Improvements (COMPLETE - PI tracking, collections, webhook alerts)
+- Phase 08: Additional Payment Methods (COMPLETE - Apple Pay, Google Pay, SPEI, MSI)
 
 ## Decisions Made
 
@@ -96,12 +97,23 @@ Phase 07: COMPLETE. All payment system phases delivered.
 ## Edge Functions (5 deployed)
 - `verify-qr` (JWT required) - QR HMAC verification
 - `send-push` (JWT required) - FCM push + in-app notifications
-- `payment-webhook` v5 (no JWT) - Stripe webhook handler (QA fixes: maybeSingle, status update guard)
-- `create-payment-intent` v5 (JWT required) - Stripe PaymentIntent creation (QA fixes: idempotency, email, OXXO cap, Stripe timestamp)
+- `payment-webhook` v6 (no JWT) - Stripe webhook handler (SPEI descriptions, receipt labels, auto-receipt)
+- `create-payment-intent` v6 (JWT required) - Stripe PaymentIntent (SPEI transfers, MSI installments, OXXO)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 07 COMPLETE. All payment system phases (01-07) delivered.
+Phase 08 COMPLETE. All payment methods implemented (card, OXXO, SPEI, MSI, Apple Pay, Google Pay).
+Next: Phase 09 — Comprehensive QA Testing.
+
+## Phase 08 Deliverables
+- Apple Pay + Google Pay enabled via PaymentSheet config (merchantCountryCode: MX)
+- Google Pay enabled in app.json
+- SPEI: edge function creates PI with customer_balance + mx_bank_transfer, confirms server-side
+- SPEI instructions screen: CLABE, bank name, reference (selectable text), 1-3 day settlement note
+- MSI: enable_installments flag → card.installments.enabled on PaymentIntent
+- SPEI + MSI action cards on payments dashboard
+- Dynamic checkout headers per payment method (Card, OXXO, SPEI, MSI)
+- Edge functions v6 deployed: create-payment-intent + payment-webhook
 
 ## Phase 07 Deliverables
 - `usePaymentIntents` hook with status filtering + unit enrichment

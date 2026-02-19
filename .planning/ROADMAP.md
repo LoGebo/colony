@@ -69,12 +69,33 @@
 - [x] PaymentIntent Excel export (filtered by status)
 - [x] Navigation: Cobranza + Pagos Stripe added to Finanzas sidebar
 
-### Phase 08: Future Extensions
+### Phase 08: Additional Payment Methods
+**Status:** COMPLETE
+**Goal:** Apple Pay, Google Pay, SPEI bank transfers, and MSI installments
+**Completed:** 2026-02-18
+- [x] Apple Pay config in PaymentSheet (merchantCountryCode: MX)
+- [x] Google Pay enabled in app.json + PaymentSheet config (testEnv for dev)
+- [x] SPEI bank transfers via Stripe customer_balance + mx_bank_transfer
+- [x] SPEI instructions screen (CLABE, bank name, reference with selectable text)
+- [x] MSI installments (card.installments.enabled on PaymentIntent)
+- [x] create-payment-intent edge function v6: SPEI + MSI support deployed
+- [x] payment-webhook v6: SPEI description + receipt label handling deployed
+- [x] SPEI and MSI action cards on payments dashboard
+- [x] Dynamic checkout header titles per payment method
+
+### Phase 09: Comprehensive QA Testing
 **Status:** Not started
-**Goal:** Advanced payment features (deferred)
-- SPEI via Stripe
-- Meses sin intereses (MSI)
-- Domiciliacion bancaria
-- CFDI integration (Facturapi)
+**Goal:** Exhaustive quality assurance across entire payment system
+- E2E testing of all payment flows (card, OXXO, SPEI, Apple/Google Pay)
+- Security audit (RLS policies, Edge Function auth, input validation)
+- Edge case testing (double payments, expired vouchers, network failures)
+- Code quality review (TypeScript strictness, error handling, logging)
+- User acceptance testing (resident + admin flows as real users)
+- Performance testing (batch charge generation, large receipt lists)
+
+### Phase 10: Future Extensions (Deferred)
+**Status:** Not started
+**Goal:** Advanced payment features requiring external integrations
+- CFDI integration (Facturapi) — electronic invoicing
 - Stripe Connect for multi-community platform
-- Apple Pay / Google Pay
+- Domiciliacion bancaria (recurring direct debit)
