@@ -41,6 +41,8 @@ function getMethodLabel(method: string) {
       return 'Tarjeta';
     case 'oxxo':
       return 'OXXO';
+    case 'spei':
+      return 'SPEI';
     default:
       return method;
   }
@@ -57,7 +59,7 @@ export default function StripePaymentsPage() {
       'Stripe ID': pi.stripe_payment_intent_id,
       Unidad: pi.unit_number ?? '',
       Edificio: pi.building ?? '',
-      Monto: Number(pi.amount) / 100,
+      Monto: Number(pi.amount),
       Moneda: pi.currency,
       Metodo: getMethodLabel(pi.payment_method_type),
       Estado: getStatusBadge(pi.status).label,
@@ -204,7 +206,7 @@ export default function StripePaymentsPage() {
                         {getMethodLabel(pi.payment_method_type)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900">
-                        {formatCurrency(Number(pi.amount) / 100)}
+                        {formatCurrency(Number(pi.amount))}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-center">
                         <span

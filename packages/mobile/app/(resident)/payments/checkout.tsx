@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import Animated, { FadeIn, FadeInDown, BounceIn } from 'react-native-reanimated';
@@ -59,6 +59,7 @@ export default function CheckoutScreen() {
   const createPaymentIntent = useCreatePaymentIntent();
   const { data: profile } = useResidentProfile();
   const { user } = useAuth();
+  const navigation = useNavigation();
 
   // ---------- State ----------
 
@@ -72,6 +73,13 @@ export default function CheckoutScreen() {
 
   // Ref to capture activeAmount for async callbacks (avoids stale closures)
   const activeAmountRef = useRef<number | null>(null);
+
+  // ---------- Disable gesture back during payment ----------
+
+  useEffect(() => {
+    const isProcessing = paymentState === 'creating' || paymentState === 'presenting' || paymentState === 'processing';
+    navigation.setOptions({ gestureEnabled: !isProcessing });
+  }, [paymentState, navigation]);
 
   // ---------- Derived ----------
 

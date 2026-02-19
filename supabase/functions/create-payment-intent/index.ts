@@ -101,9 +101,9 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "unit_id must be a valid UUID" }, 400);
     }
 
-    if (!UUID_REGEX.test(idempotency_key) || idempotency_key.length > 255) {
+    if (!UUID_REGEX.test(idempotency_key)) {
       return jsonResponse(
-        { error: "idempotency_key must be a UUID or at most 255 characters" },
+        { error: "idempotency_key must be a valid UUID" },
         400,
       );
     }
@@ -154,6 +154,14 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(
         { error: "OXXO payments are limited to $10,000.00 MXN" },
         400,
+      );
+    }
+
+    // 5b. OXXO requires a valid email for billing details (check early, before Stripe Customer creation)
+    if (payment_method_type === "oxxo" && !user.email) {
+      return jsonResponse(
+        { error: "OXXO payments require an email address on your account" },
+        422,
       );
     }
 
@@ -287,14 +295,6 @@ Deno.serve(async (req: Request) => {
           );
         }
       }
-    }
-
-    // 9b. OXXO requires a valid email for billing details
-    if (payment_method_type === "oxxo" && !user.email) {
-      return jsonResponse(
-        { error: "OXXO payments require an email address on your account" },
-        422,
-      );
     }
 
     // 10. Create Stripe PaymentIntent

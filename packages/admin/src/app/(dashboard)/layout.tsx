@@ -306,7 +306,7 @@ function SidebarUser() {
   );
 }
 
-const ADMIN_ROLES = ['super_admin', 'community_admin', 'manager', 'admin'];
+const ADMIN_ROLES = ['super_admin', 'community_admin', 'manager'];
 
 export default function DashboardLayout({
   children,

@@ -168,7 +168,7 @@ async function handlePaymentIntentSucceeded(
       p_community_id: communityId,
       p_unit_id: unitId,
       p_amount: amount / 100,
-      p_payment_date: new Date().toISOString().split("T")[0],
+      p_payment_date: new Date(((pi.created as number) ?? Math.floor(Date.now() / 1000)) * 1000).toISOString().split("T")[0],
       p_description: paymentDescription,
       p_payment_method_id: null, // Stripe is not a row in payment_methods table
       p_created_by: residentId ?? null, // Audit trail
