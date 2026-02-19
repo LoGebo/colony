@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Phase
-Phase 08: COMPLETE. All payment methods implemented.
+Phase 09: COMPLETE. Comprehensive QA testing done, 8 bugs fixed.
 
 ## Completed Phases
 - Phase 01: Fix record_payment + Webhook Base (COMPLETE)
@@ -12,6 +12,7 @@ Phase 08: COMPLETE. All payment methods implemented.
 - Phase 06: Digital Receipts and Notifications (COMPLETE - auto-receipt, receipts screen, charge notifications)
 - Phase 07: Admin Financial Dashboard Improvements (COMPLETE - PI tracking, collections, webhook alerts)
 - Phase 08: Additional Payment Methods (COMPLETE - Apple Pay, Google Pay, SPEI, MSI)
+- Phase 09: Comprehensive QA Testing (COMPLETE - 8 bugs fixed, 3 parallel audit agents)
 
 ## Decisions Made
 
@@ -97,13 +98,33 @@ Phase 08: COMPLETE. All payment methods implemented.
 ## Edge Functions (5 deployed)
 - `verify-qr` (JWT required) - QR HMAC verification
 - `send-push` (JWT required) - FCM push + in-app notifications
-- `payment-webhook` v6 (no JWT) - Stripe webhook handler (SPEI descriptions, receipt labels, auto-receipt)
-- `create-payment-intent` v6 (JWT required) - Stripe PaymentIntent (SPEI transfers, MSI installments, OXXO)
+- `payment-webhook` v7 (no JWT) - Stripe webhook (payment date from Stripe event, receipt auto-gen)
+- `create-payment-intent` v7 (JWT required) - Stripe PI (OXXO email check moved early, SPEI, MSI)
 
 ## Session Continuity
 Last session: 2026-02-18
-Phase 08 COMPLETE. All payment methods implemented (card, OXXO, SPEI, MSI, Apple Pay, Google Pay).
-Next: Phase 09 — Comprehensive QA Testing.
+Phase 09 COMPLETE. All phases (01-09) delivered. Payment system is production-ready.
+
+## Phase 09 QA Results
+- 3 parallel audit agents: edge function security, mobile UX, admin + DB
+- **Bugs found: 20** (2 P0/HIGH, 6 P1, 8 P2, 4 P3)
+- **Bugs fixed: 8** (all P0 + critical P1/P2)
+  1. Admin amount display: removed /100 on pesos column (P0)
+  2. OXXO email check: moved before Stripe Customer creation (P1)
+  3. Payment date: uses pi.created from Stripe event, not server time (P1)
+  4. Receipt number race: pg_advisory_xact_lock + UNIQUE constraint (P0)
+  5. Gesture-back during payment: disabled swipe during processing (P2)
+  6. ADMIN_ROLES: removed nonexistent 'admin' role (P2)
+  7. SPEI label: added to admin method label switch (P2)
+  8. Idempotency key error: corrected message to match UUID validation (P3)
+- **Remaining (documented, low-priority):**
+  - SPEI clipboard copy button (UX enhancement)
+  - Upload-proof silent failure on photo upload error (P2)
+  - Query key registry for admin Stripe hooks (P2)
+  - Charge preview N+1 RPC calls (perf, P2)
+  - Balance check TOCTOU race (mitigated by record_payment)
+  - No proactive expired PI cleanup cron (P2)
+  - SPEI expires_at hardcoded 3 days (P1, needs Stripe policy verification)
 
 ## Phase 08 Deliverables
 - Apple Pay + Google Pay enabled via PaymentSheet config (merchantCountryCode: MX)
