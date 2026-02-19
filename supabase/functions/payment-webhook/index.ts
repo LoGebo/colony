@@ -156,7 +156,9 @@ async function handlePaymentIntentSucceeded(
 
   const paymentDescription = localPi?.payment_method_type === "oxxo"
     ? `Pago OXXO via Stripe - ${piId}`
-    : `Pago con tarjeta via Stripe - ${piId}`;
+    : localPi?.payment_method_type === "spei"
+      ? `Pago SPEI via Stripe - ${piId}`
+      : `Pago con tarjeta via Stripe - ${piId}`;
 
   // 3. Call record_payment() RPC
   //    Amount from Stripe is in centavos -> divide by 100 for MXN pesos
@@ -218,7 +220,9 @@ async function handlePaymentIntentSucceeded(
     } else {
       const paymentMethodLabel = localPi?.payment_method_type === "oxxo"
         ? "oxxo"
-        : "card";
+        : localPi?.payment_method_type === "spei"
+          ? "transfer"
+          : "card";
 
       const { error: receiptError } = await supabase
         .from("receipts")

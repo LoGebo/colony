@@ -181,6 +181,44 @@ export default function PaymentDashboardScreen() {
 
           <View style={{ height: spacing.lg }} />
 
+          {/* SPEI Transfer */}
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'spei' } })}
+            disabled={currentBalance <= 0}
+          >
+            <GlassCard style={currentBalance <= 0 ? { ...styles.actionCard, opacity: 0.5 } : styles.actionCard}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.tealLight }]}>
+                <Ionicons name="business-outline" size={20} color={colors.teal} />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>SPEI Transfer</Text>
+                <Text style={styles.actionSubtitle}>Pay via bank transfer (CLABE)</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
+            </GlassCard>
+          </TouchableOpacity>
+
+          <View style={{ height: spacing.lg }} />
+
+          {/* Pay in Installments (MSI) */}
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/(resident)/payments/checkout', params: { paymentMethodType: 'card', enableInstallments: 'true' } })}
+            disabled={currentBalance <= 0}
+          >
+            <GlassCard style={currentBalance <= 0 ? { ...styles.actionCard, opacity: 0.5 } : styles.actionCard}>
+              <View style={[styles.actionIconBox, { backgroundColor: colors.indigoBg }]}>
+                <Ionicons name="calendar-outline" size={20} color={colors.indigo} />
+              </View>
+              <View style={styles.actionTextContainer}>
+                <Text style={styles.actionTitle}>Meses sin Intereses</Text>
+                <Text style={styles.actionSubtitle}>Pay in installments with card</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textCaption} />
+            </GlassCard>
+          </TouchableOpacity>
+
+          <View style={{ height: spacing.lg }} />
+
           {/* Upload Transfer Receipt */}
           <TouchableOpacity
             onPress={() => router.push('/(resident)/payments/upload-proof')}

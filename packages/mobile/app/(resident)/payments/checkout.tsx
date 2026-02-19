@@ -16,7 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@upoe/shared';
 import { useResidentUnit } from '@/hooks/useOccupancy';
-import { useUnitBalance, useCreatePaymentIntent, pendingOxxoQueryKey } from '@/hooks/usePayments';
+import { useUnitBalance, useCreatePaymentIntent, pendingOxxoQueryKey, type BankTransferDetails } from '@/hooks/usePayments';
 import { useResidentProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
@@ -26,7 +26,7 @@ import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 
 // ---------- Types ----------
 
-type PaymentState = 'idle' | 'creating' | 'presenting' | 'processing' | 'success' | 'failed' | 'timeout' | 'voucher_generated';
+type PaymentState = 'idle' | 'creating' | 'presenting' | 'processing' | 'success' | 'failed' | 'timeout' | 'voucher_generated' | 'spei_instructions';
 
 // ---------- Helpers ----------
 
@@ -48,8 +48,10 @@ function generateUUID(): string {
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { paymentMethodType } = useLocalSearchParams<{ paymentMethodType?: string }>();
+  const { paymentMethodType, enableInstallments } = useLocalSearchParams<{ paymentMethodType?: string; enableInstallments?: string }>();
   const isOxxo = paymentMethodType === 'oxxo';
+  const isSpei = paymentMethodType === 'spei';
+  const isMsi = enableInstallments === 'true';
   const queryClient = useQueryClient();
   const { initPaymentSheet, presentPaymentSheet, confirmPayment } = useStripe();
   const { unitId, unitNumber, isLoading: unitLoading } = useResidentUnit();
@@ -66,6 +68,7 @@ export default function CheckoutScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null);
   const [paidAmount, setPaidAmount] = useState<number>(0);
+  const [bankTransfer, setBankTransfer] = useState<BankTransferDetails | null>(null);
 
   // Ref to capture activeAmount for async callbacks (avoids stale closures)
   const activeAmountRef = useRef<number | null>(null);
@@ -140,11 +143,14 @@ export default function CheckoutScreen() {
       const result = await createPaymentIntent.mutateAsync({
         unit_id: unitId,
         amount, // MXN pesos, NOT centavos
-        description: isOxxo
-          ? `Pago OXXO - ${unitNumber}`
-          : `Pago de mantenimiento - ${unitNumber}`,
+        description: isSpei
+          ? `Pago SPEI - ${unitNumber}`
+          : isOxxo
+            ? `Pago OXXO - ${unitNumber}`
+            : `Pago de mantenimiento - ${unitNumber}`,
         idempotency_key: idempotencyKey,
-        payment_method_type: isOxxo ? 'oxxo' : 'card',
+        payment_method_type: isSpei ? 'spei' : isOxxo ? 'oxxo' : 'card',
+        enable_installments: isMsi ? true : undefined,
       });
 
       setStripePaymentIntentId(result.paymentIntentId);
@@ -194,13 +200,33 @@ export default function CheckoutScreen() {
       }
       // --- End OXXO Flow ---
 
+      // --- SPEI Flow ---
+      if (isSpei) {
+        // SPEI PI is already confirmed server-side. Show bank transfer instructions.
+        if (result.bankTransfer) {
+          setBankTransfer(result.bankTransfer);
+        }
+        setPaymentState('spei_instructions');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+      // --- End SPEI Flow ---
+
       // Step 2: Initialize PaymentSheet
+      // Apple Pay and Google Pay are shown automatically when available
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: 'UPOE Community',
         paymentIntentClientSecret: result.clientSecret,
         customerId: result.customerId,
         returnURL: 'upoe://payment-sheet',
         allowsDelayedPaymentMethods: false,
+        applePay: {
+          merchantCountryCode: 'MX',
+        },
+        googlePay: {
+          merchantCountryCode: 'MX',
+          testEnv: __DEV__,
+        },
       });
 
       if (initError) {
@@ -230,7 +256,7 @@ export default function CheckoutScreen() {
       setPaymentState('failed');
       setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred');
     }
-  }, [unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet, confirmPayment, isOxxo, profile, user]);
+  }, [unitId, unitNumber, createPaymentIntent, initPaymentSheet, presentPaymentSheet, confirmPayment, isOxxo, isSpei, isMsi, profile, user]);
 
   // ---------- handleRetry ----------
 
@@ -251,7 +277,7 @@ export default function CheckoutScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isOxxo ? 'Pay with OXXO' : 'Pay with Card'}</Text>
+          <Text style={styles.headerTitle}>{isSpei ? 'SPEI Transfer' : isOxxo ? 'Pay with OXXO' : 'Pay with Card'}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -320,6 +346,55 @@ export default function CheckoutScreen() {
     );
   }
 
+  // ---------- Render: SPEI Instructions ----------
+
+  if (paymentState === 'spei_instructions' && bankTransfer) {
+    return (
+      <View style={styles.container}>
+        <AmbientBackground />
+        <View style={styles.successContainer}>
+          <Animated.View entering={BounceIn.delay(200)} style={[styles.successIconCircle, { backgroundColor: colors.primary }]}>
+            <Ionicons name="business-outline" size={40} color={colors.textOnDark} />
+          </Animated.View>
+          <Animated.Text entering={FadeInDown.delay(400)} style={styles.successTitle}>
+            Transferencia SPEI
+          </Animated.Text>
+          <Animated.Text entering={FadeInDown.delay(500)} style={styles.successAmount}>
+            {formatCurrency(paidAmount)}
+          </Animated.Text>
+          <Animated.View entering={FadeIn.delay(600)} style={styles.speiDetailsCard}>
+            {bankTransfer.clabe && (
+              <View style={styles.speiRow}>
+                <Text style={styles.speiLabel}>CLABE</Text>
+                <Text style={styles.speiValue} selectable>{bankTransfer.clabe}</Text>
+              </View>
+            )}
+            {bankTransfer.bankName && (
+              <View style={styles.speiRow}>
+                <Text style={styles.speiLabel}>Banco</Text>
+                <Text style={styles.speiValue}>{bankTransfer.bankName}</Text>
+              </View>
+            )}
+            {bankTransfer.reference && (
+              <View style={styles.speiRow}>
+                <Text style={styles.speiLabel}>Referencia</Text>
+                <Text style={styles.speiValue} selectable>{bankTransfer.reference}</Text>
+              </View>
+            )}
+          </Animated.View>
+          <Animated.Text entering={FadeIn.delay(700)} style={styles.successSubtitle}>
+            Realiza la transferencia desde tu banca en linea. Tu pago se acreditara en 1-3 dias habiles.
+          </Animated.Text>
+          <Animated.View entering={FadeIn.delay(800)}>
+            <TouchableOpacity style={styles.successButton} onPress={() => router.back()}>
+              <Text style={styles.successButtonText}>Volver a Pagos</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  }
+
   // ---------- Render: Main Checkout ----------
 
   const isProcessing = paymentState === 'creating' || paymentState === 'presenting' || paymentState === 'processing';
@@ -337,7 +412,7 @@ export default function CheckoutScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={isProcessing ? colors.textDisabled : colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isOxxo ? 'Pay with OXXO' : 'Pay with Card'}</Text>
+        <Text style={styles.headerTitle}>{isSpei ? 'SPEI Transfer' : isOxxo ? 'Pay with OXXO' : isMsi ? 'Pay in Installments' : 'Pay with Card'}</Text>
       </View>
 
       <ScrollView
@@ -449,7 +524,7 @@ export default function CheckoutScreen() {
           ) : (
             <Text style={styles.payButtonText}>
               {isValidAmount
-                ? (isOxxo ? `Generar Voucher ${formatCurrency(activeAmount!)}` : `Pay ${formatCurrency(activeAmount!)}`)
+                ? (isSpei ? `Transfer ${formatCurrency(activeAmount!)}` : isOxxo ? `Generar Voucher ${formatCurrency(activeAmount!)}` : `Pay ${formatCurrency(activeAmount!)}`)
                 : 'Select an amount'}
             </Text>
           )}
@@ -755,5 +830,38 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 16,
     color: colors.textOnDark,
+  },
+
+  // SPEI Instructions
+  speiDetailsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing['3xl'],
+    width: '100%',
+    marginBottom: spacing['3xl'],
+    ...shadows.sm,
+  },
+  speiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  speiLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textMuted,
+    marginRight: spacing.xl,
+  },
+  speiValue: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: 'right',
   },
 });

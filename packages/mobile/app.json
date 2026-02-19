@@ -54,7 +54,7 @@
       ],
       ["@stripe/stripe-react-native", {
         "merchantIdentifier": "merchant.com.upoe",
-        "enableGooglePay": false
+        "enableGooglePay": true
       }]
     ]
   }

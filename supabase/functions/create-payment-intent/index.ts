@@ -17,7 +17,7 @@ const CORS_HEADERS = {
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_PAYMENT_METHODS = ["card", "oxxo"] as const;
+const VALID_PAYMENT_METHODS = ["card", "oxxo", "spei"] as const;
 const MIN_AMOUNT_CENTAVOS = 1000; // MXN $10.00 minimum (Stripe MXN minimum)
 const MAX_AMOUNT_CENTAVOS = 99999999; // MXN $999,999.99
 const MAX_OXXO_AMOUNT_CENTAVOS = 1000000; // MXN $10,000.00 (OXXO limit)
@@ -73,6 +73,7 @@ Deno.serve(async (req: Request) => {
       description?: string;
       idempotency_key?: string;
       payment_method_type?: string;
+      enable_installments?: boolean;
     };
 
     try {
@@ -113,7 +114,7 @@ Deno.serve(async (req: Request) => {
       )
     ) {
       return jsonResponse(
-        { error: "payment_method_type must be 'card' or 'oxxo'" },
+        { error: "payment_method_type must be 'card', 'oxxo', or 'spei'" },
         400,
       );
     }
@@ -297,13 +298,19 @@ Deno.serve(async (req: Request) => {
     }
 
     // 10. Create Stripe PaymentIntent
+    const paymentMethodTypes: string[] =
+      payment_method_type === "oxxo"
+        ? ["oxxo"]
+        : payment_method_type === "spei"
+          ? ["customer_balance"]
+          : ["card"];
+
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCentavos,
       currency: "mxn",
       customer: stripeCustomerId,
       description: description,
-      payment_method_types:
-        payment_method_type === "oxxo" ? ["oxxo"] : ["card"],
+      payment_method_types: paymentMethodTypes,
       metadata: {
         community_id: resident.community_id,
         unit_id: unit_id,
@@ -319,6 +326,32 @@ Deno.serve(async (req: Request) => {
       };
     }
 
+    // SPEI-specific: configure bank transfer funding
+    if (payment_method_type === "spei") {
+      paymentIntentParams.payment_method_data = {
+        type: "customer_balance",
+      } as Stripe.PaymentIntentCreateParams.PaymentMethodData;
+      paymentIntentParams.payment_method_options = {
+        customer_balance: {
+          funding_type: "bank_transfer",
+          bank_transfer: {
+            type: "mx_bank_transfer",
+          },
+        },
+      };
+      paymentIntentParams.confirm = true;
+    }
+
+    // MSI (installments): enable when requested for card payments
+    if (payment_method_type === "card" && body.enable_installments) {
+      paymentIntentParams.payment_method_options = {
+        ...paymentIntentParams.payment_method_options,
+        card: {
+          installments: { enabled: true },
+        },
+      };
+    }
+
     const paymentIntent = await stripe.paymentIntents.create(
       paymentIntentParams,
       { idempotencyKey: idempotency_key },
@@ -330,7 +363,9 @@ Deno.serve(async (req: Request) => {
     const expiresAt =
       payment_method_type === "oxxo"
         ? new Date((paymentIntent.created + 2 * 24 * 60 * 60) * 1000).toISOString()
-        : null;
+        : payment_method_type === "spei"
+          ? new Date((paymentIntent.created + 3 * 24 * 60 * 60) * 1000).toISOString()
+          : null;
 
     const { error: insertIntentError } = await serviceClient
       .from("payment_intents")
@@ -389,15 +424,40 @@ Deno.serve(async (req: Request) => {
     }
 
     // 12. Return success response
-    return jsonResponse(
-      {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-        customerId: stripeCustomerId,
-        status: paymentIntent.status,
-      },
-      201,
-    );
+    // For SPEI: include bank transfer instructions from next_action
+    const responseBody: Record<string, unknown> = {
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      customerId: stripeCustomerId,
+      status: paymentIntent.status,
+    };
+
+    if (payment_method_type === "spei" && paymentIntent.next_action) {
+      const bankTransfer = (
+        paymentIntent.next_action as { display_bank_transfer_instructions?: {
+          financial_addresses?: Array<{
+            type: string;
+            spei?: { bank_name: string; clabe: string };
+          }>;
+          reference?: string;
+          amount_remaining?: number;
+        } }
+      ).display_bank_transfer_instructions;
+
+      if (bankTransfer) {
+        const speiAddress = bankTransfer.financial_addresses?.find(
+          (a) => a.type === "spei",
+        );
+        responseBody.bankTransfer = {
+          clabe: speiAddress?.spei?.clabe ?? null,
+          bankName: speiAddress?.spei?.bank_name ?? null,
+          reference: bankTransfer.reference ?? null,
+          amountRemaining: bankTransfer.amount_remaining ?? amountCentavos,
+        };
+      }
+    }
+
+    return jsonResponse(responseBody, 201);
   } catch (err: unknown) {
     // Stripe-specific error handling
     if (err && typeof err === "object" && "type" in err) {

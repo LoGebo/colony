@@ -204,6 +204,7 @@ export interface CreatePaymentIntentResponse {
   paymentIntentId: string;
   customerId: string;
   status: string;
+  bankTransfer?: BankTransferDetails;
 }
 
 export interface CreatePaymentIntentInput {
@@ -211,7 +212,15 @@ export interface CreatePaymentIntentInput {
   amount: number; // MXN pesos (NOT centavos) — edge function converts internally
   description: string;
   idempotency_key: string;
-  payment_method_type: 'card' | 'oxxo';
+  payment_method_type: 'card' | 'oxxo' | 'spei';
+  enable_installments?: boolean;
+}
+
+export interface BankTransferDetails {
+  clabe: string | null;
+  bankName: string | null;
+  reference: string | null;
+  amountRemaining: number;
 }
 
 // ---------- useCreatePaymentIntent ----------
