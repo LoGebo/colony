@@ -15,4 +15,15 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Web shims for native-only modules
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === 'web' && moduleName === '@stripe/stripe-react-native') {
+    return {
+      filePath: path.resolve(projectRoot, 'shims/stripe-react-native.web.js'),
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: './global.css' });

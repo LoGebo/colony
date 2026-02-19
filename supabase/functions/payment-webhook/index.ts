@@ -129,6 +129,17 @@ async function handlePaymentIntentSucceeded(
     );
   }
 
+  // Resolve resident business ID -> auth.users UUID for posted_by/created_by FK
+  let authUserId: string | null = null;
+  if (residentId) {
+    const { data: residentRow } = await supabase
+      .from("residents")
+      .select("user_id")
+      .eq("id", residentId)
+      .maybeSingle();
+    authUserId = residentRow?.user_id ?? null;
+  }
+
   // 1. Update payment_intents status -> succeeded
   const { error: updateError } = await supabase
     .from("payment_intents")
@@ -171,7 +182,7 @@ async function handlePaymentIntentSucceeded(
       p_payment_date: new Date(((pi.created as number) ?? Math.floor(Date.now() / 1000)) * 1000).toISOString().split("T")[0],
       p_description: paymentDescription,
       p_payment_method_id: null, // Stripe is not a row in payment_methods table
-      p_created_by: residentId ?? null, // Audit trail
+      p_created_by: authUserId, // Must be auth.users UUID, not resident business ID
     },
   );
 

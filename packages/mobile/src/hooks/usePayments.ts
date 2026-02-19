@@ -59,6 +59,10 @@ export function useUnitBalance(unitId?: string) {
       return (data?.[0] as UnitBalance | undefined) ?? null;
     },
     enabled: !!unitId,
+    // Always refetch when screen comes into focus (critical after payment)
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0,
   });
 }
 
@@ -81,6 +85,7 @@ export function useTransactions(unitId?: string, pageSize = 20) {
         .is('deleted_at', null)
         .in('status', ['pending', 'posted'])
         .order('effective_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;

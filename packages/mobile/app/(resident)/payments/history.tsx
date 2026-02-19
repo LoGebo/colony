@@ -63,7 +63,8 @@ function getTypeLabel(type: string): string {
 }
 
 function isPositiveTransaction(type: string): boolean {
-  return type === 'payment' || type === 'adjustment' || type === 'reversal';
+  // From resident's perspective: charges increase debt (+), payments reduce it (-)
+  return type === 'charge' || type === 'interest';
 }
 
 export default function TransactionHistoryScreen() {

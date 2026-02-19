@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, ActivityIndicator, Linking } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useResidentUnit } from '@/hooks/useOccupancy';
 import { useUnitBalance, useTransactions, usePaymentProofs, usePendingOxxoVoucher } from '@/hooks/usePayments';
@@ -28,6 +29,15 @@ export default function PaymentDashboardScreen() {
 
   const currentBalance = balance?.current_balance ?? 0;
   const daysOverdue = balance?.days_overdue ?? 0;
+
+  // Refetch all data when screen comes back into focus (e.g., returning from checkout)
+  useFocusEffect(
+    useCallback(() => {
+      refetchBalance();
+      refetchTx();
+      refetchOxxo();
+    }, [refetchBalance, refetchTx, refetchOxxo])
+  );
 
   const onRefresh = async () => {
     await Promise.all([refetchBalance(), refetchTx(), refetchProofs(), refetchOxxo()]);

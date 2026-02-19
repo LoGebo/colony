@@ -311,6 +311,8 @@ Deno.serve(async (req: Request) => {
       customer: stripeCustomerId,
       description: description,
       payment_method_types: paymentMethodTypes,
+      // Save card for future payments (only for card — OXXO/SPEI are one-time)
+      ...(payment_method_type === "card" ? { setup_future_usage: "off_session" } : {}),
       metadata: {
         community_id: resident.community_id,
         unit_id: unit_id,

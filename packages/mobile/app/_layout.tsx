@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { StripeProvider } from '@stripe/stripe-react-native';
+import { StripeProvider } from '@/components/StripeProviderWrapper';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { QueryProvider } from '@/providers/QueryProvider';
 
