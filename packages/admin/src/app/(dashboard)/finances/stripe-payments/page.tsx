@@ -30,6 +30,8 @@ function getStatusBadge(status: string) {
       return { bg: 'bg-red-100', text: 'text-red-800', label: 'Fallido' };
     case 'canceled':
       return { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Cancelado' };
+    case 'requires_payment_method':
+      return { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Requiere Metodo' };
     default:
       return { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
   }

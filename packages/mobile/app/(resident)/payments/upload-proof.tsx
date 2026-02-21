@@ -43,13 +43,15 @@ export default function UploadPaymentProofScreen() {
   const [proofType, setProofType] = useState<ProofType>('transfer_receipt');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showPhotoError, setShowPhotoError] = useState(false);
 
-  const canSubmit =
+  const hasRequiredFields =
     amount.trim().length > 0 &&
     paymentDate.trim().length > 0 &&
-    photoUrl !== null &&
     unitId !== null &&
     !uploadMutation.isPending;
+
+  const canSubmit = hasRequiredFields && photoUrl !== null;
 
   const handlePickPhoto = async () => {
     if (!communityId) return;
@@ -58,6 +60,7 @@ export default function UploadPaymentProofScreen() {
       const path = await pickAndUploadImage('payment-proofs', communityId, 'receipt');
       if (path) {
         setPhotoUrl(path);
+        setShowPhotoError(false);
       }
     } finally {
       setUploading(false);
@@ -65,6 +68,10 @@ export default function UploadPaymentProofScreen() {
   };
 
   const handleSubmit = async () => {
+    if (!photoUrl) {
+      setShowPhotoError(true);
+      return;
+    }
     if (!canSubmit || !unitId) return;
 
     const parsedAmount = parseFloat(amount.replace(/,/g, ''));
@@ -217,7 +224,11 @@ export default function UploadPaymentProofScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.uploadArea} onPress={handlePickPhoto} disabled={uploading}>
+              <TouchableOpacity
+                style={[styles.uploadArea, showPhotoError && styles.uploadAreaError]}
+                onPress={handlePickPhoto}
+                disabled={uploading}
+              >
                 {uploading ? (
                   <ActivityIndicator color={colors.primary} />
                 ) : (
@@ -231,13 +242,16 @@ export default function UploadPaymentProofScreen() {
                 )}
               </TouchableOpacity>
             )}
+            {showPhotoError && (
+              <Text style={styles.photoErrorText}>Please upload a receipt photo to continue.</Text>
+            )}
           </View>
 
           {/* Submit */}
           <TouchableOpacity
-            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            style={[styles.submitButton, !hasRequiredFields && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!hasRequiredFields}
           >
             {uploadMutation.isPending ? (
               <ActivityIndicator color={colors.textOnDark} />
@@ -375,6 +389,16 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.borderDashed,
     backgroundColor: colors.surface,
+  },
+  uploadAreaError: {
+    borderColor: colors.danger,
+  },
+  photoErrorText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.danger,
+    marginTop: spacing.md,
+    marginLeft: 4,
   },
   uploadIconBox: {
     width: 56,

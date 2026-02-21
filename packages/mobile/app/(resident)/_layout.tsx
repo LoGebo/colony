@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useRole } from '@/hooks/useRole';
 import { useUnreadConversations } from '@/hooks/useChat';
 import { colors, fonts, shadows } from '@/theme';
 
@@ -46,10 +47,17 @@ function ChatTabIcon({ focused, color }: { focused: boolean; color: string }) {
 
 export default function ResidentLayout() {
   const { session, isLoading } = useAuth();
+  const { isGuard, isAdminRole } = useRole();
 
   // Redirect to sign-in when session is cleared (e.g. after logout)
   if (!isLoading && !session) {
     return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  // Redirect non-resident roles to their own layout
+  if (!isLoading && session) {
+    if (isGuard) return <Redirect href="/(guard)" />;
+    if (isAdminRole) return <Redirect href="/(admin)" />;
   }
 
   return (
