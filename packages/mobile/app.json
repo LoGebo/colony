@@ -49,7 +49,6 @@
           "cameraPermission": "La app necesita acceso a la camara para escanear codigos QR"
         }
       ],
-      "react-native-nfc-manager",
       [
         "expo-location",
         {
@@ -62,13 +61,6 @@
           "icon": "./assets/icon.png",
           "color": "#2563eb",
           "sounds": []
-        }
-      ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.upoe",
-          "enableGooglePay": true
         }
       ]
     ],

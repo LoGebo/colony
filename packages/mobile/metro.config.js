@@ -15,9 +15,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
-// Web shims for native-only modules
+// Shims for native-only modules (Stripe requires dev build, shim for Expo Go)
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (platform === 'web' && moduleName === '@stripe/stripe-react-native') {
+  if (moduleName === '@stripe/stripe-react-native') {
     return {
       filePath: path.resolve(projectRoot, 'shims/stripe-react-native.web.js'),
       type: 'sourceFile',
