@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useMemo } from 'react';
 import { useKPIMonthly, useKPIMonthlyRange, useExpenseBreakdown, useDelinquentUnits } from '@/hooks/useFinancials';
+import { useAuth } from '@/hooks/useAuth';
 import { KPICard } from '@/components/charts/KPICard';
 import { CollectionChart } from '@/components/charts/CollectionChart';
 import { DelinquencyChart } from '@/components/charts/DelinquencyChart';
@@ -32,6 +33,8 @@ function SkeletonChart() {
 }
 
 export default function DashboardPage() {
+  const { isLoading: authLoading, communityId } = useAuth();
+
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
@@ -73,7 +76,10 @@ export default function DashboardPage() {
     }));
   }, [kpiRange]);
 
-  const isLoading = kpiLoading || rangeLoading || expensesLoading || delinquentLoading;
+  // Include auth loading state: when communityId is not yet available, all
+  // queries are disabled and their isLoading is false (TanStack Query v5).
+  // Without this guard the non-skeleton branch renders with all-zero data.
+  const isLoading = authLoading || !communityId || kpiLoading || rangeLoading || expensesLoading || delinquentLoading;
 
   return (
     <div className="space-y-6">

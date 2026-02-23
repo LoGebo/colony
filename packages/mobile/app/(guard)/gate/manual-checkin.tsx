@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
@@ -39,9 +40,9 @@ export default function ManualCheckInScreen() {
     (decision: 'allowed' | 'denied') => {
       if (!personName.trim()) {
         if (Platform.OS === 'web') {
-          window.alert('Please enter the visitor name.');
+          window.alert('Ingresa el nombre del visitante.');
         } else {
-          showAlert('Required', 'Please enter the visitor name.');
+          showAlert('Campo requerido', 'Ingresa el nombre del visitante.');
         }
         return;
       }
@@ -58,23 +59,29 @@ export default function ManualCheckInScreen() {
         },
         {
           onSuccess: () => {
-            const msg = `${personName} has been ${decision === 'allowed' ? 'granted access' : 'denied entry'}.`;
+            const title =
+              decision === 'allowed'
+                ? 'Acceso registrado'
+                : 'Entrada denegada';
+            const msg =
+              decision === 'allowed'
+                ? `Acceso registrado exitosamente para ${personName.trim()}.`
+                : `Se denegó la entrada a ${personName.trim()}.`;
             if (Platform.OS === 'web') {
               window.alert(msg);
               router.replace('/(guard)');
             } else {
-              showAlert(
-                decision === 'allowed' ? 'Entry Logged' : 'Entry Denied',
-                msg,
-                [{ text: 'OK', onPress: () => router.replace('/(guard)') }],
-              );
+              showAlert(title, msg, [
+                { text: 'OK', onPress: () => router.replace('/(guard)') },
+              ]);
             }
           },
           onError: (err) => {
+            const errMsg = err.message || 'Ocurrió un error al registrar el acceso.';
             if (Platform.OS === 'web') {
-              window.alert(err.message);
+              window.alert(errMsg);
             } else {
-              showAlert('Error', err.message);
+              showAlert('Error', errMsg);
             }
           },
         },
@@ -255,8 +262,14 @@ export default function ManualCheckInScreen() {
               disabled={!canSubmit}
               activeOpacity={0.85}
             >
-              <Text style={styles.submitButtonText}>Complete Check-in</Text>
-              <Ionicons name="checkmark-circle-outline" size={22} color={colors.textOnDark} />
+              {manualCheckIn.isPending ? (
+                <ActivityIndicator color={colors.textOnDark} />
+              ) : (
+                <>
+                  <Text style={styles.submitButtonText}>Complete Check-in</Text>
+                  <Ionicons name="checkmark-circle-outline" size={22} color={colors.textOnDark} />
+                </>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -265,8 +278,14 @@ export default function ManualCheckInScreen() {
               disabled={!canSubmit}
               activeOpacity={0.85}
             >
-              <Text style={styles.denyButtonText}>Deny Entry</Text>
-              <Ionicons name="close-circle-outline" size={22} color={colors.danger} />
+              {manualCheckIn.isPending ? (
+                <ActivityIndicator color={colors.danger} />
+              ) : (
+                <>
+                  <Text style={styles.denyButtonText}>Deny Entry</Text>
+                  <Ionicons name="close-circle-outline" size={22} color={colors.danger} />
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>

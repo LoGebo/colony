@@ -82,7 +82,7 @@ export function usePackageDetail(id: string) {
 // ---------- useLogPackage ----------
 
 export function useLogPackage() {
-  const { communityId, guardId } = useAuth();
+  const { communityId, user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -100,7 +100,7 @@ export function useLogPackage() {
           is_oversized: input.is_oversized ?? false,
           label_photo_url: input.label_photo_url,
           community_id: communityId!,
-          received_by: guardId ?? undefined,
+          received_by: user?.id ?? undefined,
           received_at: new Date().toISOString(),
           status: 'received' as const,
         })
@@ -119,7 +119,7 @@ export function useLogPackage() {
 // ---------- useConfirmPickup ----------
 
 export function useConfirmPickup() {
-  const { guardId } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -155,7 +155,7 @@ export function useConfirmPickup() {
           .update({
             status: 'used' as const,
             used_at: new Date().toISOString(),
-            used_by: guardId ?? undefined,
+            used_by: user?.id ?? undefined,
           })
           .eq('id', validCode.id);
 
@@ -191,7 +191,7 @@ export function useConfirmPickup() {
         .update({
           status: 'picked_up' as const,
           picked_up_at: new Date().toISOString(),
-          picked_up_by: guardId ?? undefined,
+          picked_up_by: user?.id ?? undefined,
         })
         .eq('id', packageId)
         .select()

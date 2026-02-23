@@ -106,10 +106,32 @@ export default function ResidentDashboard() {
           <View style={styles.balanceContent}>
             <View style={styles.balanceHeader}>
               <View>
-                <Text style={styles.balanceLabel}>CURRENT BALANCE</Text>
-                <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
+                {currentBalance < 0 ? (
+                  <>
+                    <Text style={styles.balanceLabel}>SALDO A FAVOR</Text>
+                    <Text style={[styles.balanceAmount, styles.balanceAmountFavor]}>
+                      {formatCurrency(Math.abs(currentBalance))}
+                    </Text>
+                  </>
+                ) : currentBalance === 0 ? (
+                  <>
+                    <Text style={styles.balanceLabel}>BALANCE</Text>
+                    <Text style={[styles.balanceAmount, styles.balanceAmountCurrent]}>
+                      Al corriente
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.balanceLabel}>SALDO PENDIENTE</Text>
+                    <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
+                  </>
+                )}
               </View>
-              {daysOverdue > 0 ? (
+              {currentBalance < 0 ? (
+                <View style={styles.favorBadge}>
+                  <Text style={styles.favorBadgeText}>SALDO A FAVOR</Text>
+                </View>
+              ) : daysOverdue > 0 ? (
                 <View style={styles.overdueBadge}>
                   <Text style={styles.overdueBadgeText}>
                     {daysOverdue} DAYS OVERDUE
@@ -117,7 +139,7 @@ export default function ResidentDashboard() {
                 </View>
               ) : (
                 <View style={styles.paidBadge}>
-                  <Text style={styles.paidBadgeText}>UP TO DATE</Text>
+                  <Text style={styles.paidBadgeText}>AL CORRIENTE</Text>
                 </View>
               )}
             </View>
@@ -425,6 +447,28 @@ const styles = StyleSheet.create({
   paidBadgeText: {
     fontFamily: fonts.bold,
     fontSize: 10,
+    color: colors.success,
+  },
+  favorBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.3)',
+    flexShrink: 1,
+    alignSelf: 'flex-start' as const,
+  },
+  favorBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.success,
+  },
+  balanceAmountFavor: {
+    color: colors.success,
+  },
+  balanceAmountCurrent: {
+    fontSize: 24,
     color: colors.success,
   },
   balanceFooter: {

@@ -11,6 +11,7 @@ import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useGuardProfile } from '@/hooks/useProfile';
 import { supabase } from '@/lib/supabase';
 import { AmbientBackground } from '@/components/ui/AmbientBackground';
 import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
@@ -18,11 +19,12 @@ import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 export default function GuardSettingsScreen() {
   const router = useRouter();
   const { signOut, user } = useAuth();
+  const { data: guardProfile } = useGuardProfile();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  const firstName = user?.user_metadata?.first_name ?? 'Guard';
-  const lastName = user?.user_metadata?.last_name ?? '';
-  const email = user?.email ?? '';
+  const firstName = guardProfile?.first_name ?? user?.user_metadata?.first_name ?? 'Guard';
+  const lastName = guardProfile?.paternal_surname ?? user?.user_metadata?.last_name ?? '';
+  const email = guardProfile?.email ?? user?.email ?? '';
 
   const confirmSignOut = () => {
     if (Platform.OS === 'web') {

@@ -13,6 +13,7 @@ import { showAlert } from '@/lib/alert';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { useGuardProfile } from '@/hooks/useProfile';
 import { useTodayAccessLogs, useExpectedVisitorsRealtime, useGuardAccessPoint } from '@/hooks/useGateOps';
 import { useIncidentList } from '@/hooks/useIncidents';
 import { useUnacknowledgedHandovers, useAcknowledgeHandover } from '@/hooks/useHandovers';
@@ -27,6 +28,7 @@ import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 export default function GuardDashboard() {
   const router = useRouter();
   const { user, communityId } = useAuth();
+  const { data: guardProfile } = useGuardProfile();
   const { data: accessPoint } = useGuardAccessPoint();
   const { data: todayLogs, refetch: refetchLogs } = useTodayAccessLogs();
   const { data: expectedVisitors, refetch: refetchVisitors } = useExpectedVisitorsRealtime();
@@ -40,7 +42,9 @@ export default function GuardDashboard() {
   const scrollRef = useRef<ScrollView>(null);
   const visitorsYRef = useRef(0);
 
-  const guardName = user?.user_metadata?.first_name ?? 'Guard';
+  const guardName = guardProfile
+    ? `${guardProfile.first_name ?? ''} ${guardProfile.paternal_surname ?? ''}`.trim() || 'Guard'
+    : user?.user_metadata?.first_name ?? 'Guard';
   const gateName = accessPoint?.name ?? 'Guard Station';
   const todayEntryCount = todayLogs?.length ?? 0;
   const pendingPackageCount = pendingPackages?.length ?? 0;
@@ -119,7 +123,7 @@ export default function GuardDashboard() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerGate}>{gateName}</Text>
-            <Text style={styles.headerTitle}>Guard Dashboard</Text>
+            <Text style={styles.headerTitle}>{guardName}</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.activeBadge}>

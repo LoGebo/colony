@@ -82,15 +82,36 @@ export default function PaymentDashboardScreen() {
           <View style={styles.balanceOrb} />
           <View style={styles.balanceContent}>
             <View style={styles.balanceHeader}>
-              <Text style={styles.balanceLabel}>Outstanding Balance</Text>
-              {daysOverdue > 0 && (
+              {currentBalance < 0 ? (
+                <Text style={styles.balanceLabel}>Saldo a favor</Text>
+              ) : currentBalance === 0 ? (
+                <Text style={styles.balanceLabel}>Balance</Text>
+              ) : (
+                <Text style={styles.balanceLabel}>Saldo pendiente</Text>
+              )}
+              {currentBalance < 0 ? (
+                <View style={styles.favorBadge}>
+                  <Ionicons name="checkmark-circle-outline" size={12} color={colors.success} />
+                  <Text style={styles.favorBadgeText}>Saldo a favor</Text>
+                </View>
+              ) : daysOverdue > 0 ? (
                 <View style={styles.overdueBadge}>
                   <Ionicons name="alert-circle-outline" size={12} color="#F87171" />
                   <Text style={styles.overdueBadgeText}>{daysOverdue} Days Overdue</Text>
                 </View>
-              )}
+              ) : null}
             </View>
-            <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
+            {currentBalance < 0 ? (
+              <Text style={[styles.balanceAmount, styles.balanceAmountFavor]}>
+                {formatCurrency(Math.abs(currentBalance))}
+              </Text>
+            ) : currentBalance === 0 ? (
+              <Text style={[styles.balanceAmount, styles.balanceAmountCurrent]}>
+                Al corriente
+              </Text>
+            ) : (
+              <Text style={styles.balanceAmount}>{formatCurrency(currentBalance)}</Text>
+            )}
             <View style={styles.balanceActions}>
               <TouchableOpacity
                 style={[styles.payButton, currentBalance <= 0 && styles.payButtonDisabledState]}
@@ -424,6 +445,29 @@ const styles = StyleSheet.create({
     color: '#F87171',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  favorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    borderRadius: borderRadius.sm,
+  },
+  favorBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.success,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  balanceAmountFavor: {
+    color: colors.success,
+  },
+  balanceAmountCurrent: {
+    fontSize: 28,
+    color: colors.success,
   },
   balanceAmount: {
     fontFamily: fonts.bold,

@@ -7,6 +7,27 @@ import { queryKeys } from '@upoe/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 
+// ---------- useGuardProfile ----------
+
+export function useGuardProfile() {
+  const { guardId } = useAuth();
+
+  return useQuery({
+    queryKey: [...queryKeys.guards.detail(guardId!).queryKey, 'profile'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('guards')
+        .select('id, first_name, paternal_surname, email, phone, photo_url')
+        .eq('id', guardId!)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!guardId,
+  });
+}
+
 // ---------- useResidentProfile ----------
 
 export function useResidentProfile() {
